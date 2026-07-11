@@ -8,12 +8,9 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --ink: #1A1714; --parchment: #F7F3EE; --mist: #EAE4DC;
-    --dust: #C8BEB3; --gold: #A07840; --gold-pale: #D4B07A;
-    --slate: #5C6B7A; --rouge: #8C3A3A; --moss: #3A5C44; --umber: #6B4C2A;
+    --dust: #C8BEB3; --gold-pale: #D4B07A;
   }
   body { background: var(--parchment); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
-
-  /* HEADER */
   .header { background: var(--ink); padding: 40px 24px 28px; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 20px; }
   @media(min-width:768px){ .header { padding: 48px 56px 36px; flex-direction: row; align-items: flex-end; justify-content: space-between; } }
   .header-watermark { position: absolute; right: -8px; top: -16px; font-size: 140px; opacity: 0.04; line-height: 1; color: var(--gold-pale); font-family: serif; pointer-events: none; user-select: none; }
@@ -34,8 +31,6 @@
   .progress-fill { height: 100%; background: var(--gold-pale); border-radius: 999px; transition: width 0.4s ease; width: 0%; }
   .progress-label-mobile { font-size: 11px; color: var(--gold-pale); font-weight: 500; white-space: nowrap; }
   @media(min-width:768px){ .progress-label-mobile { display: none; } }
-
-  /* TOOLBAR */
   .toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 16px 10px; border-bottom: 1px solid var(--mist); background: var(--parchment); position: sticky; top: 0; z-index: 10; }
   @media(min-width:768px){ .toolbar { padding: 14px 56px; } }
   .filter-btn { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; padding: 4px 11px; border-radius: 999px; cursor: pointer; border: 1px solid var(--dust); background: transparent; color: #8A8078; transition: all 0.15s; margin-bottom: 4px; }
@@ -43,30 +38,23 @@
   .filter-btn.active { background: var(--ink); border-color: var(--ink); color: var(--parchment); border: none; }
   .reset-btn { margin-left: auto; font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; padding: 4px 11px; border-radius: 999px; cursor: pointer; border: 1px solid var(--dust); background: transparent; color: #B07878; }
   @media(min-width:768px){ .reset-btn { font-size: 11px; padding: 6px 16px; } }
-
-  /* MAIN */
   .main { padding: 4px 0 56px; }
   @media(min-width:768px){ .main { padding: 24px 56px 72px; } }
-
-  /* SECTION */
   .section { margin-bottom: 0; }
   @media(min-width:768px){ .section { margin-bottom: 48px; } }
   .section.hidden { display: none; }
-  .section-header { display: flex; align-items: center; gap: 8px; padding: 18px 16px 8px; }
-  @media(min-width:768px){ .section-header { gap: 12px; padding: 0 0 16px; } }
+  .section-header-mobile { display: flex; align-items: center; gap: 8px; padding: 18px 16px 8px; }
+  @media(min-width:768px){ .section-header-mobile { display: none; } }
+  .section-header-desktop { display: none; align-items: center; gap: 12px; padding: 0 0 16px; }
+  @media(min-width:768px){ .section-header-desktop { display: flex; } }
   .section-line { flex: 1; height: 1px; background: var(--mist); }
-  .section-line-short { width: 24px; height: 1px; background: var(--mist); display: none; }
-  @media(min-width:768px){ .section-line-short { display: block; } }
-  .section-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-  @media(min-width:768px){ .section-dot { width: 6px; height: 6px; } }
+  .section-line-short { width: 24px; height: 1px; background: var(--mist); }
+  .section-dot-sm { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .section-dot-lg { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
   .section-label { font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #B0A89E; }
   @media(min-width:768px){ .section-label { font-size: 10px; letter-spacing: 0.2em; } }
-
-  /* CARDS GRID */
   .cards-grid { display: block; }
   @media(min-width:768px){ .cards-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; } }
-
-  /* CARD */
   .frag-card { margin: 0 12px 7px; border-radius: 11px; background: white; border: 1px solid var(--mist); overflow: hidden; cursor: pointer; transition: opacity 0.2s, box-shadow 0.2s; display: flex; }
   @media(min-width:768px){ .frag-card { margin: 0; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); } }
   .frag-card.acquired { opacity: 0.4; }
@@ -75,281 +63,159 @@
   .frag-accent { width: 3px; flex-shrink: 0; }
   .frag-body { flex: 1; padding: 12px 12px 11px; display: flex; gap: 10px; align-items: flex-start; }
   @media(min-width:768px){ .frag-body { padding: 16px 16px 14px; flex-direction: column; gap: 0; } }
-
-  /* MOBILE CARD INNER */
   .mobile-left { flex: 1; min-width: 0; }
   .mobile-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; padding-top: 1px; }
   @media(min-width:768px){ .mobile-left, .mobile-right { display: none; } }
-
-  /* DESKTOP CARD INNER */
-  .desktop-inner { display: none; flex: 1; flex-direction: column; }
+  .desktop-inner { display: none; flex: 1; flex-direction: column; width: 100%; }
   @media(min-width:768px){ .desktop-inner { display: flex; } }
-
   .frag-name { font-size: 14px; font-weight: 500; line-height: 1.2; color: var(--ink); margin-bottom: 2px; }
   @media(min-width:768px){ .frag-name { font-size: 15px; margin-bottom: 3px; } }
   .frag-card.acquired .frag-name { text-decoration: line-through; color: var(--dust); }
   .frag-house { font-size: 11px; color: #B0A89E; font-style: italic; margin-bottom: 8px; }
   @media(min-width:768px){ .frag-house { margin-bottom: 12px; } }
   .frag-caution { font-size: 10px; color: #8C5A28; background: #FDF0E8; padding: 2px 7px; border-radius: 999px; display: inline-block; margin-bottom: 8px; }
-
   .notes { display: flex; gap: 4px; flex-wrap: wrap; }
   .note-pill { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: #F0EBE4; color: #6B5F55; white-space: nowrap; }
-
   .longevity { font-size: 10px; color: #B0A89E; margin-bottom: 4px; }
-  @media(min-width:768px){ .longevity { margin-bottom: 0; } }
   .spray-badge { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 999px; display: inline-block; }
-
   .bottom-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0EBE4; }
-
   .checkbox { width: 19px; height: 19px; border-radius: 50%; border: 1.5px solid var(--dust); background: transparent; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
   @media(min-width:768px){ .checkbox { width: 20px; height: 20px; } }
   .frag-card.acquired .checkbox { background: var(--ink); border-color: var(--ink); }
   .check-icon { display: none; }
   .frag-card.acquired .check-icon { display: block; }
-
   .spacer { flex: 1; }
-
-  /* FOOTER */
   .footer { text-align: center; padding: 0 16px 40px; font-size: 10px; color: var(--dust); letter-spacing: 0.1em; text-transform: uppercase; }
-
-  /* TOAST */
   .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--ink); color: var(--parchment); font-size: 11px; font-weight: 500; padding: 10px 20px; border-radius: 999px; white-space: nowrap; z-index: 100; box-shadow: 0 4px 24px rgba(0,0,0,0.2); letter-spacing: 0.04em; opacity: 0; transition: all 0.25s; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  .loading { background: var(--parchment); min-height: 100vh; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--dust); font-size: 15px; }
+  .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; font-style: italic; color: var(--dust); font-size: 15px; }
 </style>
 </head>
 <body>
-
-<div id="app"></div>
+<div id="app"><div class="loading-screen">Loading\u2026</div></div>
 <div class="toast" id="toast"></div>
-
 <script>
-const FIREBASE_URL = "https://fragrances-ccf69-default-rtdb.firebaseio.com/collection.json";
-const UNIQUE_COUNT = 11;
-
-const TINTS = {
-  aquatica:   "rgba(120,200,120,0.13)",
-  pacific:    "rgba(255,140,60,0.13)",
-  myslf:      "rgba(255,200,100,0.13)",
-  khamrah:    "rgba(200,90,20,0.16)",
-  asad:       "rgba(10,10,10,0.22)",
-  liquidbrun: "rgba(200,110,40,0.14)",
-  capitale:   "rgba(180,60,80,0.13)",
-  angels:     "rgba(160,100,40,0.13)",
-  vulcan:     "rgba(220,80,40,0.14)",
-  vanguard:   "rgba(230,200,40,0.14)",
-  reflection: "rgba(180,160,200,0.13)",
-};
-
-const FRAGRANCES = [
-  { id:"aquatica",   name:"Rayhaan Aquatica",     house:"Rayhaan",            slot:"everyday",     maxSprays:"3 sprays max",          longevity:"5–7h",   notes:["Coconut","Lime","Musk"] },
-  { id:"pacific",    name:"Rayhaan Pacific",       house:"Rayhaan",            slot:"everyday",     maxSprays:"3 sprays max",          longevity:"4–6h",   notes:["Citrus","Aquatic","Musk"],                 caution:"Skin-chemistry dependent" },
-  { id:"myslf",      name:"YSL MYSLF EDP",         house:"Yves Saint Laurent", slot:"everyday",     maxSprays:"2–3 sprays max",        longevity:"6–8h",   notes:["Bergamot","Orange Blossom","Sandalwood"] },
-  { id:"khamrah",    name:"Lattafa Khamrah Qahwa", house:"Lattafa",            slot:"professional", maxSprays:"1 spray max in office", longevity:"8–10h",  notes:["Coffee","Oud","Vanilla","Amber"],           caution:"Bold for enclosed spaces" },
-  { id:"asad",       name:"Lattafa Asad",          house:"Lattafa",            slot:"professional", maxSprays:"2 sprays max",          longevity:"8–10h",  notes:["Dark Vanilla","Spice","Smoke"],            caution:"Turns sour in heat" },
-  { id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"professional", maxSprays:"1 spray only",          longevity:"8–10h",  notes:["Vanilla","Pepper","Boozy"],                synced:true },
-  { id:"capitale",   name:"La Capitale",           house:"Xerjoff",            slot:"date",         maxSprays:"2 sprays max",          longevity:"8–10h",  notes:["Strawberry","Saffron","Oud","Leather"] },
-  { id:"angels",     name:"Angels' Share",         house:"By Kilian",          slot:"date",         maxSprays:"2 sprays max",          longevity:"8–10h",  notes:["Cognac","Oak","Cinnamon","Tonka"] },
-  { id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"date",         maxSprays:"1 spray only",          longevity:"8–10h",  notes:["Vanilla","Pepper","Boozy"],                synced:true },
-  { id:"vulcan",     name:"Vulcan Feu EDP",        house:"French Avenue",      slot:"special",      maxSprays:"2 sprays max",          longevity:"8–10h",  notes:["Smoke","Wood","Leather"] },
-  { id:"vanguard",   name:"Vanguard",              house:"Maison Asrar",       slot:"special",      maxSprays:"2 sprays max",          longevity:"7–8h",   notes:["Pineapple","Blackcurrant","Leather","Cedar"] },
-  { id:"reflection", name:"Reflection Man",        house:"Amouage",            slot:"special",      maxSprays:"2–3 sprays max",        longevity:"10–12h", notes:["Neroli","Iris","Jasmine","Sandalwood"] },
-  { id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"special",      maxSprays:"1 spray only",          longevity:"8–10h",  notes:["Vanilla","Pepper","Boozy"],                synced:true },
-];
+const FB_BASE = "https://fragrances-ccf69-default-rtdb.firebaseio.com";
+const FB_FRAGS = FB_BASE + "/fragrances.json";
+const FB_STATE = FB_BASE + "/collection.json";
 
 const SLOTS = [
   { id:"everyday",     label:"Everyday",         color:"#3A5C44" },
   { id:"professional", label:"Professional",     color:"#5C6B7A" },
   { id:"date",         label:"Date Night",       color:"#8C3A3A" },
   { id:"special",      label:"Special Occasion", color:"#6B4C2A" },
+  { id:"unknown",      label:"Unknown",          color:"#7A6A5A" },
 ];
 
+const SEED = [
+  { id:"aquatica",   name:"Rayhaan Aquatica",     house:"Rayhaan",            slot:"everyday",     maxSprays:"3 sprays max",          longevity:"5\u20137h",   notes:["Coconut","Lime","Musk"],                                     tint:"rgba(120,200,120,0.13)" },
+  { id:"pacific",    name:"Rayhaan Pacific",       house:"Rayhaan",            slot:"everyday",     maxSprays:"3 sprays max",          longevity:"4\u20136h",   notes:["Citrus","Aquatic","Musk"],       caution:"Skin-chemistry dependent",  tint:"rgba(255,140,60,0.13)" },
+  { id:"myslf",      name:"YSL MYSLF EDP",         house:"Yves Saint Laurent", slot:"everyday",     maxSprays:"2\u20133 sprays max",   longevity:"6\u20138h",   notes:["Bergamot","Orange Blossom","Sandalwood"],                    tint:"rgba(255,200,100,0.13)" },
+  { id:"khamrah",    name:"Lattafa Khamrah Qahwa", house:"Lattafa",            slot:"professional", maxSprays:"1 spray max in office", longevity:"8\u201310h",  notes:["Coffee","Oud","Vanilla","Amber"],  caution:"Bold for enclosed spaces",  tint:"rgba(200,90,20,0.16)" },
+  { id:"asad",       name:"Lattafa Asad",          house:"Lattafa",            slot:"professional", maxSprays:"2 sprays max",          longevity:"8\u201310h",  notes:["Dark Vanilla","Spice","Smoke"],  caution:"Turns sour in heat",        tint:"rgba(10,10,10,0.22)" },
+  { id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"professional", maxSprays:"1 spray only",          longevity:"8\u201310h",  notes:["Vanilla","Pepper","Boozy"],      synced:true,                         tint:"rgba(200,110,40,0.14)" },
+  { id:"capitale",   name:"La Capitale",           house:"Xerjoff",            slot:"date",         maxSprays:"2 sprays max",          longevity:"8\u201310h",  notes:["Strawberry","Saffron","Oud","Leather"],                      tint:"rgba(180,60,80,0.13)" },
+  { id:"angels",     name:"Angels' Share",         house:"By Kilian",          slot:"date",         maxSprays:"2 sprays max",          longevity:"8\u201310h",  notes:["Cognac","Oak","Cinnamon","Tonka"],                           tint:"rgba(160,100,40,0.13)" },
+  { id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"date",         maxSprays:"1 spray only",          longevity:"8\u201310h",  notes:["Vanilla","Pepper","Boozy"],      synced:true,                         tint:"rgba(200,110,40,0.14)" },
+  { id:"vulcan",     name:"Vulcan Feu EDP",        house:"French Avenue",      slot:"special",      maxSprays:"2 sprays max",          longevity:"8\u201310h",  notes:["Smoke","Wood","Leather"],                                    tint:"rgba(220,80,40,0.14)" },
+  { id:"vanguard",   name:"Vanguard",              house:"Maison Asrar",       slot:"special",      maxSprays:"2 sprays max",          longevity:"7\u20138h",   notes:["Pineapple","Blackcurrant","Leather","Cedar"],                tint:"rgba(230,200,40,0.14)" },
+  { id:"reflection", name:"Reflection Man",        house:"Amouage",            slot:"special",      maxSprays:"2\u20133 sprays max",   longevity:"10\u201312h", notes:["Neroli","Iris","Jasmine","Sandalwood"],                      tint:"rgba(180,160,200,0.13)" },
+  { id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"special",      maxSprays:"1 spray only",          longevity:"8\u201310h",  notes:["Vanilla","Pepper","Boozy"],      synced:true,                         tint:"rgba(200,110,40,0.14)" },
+];
+
+let FRAGRANCES = [];
 let acquired = {};
 let currentFilter = "all";
+let uniqueCount = 0;
 let toastTimer;
 
-// ── FIREBASE ──
-async function loadFromFirebase() {
-  try {
-    const res = await fetch(FIREBASE_URL);
-    const data = await res.json();
-    if (data && typeof data === "object") acquired = data;
-  } catch(e) {}
+async function seedIfEmpty() {
+  const res = await fetch(FB_FRAGS);
+  const data = await res.json();
+  const isEmpty = !data || (Array.isArray(data) ? data.length === 0 : Object.keys(data).length === 0);
+  if (!isEmpty) return;
+  await fetch(FB_FRAGS, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(SEED) });
+  FRAGRANCES = SEED;
+  uniqueCount = [...new Set(SEED.map(f => f.id))].length;
 }
 
-async function saveToFirebase() {
-  try {
-    await fetch(FIREBASE_URL, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(acquired),
-    });
-  } catch(e) {}
+async function loadAll() {
+  const [fr, sr] = await Promise.all([fetch(FB_FRAGS), fetch(FB_STATE)]);
+  const fd = await fr.json();
+  const sd = await sr.json();
+  if (Array.isArray(fd) && fd.length > 0) FRAGRANCES = fd;
+  else if (fd && typeof fd === "object" && Object.keys(fd).length > 0) FRAGRANCES = Object.values(fd);
+  uniqueCount = [...new Set(FRAGRANCES.map(f => f.id))].length;
+  if (sd && typeof sd === "object") acquired = sd;
 }
 
-// ── TOAST ──
+async function saveState() {
+  try { await fetch(FB_STATE, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(acquired) }); } catch(e) {}
+}
+
 function showToast(msg) {
   const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
+  t.textContent = msg; t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
 }
 
-// ── TOGGLE ──
 function toggle(id) {
   acquired[id] = !acquired[id];
-  saveToFirebase();
-  render();
+  saveState(); render();
   showToast(acquired[id] ? "Acquired" : "Removed");
 }
 
-function resetAll() {
-  acquired = {};
-  saveToFirebase();
-  render();
-  showToast("Reset");
-}
+function resetAll() { acquired = {}; saveState(); render(); showToast("Reset"); }
+function setFilter(f) { currentFilter = f; render(); }
 
-function setFilter(f) {
-  currentFilter = f;
-  render();
-}
-
-// ── RENDER ──
 function render() {
   const uniqueIds = [...new Set(FRAGRANCES.map(f => f.id))];
   const acquiredCount = uniqueIds.filter(id => acquired[id]).length;
-  const pct = Math.round((acquiredCount / UNIQUE_COUNT) * 100);
+  const pct = uniqueCount > 0 ? Math.round((acquiredCount / uniqueCount) * 100) : 0;
   const visibleSlots = currentFilter === "all" ? SLOTS : SLOTS.filter(s => s.id === currentFilter);
-
-  const checkSVG = `<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const chk = '<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   const filterBtns = [{ id:"all", label:"All" }, ...SLOTS].map(s =>
-    `<button class="filter-btn${currentFilter===s.id?" active":""}" onclick="setFilter('${s.id}')">${s.label}</button>`
+    '<button class="filter-btn' + (currentFilter===s.id?" active":"") + '" onclick="setFilter(\'' + s.id + '\')">' + s.label + '</button>'
   ).join("");
 
   const sectionsHTML = SLOTS.map(slot => {
     const frags = FRAGRANCES.filter(f => f.slot === slot.id);
     const hidden = !visibleSlots.find(s => s.id === slot.id);
-
-    const cardsHTML = frags.map((frag, i) => {
-      const isAcquired = !!acquired[frag.id];
-      const tint = TINTS[frag.id] || "rgba(160,140,120,0.08)";
-      const accent = frag.synced
-        ? "linear-gradient(180deg,#5C6B7A,#8C3A3A,#6B4C2A)"
-        : slot.color;
-      const notesPills = frag.notes.map(n => `<span class="note-pill">${n}</span>`).join("");
-      const cautionHTML = frag.caution ? `<div class="frag-caution">${frag.caution}</div>` : "";
-      const sprayStyle = `color:${slot.color};background:${slot.color}18`;
-
-      return `
-        <div class="frag-card${isAcquired?" acquired":""}${frag.synced?" synced":""}"
-             style="background:linear-gradient(90deg,#ffffff 55%,${tint} 100%)"
-             onclick="toggle('${frag.id}')">
-          <div class="frag-accent" style="background:${accent}"></div>
-          <div class="frag-body">
-
-            <!-- MOBILE LAYOUT -->
-            <div class="mobile-left">
-              <div class="frag-name">${frag.name}</div>
-              <div class="frag-house">${frag.house}</div>
-              ${cautionHTML}
-              <div class="longevity">${frag.longevity}</div>
-              <span class="spray-badge" style="${sprayStyle}">${frag.maxSprays}</span>
-            </div>
-            <div class="mobile-right">
-              <div class="checkbox">${isAcquired ? checkSVG : ""}</div>
-              <div class="spacer"></div>
-              <div class="notes">${notesPills}</div>
-            </div>
-
-            <!-- DESKTOP LAYOUT -->
-            <div class="desktop-inner">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px">
-                <div class="frag-name">${frag.name}</div>
-                <div class="checkbox">${isAcquired ? checkSVG : ""}</div>
-              </div>
-              <div class="frag-house">${frag.house}</div>
-              <div class="notes" style="margin-bottom:12px">${notesPills}</div>
-              ${cautionHTML}
-              <div class="spacer"></div>
-              <div class="bottom-row">
-                <span class="longevity" style="margin-bottom:0">${frag.longevity}</span>
-                <span class="spray-badge" style="${sprayStyle}">${frag.maxSprays}</span>
-              </div>
-            </div>
-
-          </div>
-        </div>`;
+    const cardsHTML = frags.map(frag => {
+      const isAcq = !!acquired[frag.id];
+      const tint = frag.tint || "rgba(160,140,120,0.08)";
+      const accent = frag.synced ? "linear-gradient(180deg,#5C6B7A,#8C3A3A,#6B4C2A)" : slot.color;
+      const pills = (frag.notes||[]).map(n => '<span class="note-pill">' + n + '</span>').join("");
+      const caut = frag.caution ? '<div class="frag-caution">' + frag.caution + '</div>' : "";
+      const ss = "color:" + slot.color + ";background:" + slot.color + "18";
+      return '<div class="frag-card' + (isAcq?" acquired":"") + (frag.synced?" synced":"") + '" style="background:linear-gradient(90deg,#ffffff 55%,' + tint + ' 100%)" onclick="toggle(\'' + frag.id + '\')">'
+        + '<div class="frag-accent" style="background:' + accent + '"></div>'
+        + '<div class="frag-body">'
+        + '<div class="mobile-left"><div class="frag-name">' + frag.name + '</div><div class="frag-house">' + frag.house + '</div>' + caut + '<div class="longevity">' + (frag.longevity||"") + '</div><span class="spray-badge" style="' + ss + '">' + (frag.maxSprays||"") + '</span></div>'
+        + '<div class="mobile-right"><div class="checkbox">' + (isAcq?chk:"") + '</div><div class="spacer"></div><div class="notes">' + pills + '</div></div>'
+        + '<div class="desktop-inner"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="frag-name">' + frag.name + '</div><div class="checkbox">' + (isAcq?chk:"") + '</div></div><div class="frag-house">' + frag.house + '</div><div class="notes" style="margin-bottom:12px">' + pills + '</div>' + caut + '<div class="spacer"></div><div class="bottom-row"><span style="font-size:10px;color:#B0A89E">' + (frag.longevity||"") + '</span><span class="spray-badge" style="' + ss + '">' + (frag.maxSprays||"") + '</span></div></div>'
+        + '</div></div>';
     }).join("");
 
-    // Mobile section header (centered)
-    const mobileHeader = `
-      <div class="section-header" style="display:flex">
-        <div class="section-line"></div>
-        <div style="display:flex;align-items:center;gap:5px">
-          <div class="section-dot" style="background:${slot.color}"></div>
-          <span class="section-label">${slot.label}</span>
-        </div>
-        <div class="section-line"></div>
-      </div>`;
-
-    // Desktop section header (left-aligned with short line)
-    const desktopHeader = `
-      <div class="section-header" style="display:none" id="dh-${slot.id}">
-        <div class="section-line-short"></div>
-        <div class="section-dot" style="background:${slot.color}"></div>
-        <span class="section-label">${slot.label}</span>
-        <div class="section-line"></div>
-      </div>`;
-
-    return `
-      <div class="section${hidden?" hidden":""}" data-slot="${slot.id}">
-        ${mobileHeader}
-        <div class="cards-grid">${cardsHTML}</div>
-      </div>`;
+    return '<div class="section' + (hidden?" hidden":"") + '" data-slot="' + slot.id + '">'
+      + '<div class="section-header-mobile"><div class="section-line"></div><div style="display:flex;align-items:center;gap:5px"><div class="section-dot-sm" style="background:' + slot.color + '"></div><span class="section-label">' + slot.label + '</span></div><div class="section-line"></div></div>'
+      + '<div class="section-header-desktop"><div class="section-line-short"></div><div class="section-dot-lg" style="background:' + slot.color + '"></div><span class="section-label">' + slot.label + '</span><div class="section-line"></div></div>'
+      + '<div class="cards-grid">' + cardsHTML + '</div></div>';
   }).join("");
 
-  document.getElementById("app").innerHTML = `
-    <div class="header">
-      <div class="header-watermark">馥</div>
-      <div style="position:relative;z-index:1">
-        <div class="header-eyebrow">Fragrance</div>
-        <div class="header-title">The <em>Edit</em></div>
-      </div>
-      <div class="progress-wrap" style="position:relative;z-index:1">
-        <div class="progress-count">
-          <span class="big">${acquiredCount}</span><span class="small"> / ${UNIQUE_COUNT}</span>
-          <span class="label">Acquired</span>
-        </div>
-        <div class="progress-bar-wrap">
-          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <span class="progress-label-mobile">${acquiredCount} / ${UNIQUE_COUNT}</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="toolbar">
-      ${filterBtns}
-      <button class="reset-btn" onclick="resetAll()">Reset</button>
-    </div>
-
-    <div class="main">${sectionsHTML}</div>
-
-    <div class="footer">Synced via Firebase · The Edit</div>
-  `;
-
-  // Show desktop section headers via CSS media logic
-  document.querySelectorAll(".section-header").forEach(el => {
-    // handled by CSS display none/flex
-  });
+  document.getElementById("app").innerHTML =
+    '<div class="header"><div class="header-watermark">\u99A5</div><div style="position:relative;z-index:1"><div class="header-eyebrow">Fragrance</div><div class="header-title">The <em>Edit</em></div></div><div class="progress-wrap" style="position:relative;z-index:1"><div class="progress-count"><span class="big">' + acquiredCount + '</span><span class="small"> / ' + uniqueCount + '</span><span class="label">Acquired</span></div><div class="progress-bar-wrap"><div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div><span class="progress-label-mobile">' + acquiredCount + ' / ' + uniqueCount + '</span></div></div></div>'
+    + '<div class="toolbar">' + filterBtns + '<button class="reset-btn" onclick="resetAll()">Reset</button></div>'
+    + '<div class="main">' + sectionsHTML + '</div>'
+    + '<div class="footer">The Edit \u00B7 chalkedit</div>';
 }
 
-// ── INIT ──
-document.getElementById("app").innerHTML = `<div class="loading">Loading…</div>`;
-loadFromFirebase().then(() => render());
+(async () => {
+  try { await seedIfEmpty(); await loadAll(); } catch(e) {}
+  render();
+})();
 </script>
 </body>
 </html>
