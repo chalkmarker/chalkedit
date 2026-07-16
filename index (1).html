@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Gallery</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1A1714;--card:#241E1A;--toolbar:#1C1712;
+  --border:rgba(255,255,255,0.07);--line:rgba(255,255,255,0.06);
+  --gold:#D4B07A;--gold2:#A07840;--gold3:#F0C878;
+  --t1:#F0EAE2;--t2:#7A6E64;--t3:#4A4038;
+  --note-bg:rgba(255,255,255,0.05);--note-c:#8A7E74;
+  --moss:#3A5C44;--slate:#5C6B7A;--rouge:#8C3A3A;--umber:#6B4C2A;--taupe:#7A6A5A;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px}
+
+/* ── PAGES ── */
+.page{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s;will-change:transform}
+.page.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+.page.slide-left{transform:translateX(-100%);opacity:0;pointer-events:none}
+
+/* ── COVER ── */
+#cover{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);cursor:pointer;user-select:none;gap:0}
+.cover-chars{font-size:clamp(100px,28vw,180px);line-height:1;font-family:serif;background:linear-gradient(160deg,#F8ECC0 0%,#D4B07A 35%,#A07840 65%,#C8943A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 32px rgba(255,240,180,0.18)) drop-shadow(0 0 8px rgba(255,255,255,0.08));margin-bottom:28px;position:relative;z-index:1}
+.cover-title{font-size:13px;font-weight:300;letter-spacing:.28em;text-transform:uppercase;background:linear-gradient(160deg,#F8ECC0 0%,#D4B07A 40%,#A07840 70%,#C8943A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 12px rgba(255,240,180,0.25)) drop-shadow(0 0 4px rgba(255,255,255,0.12));margin-bottom:6px}
+.cover-sub{font-size:10px;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(160deg,#E8D8A0 0%,#B89050 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 8px rgba(255,240,180,0.15));margin-bottom:56px}
+.cover-btn{border:1px solid rgba(212,176,122,0.5);border-radius:999px;padding:14px 48px;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);background:rgba(212,176,122,0.08);transition:all .3s;cursor:pointer;position:relative;z-index:2}
+.cover-btn:hover,.cover-btn:active{background:rgba(212,176,122,0.18);border-color:rgba(212,176,122,0.8)}
+.cover-bg-glow{position:absolute;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.05) 0%,transparent 70%);pointer-events:none}
+
+/* ── MENU PAGE ── */
+#menu{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+.menu-header{padding:56px 28px 40px;border-bottom:1px solid var(--border)}
+.menu-logo{font-size:28px;font-weight:200;background:linear-gradient(160deg,#F8ECC0 0%,#D4B07A 40%,#A07840 70%,#C8943A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 10px rgba(255,240,180,0.15));margin-bottom:4px}
+.menu-logo em{font-style:italic;font-weight:400}
+.menu-byline{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
+.menu-nav{flex:1;padding:16px 0 48px}
+.menu-section{border-bottom:1px solid var(--border)}
+.menu-parent{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;cursor:pointer;transition:background .15s;user-select:none}
+.menu-parent:hover{background:rgba(255,255,255,0.02)}
+.menu-parent-label{font-size:15px;font-weight:400;color:var(--t1);letter-spacing:.02em}
+.menu-arrow{font-size:11px;color:var(--t3);transition:transform .25s}
+.menu-arrow.open{transform:rotate(90deg)}
+.menu-children{overflow:hidden;transition:max-height .3s ease,opacity .3s;max-height:0;opacity:0}
+.menu-children.open{max-height:300px;opacity:1}
+.menu-child{display:flex;align-items:center;gap:10px;padding:13px 28px 13px 44px;cursor:pointer;transition:background .15s;user-select:none}
+.menu-child:hover{background:rgba(255,255,255,0.025)}
+.menu-child-dot{width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0}
+.menu-child-label{font-size:13px;color:var(--t2);font-weight:300}
+.menu-weather{margin:24px 28px 0;padding:14px 16px;background:var(--card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.menu-weather-icon{font-size:22px}
+.menu-weather-text{font-size:12px;color:var(--t2)}
+.menu-weather-temp{font-size:15px;font-weight:500;color:var(--t1)}
+
+/* ── INNER HEADER ── */
+.inner-header{display:flex;align-items:center;gap:14px;padding:20px 20px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
+@media(min-width:768px){.inner-header{padding:20px 56px 16px}}
+.back-btn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;transition:all .15s}
+.back-btn:hover{color:var(--t1);border-color:rgba(255,255,255,.15)}
+.inner-title{font-size:13px;font-weight:500;color:var(--t1);letter-spacing:.06em}
+.inner-sub{font-size:10px;color:var(--t3);letter-spacing:.06em;margin-top:1px}
+
+/* ── TODAY'S PICK ── */
+#today{background:var(--bg);min-height:100vh}
+.pick-body{padding:28px 20px 48px}
+@media(min-width:768px){.pick-body{padding:32px 56px 64px}}
+.pick-weather-bar{display:flex;align-items:center;gap:8px;margin-bottom:24px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+.pick-weather-icon{font-size:18px}
+.pick-weather-desc{font-size:12px;color:var(--t2);flex:1}
+.pick-weather-temp{font-size:13px;font-weight:500;color:var(--gold)}
+.pick-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
+.pick-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.pick-card-accent{height:3px}
+.pick-card-body{padding:20px 20px 18px}
+.pick-name{font-size:22px;font-weight:300;color:var(--t1);margin-bottom:3px;font-style:italic}
+.pick-house{font-size:12px;color:var(--t2);margin-bottom:14px}
+.pick-notes{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pick-note{font-size:10px;padding:3px 9px;border-radius:999px;background:var(--note-bg);color:var(--note-c)}
+.pick-reason{font-size:12px;color:var(--t3);font-style:italic;line-height:1.6;margin-bottom:16px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:2px solid var(--gold2)}
+.pick-spray{font-size:11px;font-weight:500;padding:4px 12px;border-radius:999px;display:inline-block;margin-bottom:6px}
+.pick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.pick-btn{flex:1;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:500;letter-spacing:.05em;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--t1);transition:all .2s;text-align:center;min-width:120px}
+.pick-btn.primary{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.pick-btn:hover{opacity:.85}
+.pick-divider{text-align:center;margin:20px 0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
+.surprise-card{background:rgba(212,176,122,0.05);border:1px dashed rgba(212,176,122,0.2);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s}
+.surprise-card:hover{background:rgba(212,176,122,0.1)}
+.surprise-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+.surprise-sub{font-size:11px;color:var(--t3)}
+
+/* ── LOG MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-sheet{background:#201A16;border-radius:20px 20px 0 0;padding:0 0 40px;width:100%;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-handle{width:36px;height:3px;border-radius:999px;background:var(--t3);margin:14px auto 20px}
+.modal-title{font-size:14px;font-weight:500;color:var(--t1);padding:0 20px 4px}
+.modal-sub{font-size:11px;color:var(--t3);padding:0 20px 16px;border-bottom:1px solid var(--border)}
+.log-item{display:flex;align-items:center;gap:12px;padding:13px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,0.03)}
+.log-item:hover{background:rgba(255,255,255,0.02)}
+.log-item-name{flex:1;font-size:13px;color:var(--t1)}
+.log-item-house{font-size:11px;color:var(--t3)}
+.log-check{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.log-check.checked{background:var(--gold);border-color:var(--gold)}
+.log-other{margin:12px 20px 0;display:flex;gap:10px;align-items:center}
+.log-other-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t1);outline:none}
+.log-other-input::placeholder{color:var(--t3)}
+.log-confirm{margin:16px 20px 0;width:calc(100% - 40px);padding:13px;border-radius:10px;background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;letter-spacing:.04em;cursor:pointer;border:none;transition:opacity .2s}
+.log-confirm:hover{opacity:.9}
+
+/* ── COLLECTION ── */
+#collection{background:var(--bg);min-height:100vh}
+.coll-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:61px;z-index:9}
+@media(min-width:768px){.coll-toolbar{padding:12px 56px 10px}}
+.fb{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--t2);transition:all .15s;margin-bottom:4px}
+@media(min-width:768px){.fb{font-size:11px;padding:6px 16px;margin-bottom:0}}
+.fb.active{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--t1)}
+.rb{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:#B07878;margin-bottom:4px}
+@media(min-width:768px){.rb{font-size:11px;padding:6px 16px;margin-bottom:0}}
+.coll-progress{padding:12px 16px 0;display:flex;align-items:center;gap:12px}
+@media(min-width:768px){.coll-progress{padding:12px 56px 0}}
+.coll-prog-track{flex:1;height:1px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+.coll-prog-fill{height:100%;background:var(--gold);border-radius:999px;transition:width .4s}
+.coll-prog-label{font-size:10px;color:var(--gold);font-weight:500;white-space:nowrap}
+.coll-main{padding:4px 0 56px}
+@media(min-width:768px){.coll-main{padding:16px 56px 72px}}
+.sec{margin-bottom:0}
+@media(min-width:768px){.sec{margin-bottom:48px}}
+.sec.hidden{display:none}
+.shm{display:flex;align-items:center;gap:8px;padding:18px 16px 8px}
+@media(min-width:768px){.shm{display:none}}
+.shd{display:none;align-items:center;gap:12px;padding:0 0 16px}
+@media(min-width:768px){.shd{display:flex}}
+.sl{flex:1;height:1px;background:var(--line)}
+.sls{width:24px;height:1px;background:var(--line)}
+.sd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sdl{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.slbl{font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--t3)}
+@media(min-width:768px){.slbl{font-size:10px;letter-spacing:.2em}}
+.cg{display:block}
+@media(min-width:768px){.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
+.fc{margin:0 12px 7px;border-radius:11px;background:var(--card);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:opacity .2s,box-shadow .2s;display:flex;position:relative}
+@media(min-width:768px){.fc{margin:0;border-radius:12px}}
+.fc.acq{opacity:.35}
+.fc.syn{border-style:dashed;border-color:rgba(255,255,255,.08)}
+.fc:hover{box-shadow:0 4px 20px rgba(0,0,0,.5);border-color:rgba(255,255,255,.1)}
+.fa{width:3px;flex-shrink:0}
+.fb2{flex:1;padding:12px 12px 11px;display:flex;gap:10px;align-items:flex-start}
+@media(min-width:768px){.fb2{padding:16px 16px 14px;flex-direction:column;gap:0}}
+.ml{flex:1;min-width:0}
+.mr{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;padding-top:1px}
+@media(min-width:768px){.ml,.mr{display:none}}
+.di{display:none;flex:1;flex-direction:column;width:100%}
+@media(min-width:768px){.di{display:flex}}
+.fn{font-size:14px;font-weight:500;line-height:1.2;color:var(--t1);margin-bottom:2px}
+@media(min-width:768px){.fn{font-size:15px;margin-bottom:3px}}
+.fc.acq .fn{text-decoration:line-through;color:var(--t3)}
+.fh{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
+@media(min-width:768px){.fh{margin-bottom:12px}}
+.fcat{font-size:10px;color:#C8884A;background:rgba(200,136,74,.12);padding:2px 7px;border-radius:999px;display:inline-block;margin-bottom:8px}
+.notes{display:flex;gap:4px;flex-wrap:wrap}
+.np{font-size:10px;padding:2px 7px;border-radius:999px;background:var(--note-bg);color:var(--note-c);white-space:nowrap}
+.lon{font-size:10px;color:var(--t3);margin-bottom:4px}
+.sb{font-size:10px;font-weight:500;padding:2px 7px;border-radius:999px;display:inline-block}
+.br{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.cb{width:19px;height:19px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);background:transparent;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+@media(min-width:768px){.cb{width:20px;height:20px}}
+.fc.acq .cb{background:var(--gold);border-color:var(--gold)}
+.ci{display:none}
+.fc.acq .ci{display:block}
+.spc{flex:1}
+.wl-btn{position:absolute;top:8px;right:8px;z-index:2;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,0,0,.28);cursor:pointer;transition:transform .15s}
+.wl-btn:hover{transform:scale(1.12)}
+.wl-btn svg{width:12px;height:12px}
+.wl-btn svg path{fill:none;stroke:rgba(255,255,255,.55);stroke-width:1.6}
+.wl-btn.active svg path{fill:var(--gold3);stroke:var(--gold3)}
+
+/* ── MONTHS PAST ── */
+#months{background:var(--bg);min-height:100vh}
+.months-body{padding:20px 20px 56px}
+@media(min-width:768px){.months-body{padding:24px 56px 64px}}
+.month-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 18px 16px;margin-bottom:12px}
+.month-title{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:12px}
+.month-stat{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.month-stat-label{font-size:11px;color:var(--t3)}
+.month-stat-value{font-size:12px;color:var(--t1);font-weight:500}
+.month-top{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;color:var(--t2);font-style:italic}
+.month-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+
+/* ── YEAR END ── */
+#yearend{background:var(--bg);min-height:100vh}
+.ye-body{padding:20px 20px 56px}
+@media(min-width:768px){.ye-body{padding:24px 56px 64px}}
+.ye-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px}
+.ye-card-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.ye-card-value{font-size:26px;font-weight:300;color:var(--gold);font-style:italic;margin-bottom:4px}
+.ye-card-sub{font-size:12px;color:var(--t2)}
+.ye-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+
+/* ── SUGGESTIONS ── */
+#suggestions{background:var(--bg);min-height:100vh}
+.sugg-body{padding:20px 20px 56px}
+@media(min-width:768px){.sugg-body{padding:24px 56px 64px}}
+.sugg-tier{margin-bottom:28px}
+.sugg-tier-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sugg-tier-line{flex:1;height:1px;background:var(--line)}
+.sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px;position:relative}
+.sugg-name{padding-right:26px}
+.sugg-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+.sugg-refresh{font-size:10px;letter-spacing:.04em;color:var(--t3);text-align:right;padding:0 16px 10px;text-transform:uppercase}
+
+/* ── ADD FRAGRANCE ── */
+.addfrag-body{padding:16px}
+.af-search-row{display:flex;gap:8px;margin-bottom:12px}
+.af-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--t1);font-size:14px;outline:none}
+.af-input:focus{border-color:var(--gold2)}
+.af-search-btn{background:var(--gold2);color:#1A1714;border:none;border-radius:10px;padding:12px 18px;font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer;white-space:nowrap}
+.af-hint{font-size:11px;color:var(--t3);line-height:1.5;margin-bottom:16px}
+.af-result-card{position:relative;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 46px 40px 16px;margin-bottom:10px}
+.af-manual-fields{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.af-manual-fields input{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--t1);font-size:12px;outline:none;width:100%}
+.af-manual-fields input:focus{border-color:var(--gold2)}
+.af-add-btn{position:absolute;bottom:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--gold2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s}
+.af-add-btn:hover{transform:scale(1.1) rotate(90deg)}
+.af-add-btn svg{width:15px;height:15px}
+.af-add-btn svg path{stroke:#1A1714;stroke-width:2.2;stroke-linecap:round}
+.af-menu{position:absolute;bottom:46px;right:10px;background:#2A231D;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:5;min-width:150px}
+.af-menu-item{padding:11px 14px;font-size:12px;color:var(--t1);cursor:pointer;transition:background .15s;white-space:nowrap}
+.af-menu-item:hover{background:rgba(212,176,122,.12)}
+.af-menu-item+.af-menu-item{border-top:1px solid var(--border)}
+.sugg-name{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:2px}
+.sugg-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
+.sugg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.sugg-tag{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--note-bg);color:var(--note-c)}
+.sugg-tag.dupe{background:rgba(160,120,60,0.15);color:var(--gold2)}
+.sugg-tag.ai{background:rgba(120,150,190,0.15);color:#8CAAD4}
+.af-loading{font-size:12px;color:var(--t3);font-style:italic;padding:14px 16px}
+.sugg-price{font-size:11px;color:var(--gold);font-weight:500}
+.sugg-reason{font-size:11px;color:var(--t3);font-style:italic;margin-top:6px;line-height:1.5}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--gold);color:var(--bg);font-size:11px;font-weight:600;padding:10px 20px;border-radius:999px;white-space:nowrap;z-index:200;box-shadow:0 4px 24px rgba(0,0,0,.4);letter-spacing:.04em;opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.footer-pad{height:40px}
+
+/* ── PLUM BLOSSOM DECOR (all pages) ── */
+.blossom-decor{position:fixed;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.blossom-decor svg.blossom-big,.blossom-decor svg.blossom-small{position:absolute}
+.blossom-big{bottom:-14px;left:-18px;width:270px;height:auto;opacity:.4}
+@media(min-width:768px){.blossom-big{width:360px}}
+.blossom-small{top:-6px;right:-10px;width:140px;height:auto;opacity:.4}
+@media(min-width:768px){.blossom-small{width:190px}}
+
+/* ── COVER ROOSTER EASTER EGG ── */
+.cover-btn-row{display:flex;align-items:center;gap:16px;position:relative;z-index:2}
+.rooster-egg{width:15px;height:15px;flex-shrink:0;opacity:.5}
+</style>
+</head>
+<body>
+
+<!-- PLUM BLOSSOM DECOR — persistent across all pages -->
+<div class="blossom-decor" aria-hidden="true">
+  <svg style="position:absolute;width:0;height:0">
+    <defs>
+      <radialGradient id="petGradOuter" cx="35%" cy="85%" r="90%">
+        <stop offset="0%" stop-color="#FFF0F5"/>
+        <stop offset="45%" stop-color="#FF8CBC"/>
+        <stop offset="100%" stop-color="#D6407E"/>
+      </radialGradient>
+      <radialGradient id="petGradInner" cx="35%" cy="85%" r="90%">
+        <stop offset="0%" stop-color="#FFD9E9"/>
+        <stop offset="55%" stop-color="#FF5FA0"/>
+        <stop offset="100%" stop-color="#B92860"/>
+      </radialGradient>
+      <radialGradient id="budGrad" cx="45%" cy="22%" r="85%">
+        <stop offset="0%" stop-color="#FFA7CB"/>
+        <stop offset="55%" stop-color="#E8467F"/>
+        <stop offset="100%" stop-color="#98123F"/>
+      </radialGradient>
+      <symbol id="blossom-flower" viewBox="0 0 40 40">
+        <g>
+          <!-- outer petal layer -->
+          <g stroke="#B8285E" stroke-width="0.35">
+            <ellipse cx="20" cy="9" rx="7.4" ry="9.6" fill="url(#petGradOuter)"/>
+            <ellipse cx="20" cy="9" rx="7.4" ry="9.6" fill="url(#petGradOuter)" transform="rotate(72 20 20)"/>
+            <ellipse cx="20" cy="9" rx="7.4" ry="9.6" fill="url(#petGradOuter)" transform="rotate(144 20 20)"/>
+            <ellipse cx="20" cy="9" rx="7.4" ry="9.6" fill="url(#petGradOuter)" transform="rotate(216 20 20)"/>
+            <ellipse cx="20" cy="9" rx="7.4" ry="9.6" fill="url(#petGradOuter)" transform="rotate(288 20 20)"/>
+          </g>
+          <!-- petal midribs for texture -->
+          <g stroke="#F7CBDF" stroke-width="0.4" opacity=".7">
+            <line x1="20" y1="19" x2="20" y2="3" transform="rotate(0 20 20)"/>
+            <line x1="20" y1="19" x2="20" y2="3" transform="rotate(72 20 20)"/>
+            <line x1="20" y1="19" x2="20" y2="3" transform="rotate(144 20 20)"/>
+            <line x1="20" y1="19" x2="20" y2="3" transform="rotate(216 20 20)"/>
+            <line x1="20" y1="19" x2="20" y2="3" transform="rotate(288 20 20)"/>
+          </g>
+          <!-- inner petal layer, offset — reads as fuller, more layered bloom -->
+          <g stroke="#8E1C48" stroke-width="0.3">
+            <ellipse cx="20" cy="12.5" rx="5" ry="6.6" fill="url(#petGradInner)" transform="rotate(36 20 20)"/>
+            <ellipse cx="20" cy="12.5" rx="5" ry="6.6" fill="url(#petGradInner)" transform="rotate(108 20 20)"/>
+            <ellipse cx="20" cy="12.5" rx="5" ry="6.6" fill="url(#petGradInner)" transform="rotate(180 20 20)"/>
+            <ellipse cx="20" cy="12.5" rx="5" ry="6.6" fill="url(#petGradInner)" transform="rotate(252 20 20)"/>
+            <ellipse cx="20" cy="12.5" rx="5" ry="6.6" fill="url(#petGradInner)" transform="rotate(324 20 20)"/>
+          </g>
+          <!-- stamens: filaments + anthers -->
+          <g stroke="#C9862E" stroke-width="0.8" stroke-linecap="round">
+            <line x1="20" y1="20" x2="16.4" y2="12.8"/>
+            <line x1="20" y1="20" x2="18.2" y2="11.2"/>
+            <line x1="20" y1="20" x2="20" y2="10.6"/>
+            <line x1="20" y1="20" x2="21.8" y2="11.2"/>
+            <line x1="20" y1="20" x2="23.6" y2="12.8"/>
+            <line x1="20" y1="20" x2="14.8" y2="16.4"/>
+            <line x1="20" y1="20" x2="25.2" y2="16.4"/>
+            <line x1="20" y1="20" x2="15.6" y2="20.4"/>
+            <line x1="20" y1="20" x2="24.4" y2="20.4"/>
+          </g>
+          <g fill="#FFB627">
+            <ellipse cx="16.4" cy="12.8" rx="1" ry=".7"/>
+            <ellipse cx="18.2" cy="11.2" rx="1" ry=".7"/>
+            <ellipse cx="20" cy="10.6" rx="1" ry=".7"/>
+            <ellipse cx="21.8" cy="11.2" rx="1" ry=".7"/>
+            <ellipse cx="23.6" cy="12.8" rx="1" ry=".7"/>
+            <ellipse cx="14.8" cy="16.4" rx="1" ry=".7"/>
+            <ellipse cx="25.2" cy="16.4" rx="1" ry=".7"/>
+            <ellipse cx="15.6" cy="20.4" rx="1" ry=".7"/>
+            <ellipse cx="24.4" cy="20.4" rx="1" ry=".7"/>
+          </g>
+          <!-- pistil / style + stigma, taller than the stamens -->
+          <line x1="20" y1="20" x2="20" y2="9" stroke="#A83258" stroke-width="1"/>
+          <circle cx="20" cy="9" r="1" fill="#8A1640"/>
+          <!-- receptacle -->
+          <circle cx="20" cy="20" r="1.9" fill="#8A1640"/>
+        </g>
+      </symbol>
+      <symbol id="blossom-bud" viewBox="0 0 20 20">
+        <path d="M10 1.5C9 4 7.6 6 7 9c-.6 3 .6 6.5 3 9 2.4-2.5 3.6-6 3-9-.6-3-2-5-3-7.5Z" fill="url(#budGrad)" stroke="#7A0F38" stroke-width="0.4"/>
+        <path d="M10 3.5c-.6 1.8-1 3.4-1 5.2M10 3.5c.6 1.8 1 3.4 1 5.2" stroke="#FFD3E6" stroke-width="0.45" fill="none" stroke-linecap="round" opacity=".8"/>
+        <path d="M7.3 16.8c.7-1 1.7-1.5 2.7-1.5s2 .5 2.7 1.5" fill="none" stroke="#7A8C5C" stroke-width="0.9" stroke-linecap="round"/>
+      </symbol>
+    </defs>
+  </svg>
+  <!-- Bigger branch: left to right, with a fork (matches sketch — bottom-left) -->
+  <svg class="blossom-big" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M-10 188 C 40 178, 70 168, 110 158 S 200 150, 260 142 S 340 132, 410 118" stroke="var(--gold2)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M150 150 C 165 120, 175 95, 185 60" stroke="var(--gold2)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <!-- pedicels connecting each bloom/bud to the branch -->
+    <g stroke="var(--gold2)" stroke-width="1.4" stroke-linecap="round" fill="none">
+      <path d="M37 183 Q34 176 37 172"/>
+      <path d="M126 148 Q122 154 121 160"/>
+      <path d="M147 132 Q150 140 152 146"/>
+      <path d="M245 142 Q248 141 251 141"/>
+      <path d="M307 127 Q306 132 305 136"/>
+      <path d="M177 100 Q178 110 178 120"/>
+      <path d="M187 70 Q186 65 185 61"/>
+    </g>
+    <use href="#blossom-flower" x="14" y="140" width="46" height="46"/>
+    <use href="#blossom-bud" x="118" y="132" width="16" height="16"/>
+    <use href="#blossom-bud" x="140" y="118" width="14" height="14"/>
+    <use href="#blossom-flower" x="230" y="112" width="30" height="30"/>
+    <use href="#blossom-bud" x="300" y="112" width="15" height="15"/>
+    <use href="#blossom-bud" x="170" y="86" width="14" height="14"/>
+    <use href="#blossom-flower" x="175" y="46" width="24" height="24"/>
+  </svg>
+  <!-- Smaller branch: diagonal (matches sketch — top-right) -->
+  <svg class="blossom-small" viewBox="0 0 220 180" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 8 C 40 30, 70 55, 100 80 S 160 130, 210 172" stroke="var(--gold2)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <g stroke="var(--gold2)" stroke-width="1.2" stroke-linecap="round" fill="none">
+      <path d="M19 34 Q21 30 23 26"/>
+      <path d="M66 65 Q68 61 70 57"/>
+      <path d="M84 78 Q88 79 92 80"/>
+      <path d="M133 124 Q142 126 150 128"/>
+    </g>
+    <use href="#blossom-flower" x="2" y="0" width="34" height="34"/>
+    <use href="#blossom-bud" x="60" y="52" width="13" height="13"/>
+    <use href="#blossom-bud" x="78" y="66" width="12" height="12"/>
+    <use href="#blossom-flower" x="118" y="94" width="30" height="30"/>
+  </svg>
+</div>
+
+<!-- COVER -->
+<div id="cover" class="page">
+  <div class="cover-bg-glow"></div>
+  <div class="cover-chars">香馥</div>
+  <div class="cover-title">The Gallery</div>
+  <div class="cover-sub">by Mark Lee</div>
+  <div class="cover-btn-row">
+    <svg class="rooster-egg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="none" stroke="#FFFFFF" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5c.3-1 .8-1 1 0M10.3 4.6c.3-1.1.9-1.1 1.1 0M11.6 4.8c.3-1 .8-1 1 0"/>
+        <circle cx="10.5" cy="8" r="1.6" fill="#FFFFFF" stroke="none"/>
+        <path d="M8.9 8.3 7 9l1.9.6z" fill="#FFFFFF" stroke="none"/>
+        <path d="M10 9c3 .2 5.3 2.5 5 5.4-.2 2.1-1.9 3.7-4 4.1"/>
+        <path d="M10 9c-1.8.3-3 1.7-3 3.4 0 1.5.9 2.8 2.3 3.4"/>
+        <path d="M14.3 10c1.9-1.3 4.4-1 5.7.8-2 0-3.7.9-4.7 2.4"/>
+        <path d="M15.1 12.2c1.7-.7 3.8 0 4.8 1.6-1.8-.2-3.5.4-4.6 1.6"/>
+        <path d="M15.4 14.6c1.4-.2 3.1.6 3.8 2-1.6-.4-3.2 0-4.3 1.2"/>
+        <path d="M9.8 18.4v2.5M11.7 18.8v2.5"/>
+      </g>
+    </svg>
+    <div class="cover-btn" id="cover-btn">Tap To Enter</div>
+    <svg class="rooster-egg" style="transform:scaleX(-1)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="none" stroke="#FFFFFF" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5c.3-1 .8-1 1 0M10.3 4.6c.3-1.1.9-1.1 1.1 0M11.6 4.8c.3-1 .8-1 1 0"/>
+        <circle cx="10.5" cy="8" r="1.6" fill="#FFFFFF" stroke="none"/>
+        <path d="M8.9 8.3 7 9l1.9.6z" fill="#FFFFFF" stroke="none"/>
+        <path d="M10 9c3 .2 5.3 2.5 5 5.4-.2 2.1-1.9 3.7-4 4.1"/>
+        <path d="M10 9c-1.8.3-3 1.7-3 3.4 0 1.5.9 2.8 2.3 3.4"/>
+        <path d="M14.3 10c1.9-1.3 4.4-1 5.7.8-2 0-3.7.9-4.7 2.4"/>
+        <path d="M15.1 12.2c1.7-.7 3.8 0 4.8 1.6-1.8-.2-3.5.4-4.6 1.6"/>
+        <path d="M15.4 14.6c1.4-.2 3.1.6 3.8 2-1.6-.4-3.2 0-4.3 1.2"/>
+        <path d="M9.8 18.4v2.5M11.7 18.8v2.5"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="page hidden">
+  <div class="menu-header">
+    <div class="menu-logo">The <em>Gallery</em></div>
+    <div class="menu-byline">by Mark Lee</div>
+  </div>
+  <div id="menu-weather" class="menu-weather" style="display:none">
+    <div class="menu-weather-icon" id="mw-icon">—</div>
+    <div>
+      <div class="menu-weather-temp" id="mw-temp">—</div>
+      <div class="menu-weather-text" id="mw-desc">Loading weather...</div>
+    </div>
+  </div>
+  <div class="menu-nav">
+    <div class="menu-section">
+      <div class="menu-parent" onclick="toggleMenu('wardrobe')">
+        <span class="menu-parent-label">Wardrobe</span>
+        <span class="menu-arrow" id="arrow-wardrobe">›</span>
+      </div>
+      <div class="menu-children" id="children-wardrobe">
+        <div class="menu-child" onclick="goTo('collection')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">My Collection</span>
+        </div>
+        <div class="menu-child" onclick="goTo('suggestions')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Suggested Purchases</span>
+        </div>
+        <div class="menu-child" onclick="goTo('wishlist')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Wishlist</span>
+        </div>
+        <div class="menu-child" onclick="goTo('addfrag')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Add Fragrance</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu-section">
+      <div class="menu-parent" onclick="toggleMenu('recommended')">
+        <span class="menu-parent-label">Recommended</span>
+        <span class="menu-arrow" id="arrow-recommended">›</span>
+      </div>
+      <div class="menu-children" id="children-recommended">
+        <div class="menu-child" onclick="goTo('today')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Today's Pick</span>
+        </div>
+        <div class="menu-child" onclick="goTo('today','surprise')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Surprise Me!</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu-section">
+      <div class="menu-parent" onclick="toggleMenu('yearwrap')">
+        <span class="menu-parent-label">Year Wrap</span>
+        <span class="menu-arrow" id="arrow-yearwrap">›</span>
+      </div>
+      <div class="menu-children" id="children-yearwrap">
+        <div class="menu-child" onclick="goTo('months')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Months Past</span>
+        </div>
+        <div class="menu-child" onclick="goTo('yearend')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Year-End Report</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-pad"></div>
+</div>
+
+<!-- TODAY'S PICK -->
+<div id="today" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Menu</button>
+    <div><div class="inner-title">Recommended</div><div class="inner-sub">Today's Pick</div></div>
+  </div>
+  <div class="pick-body">
+    <div class="pick-weather-bar" id="pick-weather-bar">
+      <div class="pick-weather-icon" id="pw-icon">—</div>
+      <div class="pick-weather-desc" id="pw-desc">Loading weather...</div>
+      <div class="pick-weather-temp" id="pw-temp">—</div>
+    </div>
+    <div class="pick-label">Today's Pick</div>
+    <div id="pick-card-wrap"></div>
+    <div class="pick-divider">or</div>
+    <div class="surprise-card" onclick="renderSurprise()">
+      <div class="surprise-label">Surprise Me!</div>
+      <div class="surprise-sub">Weather-aware · ignores wear history</div>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTION -->
+<div id="collection" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Menu</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">My Collection</div></div>
+  </div>
+  <div class="coll-toolbar" id="coll-toolbar"></div>
+  <div class="coll-progress">
+    <div class="coll-prog-track"><div class="coll-prog-fill" id="coll-prog-fill" style="width:0%"></div></div>
+    <div class="coll-prog-label" id="coll-prog-label">0 / 0</div>
+  </div>
+  <div class="coll-main" id="coll-main"></div>
+</div>
+
+<!-- MONTHS PAST -->
+<div id="months" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Year Wrap</button>
+    <div><div class="inner-title">Year Wrap</div><div class="inner-sub">Months Past</div></div>
+  </div>
+  <div class="months-body" id="months-body"></div>
+</div>
+
+<!-- YEAR END -->
+<div id="yearend" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Year Wrap</button>
+    <div><div class="inner-title">Year Wrap</div><div class="inner-sub">Year-End Report</div></div>
+  </div>
+  <div class="ye-body" id="ye-body"></div>
+</div>
+
+<!-- SUGGESTIONS -->
+<div id="suggestions" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Suggested Purchases</div></div>
+  </div>
+  <div class="sugg-body" id="sugg-body"></div>
+</div>
+
+<!-- WISHLIST -->
+<div id="wishlist" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Wishlist</div></div>
+  </div>
+  <div class="sugg-body" id="wishlist-body"></div>
+</div>
+
+<!-- ADD FRAGRANCE -->
+<div id="addfrag" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Add Fragrance</div></div>
+  </div>
+  <div class="addfrag-body">
+    <div class="af-search-row">
+      <input type="text" id="af-search-input" class="af-input" placeholder="Search a fragrance name or house..." onkeydown="if(event.key==='Enter')searchFragrance()">
+      <button class="af-search-btn" onclick="searchFragrance()">Search</button>
+    </div>
+    <div class="af-hint">Checks your existing catalog and suggestions first, then asks Claude if it recognizes the fragrance (marked "AI Match" — worth double-checking details before adding). Still can't find it? Add it manually — give it a few notes/accords and the card color, longevity, and max sprays are worked out automatically when it's added to your Collection.</div>
+    <div id="af-results"></div>
+  </div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="modal-overlay" id="log-modal" onclick="closeLogModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">What did you wear today?</div>
+    <div class="modal-sub">Select all that apply</div>
+    <div id="log-list"></div>
+    <div class="log-other">
+      <input class="log-other-input" id="log-other-input" type="text" placeholder="Other (tested but not in collection)">
+    </div>
+    <button class="log-confirm" onclick="confirmLog()">Log It</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("cover-btn").addEventListener("click",enterApp);
+  document.getElementById("cover").addEventListener("click",enterApp);
+});
+const FB="https://fragrances-ccf69-default-rtdb.firebaseio.com";
+// TODO: replace with your deployed Cloud Functions base URL after `firebase deploy` — see DEPLOY_INSTRUCTIONS.md
+const FUNCTIONS_BASE="https://us-central1-fragrances-ccf69.cloudfunctions.net";
+const SLOTS=[
+  {id:"everyday",     label:"Everyday",         color:"#3A5C44"},
+  {id:"professional", label:"Professional",     color:"#5C6B7A"},
+  {id:"date",         label:"Date Night",       color:"#8C3A3A"},
+  {id:"special",      label:"Special Occasion", color:"#6B4C2A"},
+  {id:"unknown",      label:"Unknown",          color:"#7A6A5A"},
+];
+const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
+let FRAGS=[],acquired={},wishlist={},customFrags={},logSelected={},weatherData=null,currentFilter="all",pageHistory=["menu"];
+
+// ── FIREBASE ──
+async function fbGet(path){try{const r=await fetch(FB+path+".json");return await r.json();}catch(e){return null;}}
+async function fbSet(path,data){try{await fetch(FB+path+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});}catch(e){}}
+
+// ── INIT ──
+(async()=>{
+  const [fd,sd,wd,cd]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags")]);
+  if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
+  else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
+  if(sd&&typeof sd==="object")acquired=sd;
+  if(wd&&typeof wd==="object")wishlist=wd;
+  if(cd&&typeof cd==="object")customFrags=cd;
+  await maybeCompileLastMonth();
+  loadRemoteSuggestions();
+  getWeather();
+})();
+
+// ── WEATHER ──
+function getWeather(){
+  if(!navigator.geolocation){setWeatherFallback();return;}
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit`);
+      const d=await r.json();
+      const cw=d.current_weather;
+      const code=cw.weathercode;
+      const temp=Math.round(cw.temperature);
+      const desc=wDesc(code);
+      const icon=wIcon(code);
+      weatherData={temp,desc,icon,code};
+      document.getElementById("pw-icon").textContent=icon;
+      document.getElementById("pw-desc").textContent=desc+" · "+temp+"°F";
+      document.getElementById("pw-temp").textContent=temp+"°F";
+      const mwEl=document.getElementById("menu-weather");
+      document.getElementById("mw-icon").textContent=icon;
+      document.getElementById("mw-temp").textContent=temp+"°F";
+      document.getElementById("mw-desc").textContent=desc;
+      mwEl.style.display="flex";
+      renderPick();
+    }catch(e){setWeatherFallback();}
+  },()=>setWeatherFallback());
+}
+function setWeatherFallback(){
+  weatherData={temp:85,desc:"Warm & Humid",icon:"☀️",code:0};
+  document.getElementById("pw-icon").textContent="☀️";
+  document.getElementById("pw-desc").textContent="Houston — Warm & Humid";
+  document.getElementById("pw-temp").textContent="85°F";
+  renderPick();
+}
+function wDesc(c){
+  if(c===0)return"Clear Sky";
+  if(c<=2)return"Partly Cloudy";
+  if(c<=3)return"Overcast";
+  if(c<=49)return"Foggy";
+  if(c<=59)return"Drizzle";
+  if(c<=69)return"Rainy";
+  if(c<=79)return"Snowy";
+  if(c<=99)return"Thunderstorm";
+  return"Unknown";
+}
+function wIcon(c){
+  if(c===0)return"☀️";
+  if(c<=2)return"⛅";
+  if(c<=3)return"☁️";
+  if(c<=49)return"🌫️";
+  if(c<=69)return"🌧️";
+  if(c<=79)return"❄️";
+  return"⛈️";
+}
+
+// ── SMART PICK ──
+async function getRecentWorn(){
+  const logs=await fbGet("/logs")||{};
+  const recent={};
+  const today=new Date();
+  Object.entries(logs).forEach(([date,entry])=>{
+    const d=new Date(date);
+    const daysAgo=Math.floor((today-d)/(1000*60*60*24));
+    if(daysAgo<=14&&entry.worn){
+      entry.worn.forEach(id=>{
+        recent[id]=(recent[id]||0)+(14-daysAgo);
+      });
+    }
+  });
+  return recent;
+}
+
+function getWeatherScore(frag,temp,code){
+  let score=50;
+  const notes=(frag.notes||[]).map(n=>n.toLowerCase());
+  const isRainy=code>=60&&code<=69;
+  const isCold=temp<60;
+  const isHot=temp>85;
+  const isNice=!isRainy&&temp>=65&&temp<=82;
+  if(isHot&&(notes.some(n=>n.includes("citrus")||n.includes("aquatic")||n.includes("coconut")||n.includes("lime")||n.includes("green tea"))))score+=30;
+  if(isHot&&(notes.some(n=>n.includes("tobacco")||n.includes("oud")||n.includes("smoke")||n.includes("leather"))))score-=20;
+  if(isCold&&(notes.some(n=>n.includes("vanilla")||n.includes("amber")||n.includes("tobacco")||n.includes("cognac")||n.includes("spice")||n.includes("coffee")||n.includes("oud"))))score+=30;
+  if(isRainy&&(notes.some(n=>n.includes("woody")||n.includes("amber")||n.includes("leather"))))score+=15;
+  if(isNice)score+=5;
+  return score;
+}
+
+async function computePick(surprise=false){
+  const acqIds=Object.keys(acquired).filter(id=>acquired[id]);
+  const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id)&&f.slot!=="unknown");
+  if(acqFrags.length===0)return null;
+  const recent=surprise?{}:await getRecentWorn();
+  const temp=weatherData?weatherData.temp:85;
+  const code=weatherData?weatherData.code:0;
+  const hour=new Date().getHours();
+  const scored=acqFrags.map(f=>{
+    let s=getWeatherScore(f,temp,code);
+    if(!surprise){
+      const wornScore=recent[f.id]||0;
+      s-=wornScore*2;
+    }
+    // time of day preference
+    if(hour>=6&&hour<12&&(f.slot==="everyday"||f.slot==="professional"))s+=10;
+    if(hour>=12&&hour<18&&f.slot==="professional")s+=8;
+    if(hour>=18&&(f.slot==="date"||f.slot==="special"))s+=15;
+    s+=Math.random()*8;
+    return{...f,score:s};
+  });
+  scored.sort((a,b)=>b.score-a.score);
+  return scored[0];
+}
+
+function pickReason(frag,temp,code,surprise){
+  const hour=new Date().getHours();
+  const parts=[];
+  if(surprise)parts.push("A spontaneous pick just for you");
+  else{
+    if(temp>85)parts.push("Light choice for the heat today");
+    else if(temp<60)parts.push("Warm and rich for the cold");
+    else parts.push("A great fit for today's weather");
+    if(hour>=18)parts.push("perfect for this evening");
+    else if(hour>=12)parts.push("a refined afternoon choice");
+    else parts.push("a clean start to the day");
+  }
+  return parts.join(" — ");
+}
+
+// ── RENDER PICK ──
+async function renderPick(surprise=false){
+  const wrap=document.getElementById("pick-card-wrap");
+  wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-style:italic;font-size:12px">Finding your pick...</div>';
+  const frag=await computePick(surprise);
+  if(!frag){
+    wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-style:italic;font-size:12px">No acquired fragrances yet — add some to your collection first.</div>';
+    return;
+  }
+  const slot=SLOTMAP[frag.slot]||SLOTMAP.everyday;
+  const temp=weatherData?weatherData.temp:85;
+  const code=weatherData?weatherData.code:0;
+  const reason=pickReason(frag,temp,code,surprise);
+  const pills=(frag.notes||[]).map(n=>'<span class="pick-note">'+n+'</span>').join("");
+  wrap.innerHTML=
+    '<div class="pick-card">'
+      +'<div class="pick-card-accent" style="background:'+slot.color+'"></div>'
+      +'<div class="pick-card-body">'
+        +'<div class="pick-name">'+frag.name+'</div>'
+        +'<div class="pick-house">'+frag.house+'</div>'
+        +'<div class="pick-notes">'+pills+'</div>'
+        +'<div class="pick-reason">'+reason+'</div>'
+        +'<span class="pick-spray" style="color:'+slot.color+';background:'+slot.color+'22">'+(frag.maxSprays||"2 sprays max")+'</span>'
+        +'<div class="pick-actions">'
+          +'<button class="pick-btn primary" onclick="openLogModal()">Worn Today</button>'
+          +'<button class="pick-btn" onclick="renderPick(false)">New Pick</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+}
+
+function renderSurprise(){renderPick(true);}
+
+// ── LOG MODAL ──
+function openLogModal(){
+  const acqIds=Object.keys(acquired).filter(id=>acquired[id]);
+  const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id));
+  logSelected={};
+  const list=document.getElementById("log-list");
+  list.innerHTML=acqFrags.map(f=>
+    '<div class="log-item" id="log-'+f.id+'" onclick="toggleLog(\''+f.id+'\')">'
+      +'<div><div class="log-item-name">'+f.name+'</div><div class="log-item-house">'+f.house+'</div></div>'
+      +'<div class="log-check" id="logck-'+f.id+'"></div>'
+    +'</div>'
+  ).join("");
+  document.getElementById("log-other-input").value="";
+  document.getElementById("log-modal").classList.add("open");
+}
+
+function closeLogModal(e){
+  if(e.target===document.getElementById("log-modal"))
+    document.getElementById("log-modal").classList.remove("open");
+}
+
+function toggleLog(id){
+  logSelected[id]=!logSelected[id];
+  const ck=document.getElementById("logck-"+id);
+  if(logSelected[id]){
+    ck.classList.add("checked");
+    ck.innerHTML='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }else{
+    ck.classList.remove("checked");
+    ck.innerHTML="";
+  }
+}
+
+async function confirmLog(){
+  const worn=Object.keys(logSelected).filter(id=>logSelected[id]);
+  const other=document.getElementById("log-other-input").value.trim();
+  if(worn.length===0&&!other){showToast("Select at least one");return;}
+  const today=new Date().toISOString().split("T")[0];
+  const entry={worn:worn};
+  if(other)entry.other=other;;
+  await fbSet("/logs/"+today,entry);
+  document.getElementById("log-modal").classList.remove("open");
+  showToast("Logged ✓");
+}
+
+// ── COLLECTION ──
+function renderCollection(){
+  const uids=[...new Set(FRAGS.map(f=>f.id))];
+  const ac=uids.filter(id=>acquired[id]).length;
+  document.getElementById("coll-prog-label").textContent=ac+" / "+uids.length;
+  document.getElementById("coll-prog-fill").style.width=Math.round((ac/uids.length)*100)+"%";
+  const vs=currentFilter==="all"?SLOTS:SLOTS.filter(s=>s.id===currentFilter);
+  const chk='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // toolbar
+  document.getElementById("coll-toolbar").innerHTML=
+    [{ id:"all",label:"All"},...SLOTS].map(s=>
+      '<button class="fb'+(currentFilter===s.id?" active":"")+'" onclick="setFilter(\''+s.id+'\')" >'+s.label+'</button>'
+    ).join("")+'<button class="rb" onclick="resetAcquired()">Reset</button>';
+  // sections
+  document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
+    const frags=FRAGS.filter(f=>f.slot===slot.id);
+    const hidden=!vs.find(s=>s.id===slot.id);
+    const cards=frags.map(frag=>{
+      const isAcq=!!acquired[frag.id];
+      const tint=frag.tint||"rgba(160,140,120,0.08)";
+      const accent=frag.synced?"linear-gradient(180deg,#5C6B7A,#8C3A3A,#6B4C2A)":slot.color;
+      const pills=(frag.notes||[]).map(n=>'<span class="np">'+n+'</span>').join("");
+      const caut=frag.caution?'<div class="fcat">'+frag.caution+'</div>':"";
+      const ss="color:"+slot.color+";background:"+slot.color+"22";
+      return '<div class="fc'+(isAcq?" acq":"")+(frag.synced?" syn":"")
+        +'" style="background:linear-gradient(90deg,#241E1A 45%,'+tint+' 100%)" onclick="toggleAcq(\''+frag.id+'\')">'
+        +'<div class="fa" style="background:'+accent+'"></div>'
+        +'<div class="fb2">'
+          +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
+          +'<div class="mr"><div class="cb">'+(isAcq?chk:"")+'</div><div class="spc"></div><div class="notes">'+pills+'</div></div>'
+          +'<div class="di">'
+            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="fn">'+frag.name+'</div><div class="cb">'+(isAcq?chk:"")+'</div></div>'
+            +'<div class="fh">'+frag.house+'</div>'
+            +'<div class="notes" style="margin-bottom:12px">'+pills+'</div>'
+            +caut
+            +'<div class="spc"></div>'
+            +'<div class="br"><span style="font-size:10px;color:var(--t3)">'+(frag.longevity||"")+'</span><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
+          +'</div>'
+        +'</div></div>';
+    }).join("");
+    return '<div class="sec'+(hidden?" hidden":"")+'">'
+      +'<div class="shm"><div class="sl"></div><div style="display:flex;align-items:center;gap:5px"><div class="sd" style="background:'+slot.color+'"></div><span class="slbl">'+slot.label+'</span></div><div class="sl"></div></div>'
+      +'<div class="shd"><div class="sls"></div><div class="sdl" style="background:'+slot.color+'"></div><span class="slbl">'+slot.label+'</span><div class="sl"></div></div>'
+      +'<div class="cg">'+cards+'</div></div>';
+  }).join("");
+}
+
+function toggleAcq(id){
+  acquired[id]=!acquired[id];
+  fbSet("/collection",acquired);
+  renderCollection();
+  showToast(acquired[id]?"Acquired":"Removed");
+}
+
+function toggleWishlist(id,e){
+  if(e)e.stopPropagation();
+  wishlist[id]=!wishlist[id];
+  fbSet("/wishlist",wishlist);
+  renderCollection();
+  showToast(wishlist[id]?"Added to wishlist ♥":"Removed from wishlist");
+}
+
+function resetAcquired(){acquired={};fbSet("/collection",acquired);renderCollection();showToast("Reset");}
+function setFilter(f){currentFilter=f;renderCollection();}
+
+// ── MONTHS PAST ──
+async function renderMonths(){
+  const monthly=await fbGet("/monthly")||{};
+  const keys=Object.keys(monthly).sort().reverse();
+  const body=document.getElementById("months-body");
+  if(keys.length===0){
+    body.innerHTML='<div class="month-empty">No monthly data yet — wear logs will compile automatically at the end of each month.</div>';
+    return;
+  }
+  body.innerHTML=keys.map(k=>{
+    const m=monthly[k];
+    const [y,mo]=k.split("-");
+    const label=new Date(y,mo-1).toLocaleString("default",{month:"long",year:"numeric"});
+    return '<div class="month-card">'
+      +'<div class="month-title">'+label+'</div>'
+      +'<div class="month-stat"><span class="month-stat-label">Days logged</span><span class="month-stat-value">'+(m.days||0)+'</span></div>'
+      +'<div class="month-stat"><span class="month-stat-label">Unique fragrances worn</span><span class="month-stat-value">'+(m.unique||0)+'</span></div>'
+      +'<div class="month-stat"><span class="month-stat-label">Total wears</span><span class="month-stat-value">'+(m.total||0)+'</span></div>'
+      +(m.top?'<div class="month-top">Most worn: '+m.top+'</div>':"")
+      +(m.topSlot?'<div class="month-top" style="margin-top:4px">Top occasion: '+m.topSlot+'</div>':"")
+    +'</div>';
+  }).join("");
+}
+
+// ── LAZY MONTHLY COMPILE ──
+async function maybeCompileLastMonth(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const mo=now.getMonth(); // 0-indexed, so this is last month if we're in a new month
+  if(now.getDate()>3)return; // only compile in first 3 days of month
+  const lastMo=mo===0?12:mo;
+  const lastY=mo===0?y-1:y;
+  const key=lastY+"-"+String(lastMo).padStart(2,"0");
+  const existing=await fbGet("/monthly/"+key);
+  if(existing)return; // already compiled
+  // fetch logs from last month
+  const logs=await fbGet("/logs")||{};
+  const monthLogs=Object.entries(logs).filter(([d])=>d.startsWith(key));
+  if(monthLogs.length===0)return;
+  const wornCounts={},slotCounts={};
+  let total=0;
+  monthLogs.forEach(([,entry])=>{
+    (entry.worn||[]).forEach(id=>{
+      wornCounts[id]=(wornCounts[id]||0)+1;
+      total++;
+      const f=FRAGS.find(fr=>fr.id===id);
+      if(f){slotCounts[f.slot]=(slotCounts[f.slot]||0)+1;}
+    });
+  });
+  const topId=Object.entries(wornCounts).sort((a,b)=>b[1]-a[1])[0];
+  const topSlotId=Object.entries(slotCounts).sort((a,b)=>b[1]-a[1])[0];
+  const topFrag=topId?FRAGS.find(f=>f.id===topId[0]):null;
+  const topSlot=topSlotId?SLOTMAP[topSlotId[0]]:null;
+  await fbSet("/monthly/"+key,{
+    days:monthLogs.length,
+    unique:Object.keys(wornCounts).length,
+    total,
+    top:topFrag?topFrag.name:null,
+    topSlot:topSlot?topSlot.label:null,
+  });
+}
+
+// ── YEAR END ──
+async function renderYearEnd(){
+  const monthly=await fbGet("/monthly")||{};
+  const body=document.getElementById("ye-body");
+  const year=new Date().getFullYear();
+  const yearKeys=Object.keys(monthly).filter(k=>k.startsWith(year+"-"));
+  if(yearKeys.length===0){
+    body.innerHTML='<div class="ye-empty">Year-end report will be ready in December once you\'ve been logging your wears throughout the year.</div>';
+    return;
+  }
+  let totalDays=0,totalWears=0,allTop={};
+  yearKeys.forEach(k=>{
+    const m=monthly[k];
+    totalDays+=m.days||0;
+    totalWears+=m.total||0;
+  });
+  // find top fragrance across all months
+  const logs=await fbGet("/logs")||{};
+  Object.entries(logs).filter(([d])=>d.startsWith(year+"-")).forEach(([,e])=>{
+    (e.worn||[]).forEach(id=>{allTop[id]=(allTop[id]||0)+1;});
+  });
+  const topEntry=Object.entries(allTop).sort((a,b)=>b[1]-a[1])[0];
+  const topFrag=topEntry?FRAGS.find(f=>f.id===topEntry[0]):null;
+  body.innerHTML=
+    '<div class="ye-card"><div class="ye-card-label">Days Logged</div><div class="ye-card-value">'+totalDays+'</div><div class="ye-card-sub">days of wear tracked this year</div></div>'
+    +'<div class="ye-card"><div class="ye-card-label">Total Wears</div><div class="ye-card-value">'+totalWears+'</div><div class="ye-card-sub">fragrance applications logged</div></div>'
+    +'<div class="ye-card"><div class="ye-card-label">Months Logged</div><div class="ye-card-value">'+yearKeys.length+'</div><div class="ye-card-sub">of 12 months tracked</div></div>'
+    +(topFrag?'<div class="ye-card"><div class="ye-card-label">Most Worn</div><div class="ye-card-value">'+topFrag.name+'</div><div class="ye-card-sub">'+topFrag.house+' · worn '+(topEntry[1])+'x</div></div>':"");
+}
+
+// ── SUGGESTIONS ──
+const SUGGESTIONS=[
+  // 50% affordable (<$80)
+  {id:"afnan-9pm",name:"Afnan 9PM",house:"Afnan",price:"~$30",tier:"affordable",tags:["Date Night","Sweet","Vanilla"],dupe:false,reason:"Fills the sweet evening gap left after Liquid Brun — loud, crowd-pleasing, great value."},
+  {id:"lattafa-khamrah",name:"Lattafa Khamrah",house:"Lattafa",price:"~$35",tier:"affordable",tags:["Special Occasion","Oud","Sweet"],dupe:false,reason:"Dark and rich, complements Asad without duplicating it."},
+  {id:"fw-carbon-z",name:"Fragrance World Carbon Z",house:"Fragrance World",price:"~$25",tier:"affordable",tags:["Everyday","Fresh","Aquatic"],dupe:true,dupeOf:"Creed Aventus",reason:"Bridges your aquatic everyday rotation with a smoky-fresh character neither Aquatica nor Pacific has."},
+  {id:"rasasi-hawas",name:"Rasasi Hawas",house:"Rasasi",price:"~$40",tier:"affordable",tags:["Everyday","Aquatic","Woody"],dupe:false,reason:"A step above your Rayhaan dailies — aquatic-woody hybrid with excellent longevity for Houston summers."},
+  {id:"armaf-cdnim",name:"Armaf Club de Nuit Intense Man",house:"Armaf",price:"~$35",tier:"affordable",tags:["Professional","Fresh","Birch"],dupe:true,dupeOf:"Creed Aventus",reason:"Strong Aventus DNA — smoky birch opening that would complement Vulcan Sable in the professional slot."},
+  {id:"lattafa-asad-gold",name:"Lattafa Asad Gold",house:"Lattafa",price:"~$30",tier:"affordable",tags:["Date Night","Warm","Amber"],dupe:false,reason:"Warmer and more amber-forward than Asad — fills the warm evening gap in your date night rotation."},
+  // 35% mid ($80-200)
+  {id:"nishane-hacivat",name:"Nishane Hacivat",house:"Nishane",price:"~$150",tier:"mid",tags:["Everyday","Woody","Citrus"],dupe:false,reason:"An elevated everyday fragrance that would sit above your Rayhaan pair — complex pineapple-woody-citrus that works in Houston heat."},
+  {id:"initio-atomic-rose",name:"Initio Atomic Rose",house:"Initio",price:"~$180",tier:"mid",tags:["Date Night","Rose","Musk"],dupe:false,reason:"Adds a floral dimension completely absent from your date night slot — dark rose and musk that works close to skin."},
+  {id:"montale-intense-cafe",name:"Montale Intense Cafe",house:"Montale",price:"~$100",tier:"mid",tags:["Special Occasion","Coffee","Rose"],dupe:false,reason:"Coffee-rose-vanilla — bridges your Khamrah Qahwa and your sweeter evening fragrances in one composition."},
+  {id:"alt-reality",name:"ALT. Fragrances Reality",house:"ALT.",price:"~$75",tier:"mid",tags:["Everyday","Tropical","Fresh"],dupe:true,dupeOf:"LV Imagination",reason:"Fills the LV Imagination gap you identified earlier at a fraction of the cost."},
+  // 15% luxury (>$200)
+  {id:"creed-viw",name:"Creed Virgin Island Water",house:"Creed",price:"~$260",tier:"luxury",tags:["Everyday","Coconut","Lime"],dupe:false,reason:"The original your Rayhaan Aquatica dupes — owning the real thing elevates your everyday rotation to another level."},
+  {id:"tf-tobacco-oud",name:"Tom Ford Tobacco Oud",house:"Tom Ford",price:"~$280",tier:"luxury",tags:["Special Occasion","Tobacco","Oud"],dupe:false,reason:"Bridges Tobacco Vanille and your oud-heavy special occasion pieces — richer and more complex than either alone."},
+];
+
+// ── BI-WEEKLY SUGGESTION ROTATION (refreshes Sundays & Thursdays at midnight) ──
+let REMOTE_SUGGESTIONS=null,REMOTE_SUGGESTIONS_META=null;
+async function loadRemoteSuggestions(){
+  try{
+    const [rs,meta]=await Promise.all([fbGet("/suggestions"),fbGet("/suggestionsMeta")]);
+    if(Array.isArray(rs)&&rs.length>0){
+      REMOTE_SUGGESTIONS=rs;
+      REMOTE_SUGGESTIONS_META=meta;
+      if(pageHistory[pageHistory.length-1]==="suggestions")renderSuggestions();
+    }
+  }catch(e){}
+}
+function currentSuggestionPeriod(){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
+  while(d.getDay()!==0&&d.getDay()!==4){d.setDate(d.getDate()-1);}
+  return d;
+}
+function nextSuggestionPeriod(period){
+  const d=new Date(period);
+  do{d.setDate(d.getDate()+1);}while(d.getDay()!==0&&d.getDay()!==4);
+  return d;
+}
+function seededShuffle(arr,seedStr){
+  let seed=0;
+  for(let i=0;i<seedStr.length;i++)seed=(seed*31+seedStr.charCodeAt(i))>>>0;
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    seed=(seed*1103515245+12345)>>>0;
+    const j=seed%(i+1);
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function fmtShortDate(d){
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+
+function renderSuggestions(){
+  const tiers=[
+    {key:"affordable",label:"Affordable · Under $80",pct:"50%"},
+    {key:"mid",label:"Mid-Range · $80–200",pct:"35%"},
+    {key:"luxury",label:"Luxury · $200+",pct:"15%"},
+  ];
+  let pool,refreshLabel;
+  if(REMOTE_SUGGESTIONS){
+    pool=REMOTE_SUGGESTIONS;
+    const refreshedAt=REMOTE_SUGGESTIONS_META&&REMOTE_SUGGESTIONS_META.refreshedAt?new Date(REMOTE_SUGGESTIONS_META.refreshedAt):null;
+    refreshLabel='<div class="sugg-refresh">'+(refreshedAt?"Curated "+fmtShortDate(refreshedAt)+" for your collection":"Curated for your collection")+'</div>';
+  }else{
+    const period=currentSuggestionPeriod();
+    const periodKey=period.toISOString().slice(0,10);
+    pool=seededShuffle(SUGGESTIONS,periodKey);
+    refreshLabel='<div class="sugg-refresh">Refreshed '+fmtShortDate(period)+' · next refresh '+fmtShortDate(nextSuggestionPeriod(period))+'</div>';
+  }
+  document.getElementById("sugg-body").innerHTML=refreshLabel+tiers.map(t=>{
+    const items=pool.filter(s=>s.tier===t.key);
+    return '<div class="sugg-tier">'
+      +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
+      +items.map(s=>{
+        const isWish=!!wishlist[s.id];
+        const heart='<div class="wl-btn'+(isWish?" active":"")+'" onclick="toggleWishlist(\''+s.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9z"/></svg></div>';
+        return '<div class="sugg-card">'
+          +heart
+          +'<div class="sugg-name">'+s.name+'</div>'
+          +'<div class="sugg-house">'+s.house+'</div>'
+          +'<div class="sugg-tags">'
+            +s.tags.map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+            +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
+          +'</div>'
+          +'<div class="sugg-price">'+s.price+'</div>'
+          +'<div class="sugg-reason">'+s.reason+'</div>'
+        +'</div>';
+      }).join("")
+    +'</div>';
+  }).join("");
+}
+
+// ── WISHLIST ──
+function renderWishlist(){
+  const suggItems=SUGGESTIONS.filter(s=>!!wishlist[s.id]);
+  const customItems=Object.values(customFrags).filter(c=>!!wishlist[c.id]);
+  const items=[...suggItems,...customItems];
+  const body=document.getElementById("wishlist-body");
+  if(items.length===0){
+    body.innerHTML='<div class="sugg-empty">Nothing shady to see here! 👀</div>';
+    return;
+  }
+  body.innerHTML=items.map(s=>{
+    const heart='<div class="wl-btn active" onclick="toggleWishlist(\''+s.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9z"/></svg></div>';
+    return '<div class="sugg-card">'
+      +heart
+      +'<div class="sugg-name">'+s.name+'</div>'
+      +'<div class="sugg-house">'+s.house+'</div>'
+      +'<div class="sugg-tags">'
+        +(s.tags||[]).map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+        +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
+      +'</div>'
+      +(s.price?'<div class="sugg-price">'+s.price+'</div>':"")
+      +(s.reason?'<div class="sugg-reason">'+s.reason+'</div>':"")
+    +'</div>';
+  }).join("");
+}
+
+// ── NOTE-BASED INFERENCE (tint / longevity / sprays from notes) ──
+const NOTE_FAMILIES=[
+  {weight:3,color:[92,58,46],  keywords:["oud","tobacco","leather","incense","dark musk","animalic","birch tar"]},
+  {weight:3,color:[140,90,42], keywords:["vanilla","amber","gourmand","caramel","chocolate","coffee","tonka","benzoin"]},
+  {weight:2,color:[107,82,56], keywords:["woody","cedar","sandalwood","patchouli","vetiver","guaiac","oakmoss"]},
+  {weight:2,color:[200,122,154],keywords:["floral","rose","jasmine","peony","iris","orange blossom","tuberose","ylang"]},
+  {weight:2,color:[168,98,46], keywords:["spice","pepper","cardamom","cinnamon","ginger","clove","saffron"]},
+  {weight:1,color:[212,184,74],keywords:["citrus","bergamot","lemon","lime","grapefruit","orange","mandarin","yuzu"]},
+  {weight:1,color:[92,138,160],keywords:["aquatic","marine","ozonic","sea salt","coconut","melon"]},
+  {weight:1,color:[122,154,92],keywords:["green tea","herbal","fresh","mint","green","tea"]},
+];
+function deriveFragranceProfile(notes){
+  notes=(notes||[]).map(n=>n.toLowerCase().trim()).filter(Boolean);
+  if(notes.length===0){
+    return {longevity:"4-6h",maxSprays:"2-3 sprays max",tint:"rgba(160,140,120,0.08)"};
+  }
+  let totalWeight=0,matchCount=0,rSum=0,gSum=0,bSum=0;
+  notes.forEach(n=>{
+    const fam=NOTE_FAMILIES.find(f=>f.keywords.some(k=>n.includes(k)));
+    if(fam){
+      totalWeight+=fam.weight;matchCount++;
+      rSum+=fam.color[0];gSum+=fam.color[1];bSum+=fam.color[2];
+    }
+  });
+  const avg=matchCount>0?totalWeight/matchCount:1.5;
+  let longevity,maxSprays;
+  if(avg>=2.3){longevity="8-10h";maxSprays="1-2 sprays max";}
+  else if(avg>=1.6){longevity="6-8h";maxSprays="2-3 sprays max";}
+  else{longevity="4-6h";maxSprays="3-4 sprays max";}
+  let tint;
+  if(matchCount>0){
+    const r=Math.round(rSum/matchCount),g=Math.round(gSum/matchCount),b=Math.round(bSum/matchCount);
+    tint="rgba("+r+","+g+","+b+",0.1)";
+  }else{
+    tint="rgba(160,140,120,0.08)";
+  }
+  return {longevity,maxSprays,tint};
+}
+
+// ── ADD FRAGRANCE ──
+async function searchFragrance(){
+  const q=document.getElementById("af-search-input").value.trim();
+  const resultsEl=document.getElementById("af-results");
+  if(!q){resultsEl.innerHTML="";return;}
+  const ql=q.toLowerCase();
+  const pool=[
+    ...FRAGS.map(f=>({id:f.id,name:f.name,house:f.house,tags:f.notes||[],price:"",reason:"Already in your collection.",inCollection:true})),
+    ...SUGGESTIONS.map(s=>({id:s.id,name:s.name,house:s.house,tags:s.tags,price:s.price,reason:s.reason,dupe:s.dupe,dupeOf:s.dupeOf})),
+    ...Object.values(customFrags)
+  ];
+  const seen=new Set();
+  const matches=pool.filter(p=>{
+    if(seen.has(p.id))return false;
+    const hit=p.name.toLowerCase().includes(ql)||(p.house||"").toLowerCase().includes(ql);
+    if(hit)seen.add(p.id);
+    return hit;
+  });
+  let html=matches.map(afResultCard).join("");
+  html+='<div id="af-ai-slot"><div class="af-loading">Checking for a match…</div></div>';
+  html+=afManualCard(q);
+  resultsEl.innerHTML=html;
+
+  const searchToken=q;
+  try{
+    const res=await fetch(FUNCTIONS_BASE+"/lookupFragrance?q="+encodeURIComponent(q));
+    const data=await res.json();
+    if(document.getElementById("af-search-input").value.trim()!==searchToken)return;
+    const slot=document.getElementById("af-ai-slot");
+    if(!slot)return;
+    if(data&&data.found){
+      const id="ai-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+      const aiMatch={
+        id,
+        name:data.name,
+        house:data.house,
+        tags:data.tags||[],
+        price:data.price||"",
+        reason:(data.reason||"")+" — AI match, double-check details before adding.",
+        aiMatch:true,
+      };
+      slot.outerHTML=afResultCard(aiMatch);
+    }else{
+      slot.remove();
+    }
+  }catch(e){
+    const slot=document.getElementById("af-ai-slot");
+    if(slot)slot.remove();
+  }
+}
+
+function afResultCard(m){
+  const tagsHtml=(m.tags||[]).map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+    +(m.dupe?'<span class="sugg-tag dupe">Dupe of '+m.dupeOf+'</span>':"")
+    +(m.aiMatch?'<span class="sugg-tag ai">AI Match</span>':"");
+  const dataAttr=encodeURIComponent(JSON.stringify(m));
+  return '<div class="af-result-card">'
+    +'<div class="sugg-name">'+m.name+'</div>'
+    +'<div class="sugg-house">'+m.house+'</div>'
+    +(tagsHtml?'<div class="sugg-tags">'+tagsHtml+'</div>':"")
+    +(m.price?'<div class="sugg-price">'+m.price+'</div>':"")
+    +(m.reason?'<div class="sugg-reason">'+m.reason+'</div>':"")
+    +'<div class="af-add-btn" onclick="toggleAfMenu(\''+m.id+'\',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></div>'
+    +'<div class="af-menu" id="afmenu-'+m.id+'" style="display:none">'
+      +'<div class="af-menu-item" onclick="addResultTo(\''+dataAttr+'\',\'wishlist\')">Add to Wishlist</div>'
+      +'<div class="af-menu-item" onclick="addResultTo(\''+dataAttr+'\',\'collection\')">Add to Collection</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function afManualCard(q){
+  return '<div class="af-result-card">'
+    +'<div class="sugg-name">Can\'t find it? Add manually</div>'
+    +'<div class="af-manual-fields">'
+      +'<input type="text" id="af-m-name" placeholder="Name" value="'+q.replace(/"/g,"&quot;")+'">'
+      +'<input type="text" id="af-m-house" placeholder="House / Brand">'
+      +'<input type="text" id="af-m-notes" placeholder="Notes / accords, comma separated (e.g. oud, vanilla, amber)">'
+      +'<input type="text" id="af-m-price" placeholder="Price (optional)">'
+    +'</div>'
+    +'<div class="af-add-btn" onclick="toggleAfMenu(\'manual\',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></div>'
+    +'<div class="af-menu" id="afmenu-manual" style="display:none">'
+      +'<div class="af-menu-item" onclick="addManualTo(\'wishlist\')">Add to Wishlist</div>'
+      +'<div class="af-menu-item" onclick="addManualTo(\'collection\')">Add to Collection</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function toggleAfMenu(id,e){
+  if(e)e.stopPropagation();
+  document.querySelectorAll(".af-menu").forEach(m=>{if(m.id!=="afmenu-"+id)m.style.display="none";});
+  const menu=document.getElementById("afmenu-"+id);
+  if(menu)menu.style.display=menu.style.display==="block"?"none":"block";
+}
+document.addEventListener("click",function(e){
+  if(!e.target.closest(".af-add-btn")&&!e.target.closest(".af-menu")){
+    document.querySelectorAll(".af-menu").forEach(m=>m.style.display="none");
+  }
+});
+
+function addResultTo(encoded,dest){
+  const m=JSON.parse(decodeURIComponent(encoded));
+  if(dest==="wishlist"){
+    if(!SUGGESTIONS.find(s=>s.id===m.id)){
+      customFrags[m.id]=m;
+      fbSet("/customFrags",customFrags);
+    }
+    wishlist[m.id]=true;
+    fbSet("/wishlist",wishlist);
+    showToast("Added to wishlist ♥");
+  }else{
+    if(!FRAGS.find(f=>f.id===m.id)){
+      const prof=deriveFragranceProfile(m.tags);
+      FRAGS.push({id:m.id,name:m.name,house:m.house,notes:m.tags||[],slot:"unknown",longevity:prof.longevity,maxSprays:prof.maxSprays,tint:prof.tint,synced:false});
+      fbSet("/fragrances",FRAGS);
+    }
+    acquired[m.id]=true;
+    fbSet("/collection",acquired);
+    showToast("Added to Collection");
+  }
+  const menu=document.getElementById("afmenu-"+m.id);
+  if(menu)menu.style.display="none";
+}
+
+function addManualTo(dest){
+  const name=document.getElementById("af-m-name").value.trim();
+  const house=document.getElementById("af-m-house").value.trim()||"Unknown";
+  const notes=document.getElementById("af-m-notes").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const price=document.getElementById("af-m-price").value.trim();
+  if(!name){showToast("Enter a name first");return;}
+  const id="custom-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")+"-"+Date.now();
+  if(dest==="wishlist"){
+    customFrags[id]={id:id,name:name,house:house,tags:notes,price:price,reason:"Added manually"};
+    fbSet("/customFrags",customFrags);
+    wishlist[id]=true;
+    fbSet("/wishlist",wishlist);
+    showToast("Added to wishlist ♥");
+  }else{
+    const prof=deriveFragranceProfile(notes);
+    FRAGS.push({id:id,name:name,house:house,notes:notes,slot:"unknown",longevity:prof.longevity,maxSprays:prof.maxSprays,tint:prof.tint,synced:false});
+    fbSet("/fragrances",FRAGS);
+    acquired[id]=true;
+    fbSet("/collection",acquired);
+    showToast("Added to Collection");
+  }
+  document.getElementById("afmenu-manual").style.display="none";
+  searchFragrance();
+}
+
+// ── NAVIGATION ──
+function enterApp(){
+  const cover=document.getElementById("cover");
+  const menu=document.getElementById("menu");
+  cover.style.transition="opacity 0.5s ease, transform 0.5s ease";
+  cover.style.opacity="0";
+  cover.style.transform="scale(0.97)";
+  cover.style.pointerEvents="none";
+  setTimeout(()=>{
+    cover.style.display="none";
+    menu.classList.remove("hidden");
+    menu.style.opacity="0";
+    menu.style.transform="translateY(12px)";
+    menu.style.transition="opacity 0.4s ease, transform 0.4s ease";
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        menu.style.opacity="1";
+        menu.style.transform="translateY(0)";
+      });
+    });
+  },450);
+  pageHistory=["menu"];
+}
+
+function goTo(page,mode){
+  const cur=pageHistory[pageHistory.length-1];
+  document.getElementById(cur).classList.add("slide-left");
+  const el=document.getElementById(page);
+  el.classList.remove("hidden");
+  el.classList.remove("slide-left");
+  pageHistory.push(page);
+  // render on navigate
+  if(page==="today"){renderPick(mode==="surprise");}
+  if(page==="collection"){renderCollection();}
+  if(page==="months"){renderMonths();}
+  if(page==="yearend"){renderYearEnd();}
+  if(page==="suggestions"){renderSuggestions();}
+  if(page==="wishlist"){renderWishlist();}
+  if(page==="addfrag"){document.getElementById("af-search-input").value="";document.getElementById("af-results").innerHTML="";}
+}
+
+function goBack(){
+  if(pageHistory.length<=1)return;
+  const cur=pageHistory.pop();
+  const prev=pageHistory[pageHistory.length-1];
+  document.getElementById(cur).classList.add("hidden");
+  const el=document.getElementById(prev);
+  el.classList.remove("slide-left");
+  el.classList.remove("hidden");
+}
+
+function toggleMenu(key){
+  const children=document.getElementById("children-"+key);
+  const arrow=document.getElementById("arrow-"+key);
+  const isOpen=children.classList.contains("open");
+  // close all
+  ["wardrobe","recommended","yearwrap"].forEach(k=>{
+    document.getElementById("children-"+k).classList.remove("open");
+    document.getElementById("arrow-"+k).classList.remove("open");
+  });
+  if(!isOpen){
+    children.classList.add("open");
+    arrow.classList.add("open");
+  }
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+// ── BIND COVER CLICK after all functions are defined ──
+window.addEventListener("load",()=>{
+  const btn=document.getElementById("cover-btn");
+  const cov=document.getElementById("cover");
+  if(btn)btn.addEventListener("click",function(e){e.stopPropagation();enterApp();});
+  if(cov)cov.addEventListener("click",enterApp);
+});
+</script>
+</body>
+</html>
