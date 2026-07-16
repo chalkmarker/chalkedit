@@ -52,7 +52,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .menu-child{display:flex;align-items:center;gap:10px;padding:13px 28px 13px 44px;cursor:pointer;transition:background .15s;user-select:none}
 .menu-child:hover{background:rgba(255,255,255,0.025)}
 .menu-child-dot{width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0}
-.menu-child-label{font-size:13px;color:var(--t2);font-weight:300}
+.menu-child-label{font-size:13px;color:#E8D9C0;font-weight:300}
 .menu-weather{margin:24px 28px 0;padding:14px 16px;background:var(--card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px}
 .menu-weather-icon{font-size:22px}
 .menu-weather-text{font-size:12px;color:var(--t2)}
@@ -63,8 +63,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.inner-header{padding:20px 56px 16px}}
 .back-btn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid #6B1F1F;background:rgba(107,31,31,0.1);transition:all .15s}
 .back-btn:hover{border-color:#8C2A2A;background:rgba(107,31,31,0.18);transform:translateY(-1px)}
-.inner-title{font-size:13px;font-weight:500;color:var(--t1);letter-spacing:.06em}
-.inner-sub{font-size:10px;color:var(--t3);letter-spacing:.06em;margin-top:1px}
+.inner-title{font-size:13px;font-weight:500;color:#C4AE84;letter-spacing:.06em}
+.inner-sub{font-size:10px;color:#C4AE84;letter-spacing:.06em;margin-top:1px;opacity:.75}
 
 /* ── TODAY'S PICK ── */
 #today{background:var(--bg);min-height:100vh}
@@ -113,7 +113,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #spray-modal.open .modal-sheet{transform:scale(1) translateY(0);opacity:1}
 #spray-modal .modal-handle{display:none}
 #spray-modal .modal-title{text-align:center}
-#spray-modal .modal-sub{text-align:center;border-bottom:none;padding-bottom:20px}
+#spray-modal .modal-sub{text-align:center;border-bottom:none;padding-bottom:20px;color:#C97B4A}
 .log-check{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .log-check.checked{background:var(--gold);border-color:var(--gold)}
 .log-other{margin:12px 20px 0;display:flex;gap:10px;align-items:center}
@@ -239,8 +239,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .sugg-body{padding:20px 20px 56px}
 @media(min-width:768px){.sugg-body{padding:24px 56px 64px}}
 .sugg-tier{margin-bottom:28px}
-.sugg-tier-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.sugg-tier-line{flex:1;height:1px;background:var(--line)}
+.sugg-tier-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#A9C08A;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sugg-tier-line{flex:1;height:1px;background:#A9C08A;opacity:.35}
 .sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px;position:relative}
 .sugg-name{padding-right:26px}
 .sugg-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
@@ -419,7 +419,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 <!-- COVER -->
 <div id="cover" class="page">
   <div class="cover-bg-glow"></div>
-  <div class="cover-chars">香馥</div>
+  <div class="cover-chars">香</div>
   <div class="cover-title">The Gallery</div>
   <div class="cover-sub">by Mark Lee</div>
   <div class="cover-btn-row">
