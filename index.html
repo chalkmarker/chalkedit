@@ -106,6 +106,12 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .log-item:hover{background:rgba(255,255,255,0.02)}
 .log-item-name{flex:1;font-size:13px;color:var(--t1)}
 .log-item-house{font-size:11px;color:var(--t3)}
+
+/* ── SPRAY ETIQUETTE PSA — centered dialog, not a bottom sheet ── */
+#spray-modal{align-items:center;justify-content:center;padding:20px}
+#spray-modal .modal-sheet{border-radius:18px;max-width:360px;width:100%;transform:scale(.92) translateY(0);opacity:0;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s}
+#spray-modal.open .modal-sheet{transform:scale(1) translateY(0);opacity:1}
+#spray-modal .modal-handle{display:none}
 .log-check{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .log-check.checked{background:var(--gold);border-color:var(--gold)}
 .log-other{margin:12px 20px 0;display:flex;gap:10px;align-items:center}
@@ -873,6 +879,7 @@ function closeLogModal(e){
     document.getElementById("log-modal").classList.remove("open");
 }
 
+let pendingLeaveAction=null;
 function showSprayWarning(){
   if(sessionStorage.getItem("sprayWarningShown"))return;
   document.getElementById("spray-modal").classList.add("open");
@@ -880,6 +887,11 @@ function showSprayWarning(){
 }
 function closeSprayWarning(){
   document.getElementById("spray-modal").classList.remove("open");
+  if(pendingLeaveAction){
+    const action=pendingLeaveAction;
+    pendingLeaveAction=null;
+    action();
+  }
 }
 
 function toggleLog(id){
@@ -1491,6 +1503,11 @@ function enterApp(){
 }
 
 function backToCover(){
+  pendingLeaveAction=performBackToCover;
+  document.getElementById("spray-modal").classList.add("open");
+}
+
+function performBackToCover(){
   const cover=document.getElementById("cover");
   const menu=document.getElementById("menu");
   menu.style.transition="opacity 0.4s ease, transform 0.4s ease";
