@@ -207,7 +207,9 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .sugg-tier{margin-bottom:28px}
 .sugg-tier-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .sugg-tier-line{flex:1;height:1px;background:var(--line)}
-.sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px}
+.sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px;position:relative}
+.sugg-name{padding-right:26px}
+.sugg-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
 .sugg-name{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:2px}
 .sugg-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
 .sugg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
@@ -422,6 +424,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <div class="menu-child-dot"></div>
           <span class="menu-child-label">Suggested Purchases</span>
         </div>
+        <div class="menu-child" onclick="goTo('wishlist')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Wishlist</span>
+        </div>
       </div>
     </div>
     <div class="menu-section">
@@ -521,6 +527,15 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Suggested Purchases</div></div>
   </div>
   <div class="sugg-body" id="sugg-body"></div>
+</div>
+
+<!-- WISHLIST -->
+<div id="wishlist" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Wishlist</div></div>
+  </div>
+  <div class="sugg-body" id="wishlist-body"></div>
 </div>
 
 <!-- LOG MODAL -->
@@ -793,16 +808,13 @@ function renderCollection(){
     const hidden=!vs.find(s=>s.id===slot.id);
     const cards=frags.map(frag=>{
       const isAcq=!!acquired[frag.id];
-      const isWish=!!wishlist[frag.id];
       const tint=frag.tint||"rgba(160,140,120,0.08)";
       const accent=frag.synced?"linear-gradient(180deg,#5C6B7A,#8C3A3A,#6B4C2A)":slot.color;
       const pills=(frag.notes||[]).map(n=>'<span class="np">'+n+'</span>').join("");
       const caut=frag.caution?'<div class="fcat">'+frag.caution+'</div>':"";
       const ss="color:"+slot.color+";background:"+slot.color+"22";
-      const heart='<div class="wl-btn'+(isWish?" active":"")+'" onclick="toggleWishlist(\''+frag.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9z"/></svg></div>';
       return '<div class="fc'+(isAcq?" acq":"")+(frag.synced?" syn":"")
         +'" style="background:linear-gradient(90deg,#241E1A 45%,'+tint+' 100%)" onclick="toggleAcq(\''+frag.id+'\')">'
-        +heart
         +'<div class="fa" style="background:'+accent+'"></div>'
         +'<div class="fb2">'
           +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
@@ -937,20 +949,20 @@ async function renderYearEnd(){
 // ── SUGGESTIONS ──
 const SUGGESTIONS=[
   // 50% affordable (<$80)
-  {name:"Afnan 9PM",house:"Afnan",price:"~$30",tier:"affordable",tags:["Date Night","Sweet","Vanilla"],dupe:false,reason:"Fills the sweet evening gap left after Liquid Brun — loud, crowd-pleasing, great value."},
-  {name:"Lattafa Khamrah",house:"Lattafa",price:"~$35",tier:"affordable",tags:["Special Occasion","Oud","Sweet"],dupe:false,reason:"Dark and rich, complements Asad without duplicating it."},
-  {name:"Fragrance World Carbon Z",house:"Fragrance World",price:"~$25",tier:"affordable",tags:["Everyday","Fresh","Aquatic"],dupe:true,dupeOf:"Creed Aventus",reason:"Bridges your aquatic everyday rotation with a smoky-fresh character neither Aquatica nor Pacific has."},
-  {name:"Rasasi Hawas",house:"Rasasi",price:"~$40",tier:"affordable",tags:["Everyday","Aquatic","Woody"],dupe:false,reason:"A step above your Rayhaan dailies — aquatic-woody hybrid with excellent longevity for Houston summers."},
-  {name:"Armaf Club de Nuit Intense Man",house:"Armaf",price:"~$35",tier:"affordable",tags:["Professional","Fresh","Birch"],dupe:true,dupeOf:"Creed Aventus",reason:"Strong Aventus DNA — smoky birch opening that would complement Vulcan Sable in the professional slot."},
-  {name:"Lattafa Asad Gold",house:"Lattafa",price:"~$30",tier:"affordable",tags:["Date Night","Warm","Amber"],dupe:false,reason:"Warmer and more amber-forward than Asad — fills the warm evening gap in your date night rotation."},
+  {id:"afnan-9pm",name:"Afnan 9PM",house:"Afnan",price:"~$30",tier:"affordable",tags:["Date Night","Sweet","Vanilla"],dupe:false,reason:"Fills the sweet evening gap left after Liquid Brun — loud, crowd-pleasing, great value."},
+  {id:"lattafa-khamrah",name:"Lattafa Khamrah",house:"Lattafa",price:"~$35",tier:"affordable",tags:["Special Occasion","Oud","Sweet"],dupe:false,reason:"Dark and rich, complements Asad without duplicating it."},
+  {id:"fw-carbon-z",name:"Fragrance World Carbon Z",house:"Fragrance World",price:"~$25",tier:"affordable",tags:["Everyday","Fresh","Aquatic"],dupe:true,dupeOf:"Creed Aventus",reason:"Bridges your aquatic everyday rotation with a smoky-fresh character neither Aquatica nor Pacific has."},
+  {id:"rasasi-hawas",name:"Rasasi Hawas",house:"Rasasi",price:"~$40",tier:"affordable",tags:["Everyday","Aquatic","Woody"],dupe:false,reason:"A step above your Rayhaan dailies — aquatic-woody hybrid with excellent longevity for Houston summers."},
+  {id:"armaf-cdnim",name:"Armaf Club de Nuit Intense Man",house:"Armaf",price:"~$35",tier:"affordable",tags:["Professional","Fresh","Birch"],dupe:true,dupeOf:"Creed Aventus",reason:"Strong Aventus DNA — smoky birch opening that would complement Vulcan Sable in the professional slot."},
+  {id:"lattafa-asad-gold",name:"Lattafa Asad Gold",house:"Lattafa",price:"~$30",tier:"affordable",tags:["Date Night","Warm","Amber"],dupe:false,reason:"Warmer and more amber-forward than Asad — fills the warm evening gap in your date night rotation."},
   // 35% mid ($80-200)
-  {name:"Nishane Hacivat",house:"Nishane",price:"~$150",tier:"mid",tags:["Everyday","Woody","Citrus"],dupe:false,reason:"An elevated everyday fragrance that would sit above your Rayhaan pair — complex pineapple-woody-citrus that works in Houston heat."},
-  {name:"Initio Atomic Rose",house:"Initio",price:"~$180",tier:"mid",tags:["Date Night","Rose","Musk"],dupe:false,reason:"Adds a floral dimension completely absent from your date night slot — dark rose and musk that works close to skin."},
-  {name:"Montale Intense Cafe",house:"Montale",price:"~$100",tier:"mid",tags:["Special Occasion","Coffee","Rose"],dupe:false,reason:"Coffee-rose-vanilla — bridges your Khamrah Qahwa and your sweeter evening fragrances in one composition."},
-  {name:"ALT. Fragrances Reality",house:"ALT.",price:"~$75",tier:"mid",tags:["Everyday","Tropical","Fresh"],dupe:true,dupeOf:"LV Imagination",reason:"Fills the LV Imagination gap you identified earlier at a fraction of the cost."},
+  {id:"nishane-hacivat",name:"Nishane Hacivat",house:"Nishane",price:"~$150",tier:"mid",tags:["Everyday","Woody","Citrus"],dupe:false,reason:"An elevated everyday fragrance that would sit above your Rayhaan pair — complex pineapple-woody-citrus that works in Houston heat."},
+  {id:"initio-atomic-rose",name:"Initio Atomic Rose",house:"Initio",price:"~$180",tier:"mid",tags:["Date Night","Rose","Musk"],dupe:false,reason:"Adds a floral dimension completely absent from your date night slot — dark rose and musk that works close to skin."},
+  {id:"montale-intense-cafe",name:"Montale Intense Cafe",house:"Montale",price:"~$100",tier:"mid",tags:["Special Occasion","Coffee","Rose"],dupe:false,reason:"Coffee-rose-vanilla — bridges your Khamrah Qahwa and your sweeter evening fragrances in one composition."},
+  {id:"alt-reality",name:"ALT. Fragrances Reality",house:"ALT.",price:"~$75",tier:"mid",tags:["Everyday","Tropical","Fresh"],dupe:true,dupeOf:"LV Imagination",reason:"Fills the LV Imagination gap you identified earlier at a fraction of the cost."},
   // 15% luxury (>$200)
-  {name:"Creed Virgin Island Water",house:"Creed",price:"~$260",tier:"luxury",tags:["Everyday","Coconut","Lime"],dupe:false,reason:"The original your Rayhaan Aquatica dupes — owning the real thing elevates your everyday rotation to another level."},
-  {name:"Tom Ford Tobacco Oud",house:"Tom Ford",price:"~$280",tier:"luxury",tags:["Special Occasion","Tobacco","Oud"],dupe:false,reason:"Bridges Tobacco Vanille and your oud-heavy special occasion pieces — richer and more complex than either alone."},
+  {id:"creed-viw",name:"Creed Virgin Island Water",house:"Creed",price:"~$260",tier:"luxury",tags:["Everyday","Coconut","Lime"],dupe:false,reason:"The original your Rayhaan Aquatica dupes — owning the real thing elevates your everyday rotation to another level."},
+  {id:"tf-tobacco-oud",name:"Tom Ford Tobacco Oud",house:"Tom Ford",price:"~$280",tier:"luxury",tags:["Special Occasion","Tobacco","Oud"],dupe:false,reason:"Bridges Tobacco Vanille and your oud-heavy special occasion pieces — richer and more complex than either alone."},
 ];
 
 function renderSuggestions(){
@@ -963,8 +975,11 @@ function renderSuggestions(){
     const items=SUGGESTIONS.filter(s=>s.tier===t.key);
     return '<div class="sugg-tier">'
       +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
-      +items.map(s=>
-        '<div class="sugg-card">'
+      +items.map(s=>{
+        const isWish=!!wishlist[s.id];
+        const heart='<div class="wl-btn'+(isWish?" active":"")+'" onclick="toggleWishlist(\''+s.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9z"/></svg></div>';
+        return '<div class="sugg-card">'
+          +heart
           +'<div class="sugg-name">'+s.name+'</div>'
           +'<div class="sugg-house">'+s.house+'</div>'
           +'<div class="sugg-tags">'
@@ -973,8 +988,32 @@ function renderSuggestions(){
           +'</div>'
           +'<div class="sugg-price">'+s.price+'</div>'
           +'<div class="sugg-reason">'+s.reason+'</div>'
-        +'</div>'
-      ).join("")
+        +'</div>';
+      }).join("")
+    +'</div>';
+  }).join("");
+}
+
+// ── WISHLIST ──
+function renderWishlist(){
+  const items=SUGGESTIONS.filter(s=>!!wishlist[s.id]);
+  const body=document.getElementById("wishlist-body");
+  if(items.length===0){
+    body.innerHTML='<div class="sugg-empty">Nothing shady to see here! 👀</div>';
+    return;
+  }
+  body.innerHTML=items.map(s=>{
+    const heart='<div class="wl-btn active" onclick="toggleWishlist(\''+s.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9z"/></svg></div>';
+    return '<div class="sugg-card">'
+      +heart
+      +'<div class="sugg-name">'+s.name+'</div>'
+      +'<div class="sugg-house">'+s.house+'</div>'
+      +'<div class="sugg-tags">'
+        +s.tags.map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+        +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
+      +'</div>'
+      +'<div class="sugg-price">'+s.price+'</div>'
+      +'<div class="sugg-reason">'+s.reason+'</div>'
     +'</div>';
   }).join("");
 }
@@ -1016,6 +1055,7 @@ function goTo(page,mode){
   if(page==="months"){renderMonths();}
   if(page==="yearend"){renderYearEnd();}
   if(page==="suggestions"){renderSuggestions();}
+  if(page==="wishlist"){renderWishlist();}
 }
 
 function goBack(){
