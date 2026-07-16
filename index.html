@@ -803,8 +803,25 @@ function renderSuggestions(){
 
 // ── NAVIGATION ──
 function enterApp(){
-  document.getElementById("cover").classList.add("slide-left");
-  document.getElementById("menu").classList.remove("hidden");
+  const cover=document.getElementById("cover");
+  const menu=document.getElementById("menu");
+  cover.style.transition="opacity 0.5s ease, transform 0.5s ease";
+  cover.style.opacity="0";
+  cover.style.transform="scale(0.97)";
+  cover.style.pointerEvents="none";
+  setTimeout(()=>{
+    cover.style.display="none";
+    menu.classList.remove("hidden");
+    menu.style.opacity="0";
+    menu.style.transform="translateY(12px)";
+    menu.style.transition="opacity 0.4s ease, transform 0.4s ease";
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        menu.style.opacity="1";
+        menu.style.transform="translateY(0)";
+      });
+    });
+  },450);
   pageHistory=["menu"];
 }
 
@@ -856,6 +873,14 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
 }
+
+// ── BIND COVER CLICK after all functions are defined ──
+window.addEventListener("load",()=>{
+  const btn=document.getElementById("cover-btn");
+  const cov=document.getElementById("cover");
+  if(btn)btn.addEventListener("click",function(e){e.stopPropagation();enterApp();});
+  if(cov)cov.addEventListener("click",enterApp);
+});
 </script>
 </body>
 </html>
