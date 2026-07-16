@@ -74,6 +74,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .pick-weather-icon{font-size:18px}
 .pick-weather-desc{font-size:12px;color:var(--t2);flex:1}
 .pick-weather-temp{font-size:13px;font-weight:500;color:var(--gold)}
+.pick-weather-advisory{font-size:11px;color:#C97B4A;font-style:italic;line-height:1.5;margin:-14px 0 22px;padding:0 2px}
 .pick-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
 .pick-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
 .pick-card-accent{height:3px}
@@ -546,6 +547,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
       <div class="pick-weather-desc" id="pw-desc">Loading weather...</div>
       <div class="pick-weather-temp" id="pw-temp">—</div>
     </div>
+    <div class="pick-weather-advisory" id="pick-weather-advisory"></div>
     <div class="pick-label">Today's Pick</div>
     <div id="pick-card-wrap"></div>
     <div class="pick-divider">or</div>
@@ -718,6 +720,8 @@ function getWeather(){
       document.getElementById("pw-icon").textContent=icon;
       document.getElementById("pw-desc").textContent=desc+" · "+temp+"°F";
       document.getElementById("pw-temp").textContent=temp+"°F";
+      const advEl=document.getElementById("pick-weather-advisory");
+      if(advEl)advEl.textContent=weatherAdvisory(temp,new Date().getHours(),code);
       const mwEl=document.getElementById("menu-weather");
       document.getElementById("mw-icon").textContent=icon;
       document.getElementById("mw-temp").textContent=temp+"°F";
@@ -732,7 +736,23 @@ function setWeatherFallback(){
   document.getElementById("pw-icon").textContent="☀️";
   document.getElementById("pw-desc").textContent="Houston — Warm & Humid";
   document.getElementById("pw-temp").textContent="85°F";
+  const advEl=document.getElementById("pick-weather-advisory");
+  if(advEl)advEl.textContent=weatherAdvisory(85,new Date().getHours(),0);
   renderPick();
+}
+function weatherAdvisory(temp,hour,code){
+  const isDark=hour>=19||hour<6;
+  const tips=[];
+  if(temp>=85)tips.push("It's hot out — reach for something light and fresh, it'll wear better in the heat.");
+  else if(temp<=55)tips.push("Cold out there — richer, warmer notes actually have more presence in this weather.");
+  if(isDark)tips.push("Sun's down — a sharper, bolder scent will stand out more than it would in daylight.");
+  if(typeof code==="number"){
+    if(code>79)tips.push("Storms rolling through — something bold and weather-resistant won't get lost in it.");
+    else if(code>59)tips.push("Rain's coming down — humidity cuts into projection, so lean on something with real staying power.");
+    else if(code>49)tips.push("Drizzly out there — a little extra staying power goes a long way in the damp.");
+    else if(code>3)tips.push("Foggy and damp — pick something that holds up in the moisture instead of fading fast.");
+  }
+  return tips.join(" ");
 }
 function wDesc(c){
   if(c===0)return"Clear Sky";
