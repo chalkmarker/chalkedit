@@ -2,48 +2,131 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>The Edit</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#1A1714;--gold:#D4B07A;
   --bg:#1A1714;--card:#241E1A;--toolbar:#1C1712;
   --border:rgba(255,255,255,0.07);--line:rgba(255,255,255,0.06);
+  --gold:#D4B07A;--gold2:#A07840;--gold3:#F0C878;
   --t1:#F0EAE2;--t2:#7A6E64;--t3:#4A4038;
   --note-bg:rgba(255,255,255,0.05);--note-c:#8A7E74;
+  --moss:#3A5C44;--slate:#5C6B7A;--rouge:#8C3A3A;--umber:#6B4C2A;--taupe:#7A6A5A;
 }
-body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
-.hdr{background:#1A1714;padding:40px 20px 28px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:20px}
-@media(min-width:768px){.hdr{padding:48px 56px 36px;flex-direction:row;align-items:flex-end;justify-content:space-between}}
-.wm{position:absolute;right:8px;top:-8px;font-size:72px;opacity:.06;line-height:1;color:var(--gold);font-family:serif;pointer-events:none;user-select:none}
-@media(min-width:768px){.wm{font-size:120px;right:56px;top:-10px}}
-.eyebrow{font-size:9px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
-.title{font-size:40px;font-weight:200;color:var(--t1);line-height:1}
-@media(min-width:768px){.title{font-size:64px}}
-.title em{font-style:italic;font-weight:400}
-.subtitle{font-size:11px;color:var(--t3);letter-spacing:.1em;margin-top:6px}
-.pw{position:relative;z-index:1}
-@media(min-width:768px){.pw{min-width:260px;text-align:right}}
-.pc{display:none}
-@media(min-width:768px){.pc{display:block;margin-bottom:10px}}
-.pc .big{color:var(--gold);font-weight:500;font-size:28px}
-.pc .sm{color:#5A4E44;font-size:18px}
-.pc .lbl{display:block;font-size:10px;color:#5A4E44;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
-.pbw{display:flex;align-items:center;gap:12px}
-.pt{flex:1;height:1px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
-.pf{height:100%;background:var(--gold);border-radius:999px;transition:width .4s ease;width:0}
-.pm{font-size:11px;color:var(--gold);font-weight:500;white-space:nowrap}
-@media(min-width:768px){.pm{display:none}}
-.toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--toolbar);position:sticky;top:0;z-index:10}
-@media(min-width:768px){.toolbar{padding:14px 56px}}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px}
+
+/* ── PAGES ── */
+.page{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s;will-change:transform}
+.page.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+.page.slide-left{transform:translateX(-100%);opacity:0;pointer-events:none}
+
+/* ── COVER ── */
+#cover{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);cursor:pointer;user-select:none;gap:0}
+.cover-chars{font-size:clamp(100px,28vw,180px);line-height:1;font-family:serif;background:linear-gradient(160deg,#F8ECC0 0%,#D4B07A 35%,#A07840 65%,#C8943A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 32px rgba(255,240,180,0.18)) drop-shadow(0 0 8px rgba(255,255,255,0.08));margin-bottom:28px;position:relative;z-index:1}
+.cover-title{font-size:13px;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
+.cover-sub{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);margin-bottom:56px}
+.cover-btn{border:1px solid rgba(212,176,122,0.35);border-radius:999px;padding:12px 40px;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);background:rgba(212,176,122,0.05);transition:all .3s}
+#cover:hover .cover-btn{background:rgba(212,176,122,0.12);border-color:rgba(212,176,122,0.6)}
+.cover-bg-glow{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.04) 0%,transparent 70%);pointer-events:none}
+
+/* ── MENU PAGE ── */
+#menu{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+.menu-header{padding:56px 28px 40px;border-bottom:1px solid var(--border)}
+.menu-logo{font-size:28px;font-weight:200;color:var(--t1);margin-bottom:4px}
+.menu-logo em{font-style:italic;font-weight:400;color:var(--gold)}
+.menu-byline{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
+.menu-nav{flex:1;padding:16px 0 48px}
+.menu-section{border-bottom:1px solid var(--border)}
+.menu-parent{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;cursor:pointer;transition:background .15s;user-select:none}
+.menu-parent:hover{background:rgba(255,255,255,0.02)}
+.menu-parent-label{font-size:15px;font-weight:400;color:var(--t1);letter-spacing:.02em}
+.menu-arrow{font-size:11px;color:var(--t3);transition:transform .25s}
+.menu-arrow.open{transform:rotate(90deg)}
+.menu-children{overflow:hidden;transition:max-height .3s ease,opacity .3s;max-height:0;opacity:0}
+.menu-children.open{max-height:300px;opacity:1}
+.menu-child{display:flex;align-items:center;gap:10px;padding:13px 28px 13px 44px;cursor:pointer;transition:background .15s;user-select:none}
+.menu-child:hover{background:rgba(255,255,255,0.025)}
+.menu-child-dot{width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0}
+.menu-child-label{font-size:13px;color:var(--t2);font-weight:300}
+.menu-weather{margin:24px 28px 0;padding:14px 16px;background:var(--card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.menu-weather-icon{font-size:22px}
+.menu-weather-text{font-size:12px;color:var(--t2)}
+.menu-weather-temp{font-size:15px;font-weight:500;color:var(--t1)}
+
+/* ── INNER HEADER ── */
+.inner-header{display:flex;align-items:center;gap:14px;padding:20px 20px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
+@media(min-width:768px){.inner-header{padding:20px 56px 16px}}
+.back-btn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:transparent;transition:all .15s}
+.back-btn:hover{color:var(--t1);border-color:rgba(255,255,255,.15)}
+.inner-title{font-size:13px;font-weight:500;color:var(--t1);letter-spacing:.06em}
+.inner-sub{font-size:10px;color:var(--t3);letter-spacing:.06em;margin-top:1px}
+
+/* ── TODAY'S PICK ── */
+#today{background:var(--bg);min-height:100vh}
+.pick-body{padding:28px 20px 48px}
+@media(min-width:768px){.pick-body{padding:32px 56px 64px}}
+.pick-weather-bar{display:flex;align-items:center;gap:8px;margin-bottom:24px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+.pick-weather-icon{font-size:18px}
+.pick-weather-desc{font-size:12px;color:var(--t2);flex:1}
+.pick-weather-temp{font-size:13px;font-weight:500;color:var(--gold)}
+.pick-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
+.pick-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.pick-card-accent{height:3px}
+.pick-card-body{padding:20px 20px 18px}
+.pick-name{font-size:22px;font-weight:300;color:var(--t1);margin-bottom:3px;font-style:italic}
+.pick-house{font-size:12px;color:var(--t2);margin-bottom:14px}
+.pick-notes{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pick-note{font-size:10px;padding:3px 9px;border-radius:999px;background:var(--note-bg);color:var(--note-c)}
+.pick-reason{font-size:12px;color:var(--t3);font-style:italic;line-height:1.6;margin-bottom:16px;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:6px;border-left:2px solid var(--gold2)}
+.pick-spray{font-size:11px;font-weight:500;padding:4px 12px;border-radius:999px;display:inline-block;margin-bottom:6px}
+.pick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.pick-btn{flex:1;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:500;letter-spacing:.05em;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--t1);transition:all .2s;text-align:center;min-width:120px}
+.pick-btn.primary{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.pick-btn:hover{opacity:.85}
+.pick-divider{text-align:center;margin:20px 0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
+.surprise-card{background:rgba(212,176,122,0.05);border:1px dashed rgba(212,176,122,0.2);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s}
+.surprise-card:hover{background:rgba(212,176,122,0.1)}
+.surprise-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+.surprise-sub{font-size:11px;color:var(--t3)}
+
+/* ── LOG MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-sheet{background:#201A16;border-radius:20px 20px 0 0;padding:0 0 40px;width:100%;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-handle{width:36px;height:3px;border-radius:999px;background:var(--t3);margin:14px auto 20px}
+.modal-title{font-size:14px;font-weight:500;color:var(--t1);padding:0 20px 4px}
+.modal-sub{font-size:11px;color:var(--t3);padding:0 20px 16px;border-bottom:1px solid var(--border)}
+.log-item{display:flex;align-items:center;gap:12px;padding:13px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,0.03)}
+.log-item:hover{background:rgba(255,255,255,0.02)}
+.log-item-name{flex:1;font-size:13px;color:var(--t1)}
+.log-item-house{font-size:11px;color:var(--t3)}
+.log-check{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.log-check.checked{background:var(--gold);border-color:var(--gold)}
+.log-other{margin:12px 20px 0;display:flex;gap:10px;align-items:center}
+.log-other-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t1);outline:none}
+.log-other-input::placeholder{color:var(--t3)}
+.log-confirm{margin:16px 20px 0;width:calc(100% - 40px);padding:13px;border-radius:10px;background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;letter-spacing:.04em;cursor:pointer;border:none;transition:opacity .2s}
+.log-confirm:hover{opacity:.9}
+
+/* ── COLLECTION ── */
+#collection{background:var(--bg);min-height:100vh}
+.coll-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:61px;z-index:9}
+@media(min-width:768px){.coll-toolbar{padding:12px 56px 10px}}
 .fb{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--t2);transition:all .15s;margin-bottom:4px}
 @media(min-width:768px){.fb{font-size:11px;padding:6px 16px;margin-bottom:0}}
 .fb.active{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--t1)}
-.rb{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:#B07878}
-@media(min-width:768px){.rb{font-size:11px;padding:6px 16px}}
-.main{padding:4px 0 56px}
-@media(min-width:768px){.main{padding:24px 56px 72px}}
+.rb{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:#B07878;margin-bottom:4px}
+@media(min-width:768px){.rb{font-size:11px;padding:6px 16px;margin-bottom:0}}
+.coll-progress{padding:12px 16px 0;display:flex;align-items:center;gap:12px}
+@media(min-width:768px){.coll-progress{padding:12px 56px 0}}
+.coll-prog-track{flex:1;height:1px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+.coll-prog-fill{height:100%;background:var(--gold);border-radius:999px;transition:width .4s}
+.coll-prog-label{font-size:10px;color:var(--gold);font-weight:500;white-space:nowrap}
+.coll-main{padding:4px 0 56px}
+@media(min-width:768px){.coll-main{padding:16px 56px 72px}}
 .sec{margin-bottom:0}
 @media(min-width:768px){.sec{margin-bottom:48px}}
 .sec.hidden{display:none}
@@ -60,10 +143,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .cg{display:block}
 @media(min-width:768px){.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
 .fc{margin:0 12px 7px;border-radius:11px;background:var(--card);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:opacity .2s,box-shadow .2s;display:flex}
-@media(min-width:768px){.fc{margin:0;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.3)}}
-.fc.acq{opacity:.3}
-.fc.syn{border-style:dashed;border-color:rgba(255,255,255,.1)}
-.fc:hover{box-shadow:0 4px 20px rgba(0,0,0,.5);border-color:rgba(255,255,255,.12)}
+@media(min-width:768px){.fc{margin:0;border-radius:12px}}
+.fc.acq{opacity:.35}
+.fc.syn{border-style:dashed;border-color:rgba(255,255,255,.08)}
+.fc:hover{box-shadow:0 4px 20px rgba(0,0,0,.5);border-color:rgba(255,255,255,.1)}
 .fa{width:3px;flex-shrink:0}
 .fb2{flex:1;padding:12px 12px 11px;display:flex;gap:10px;align-items:flex-start}
 @media(min-width:768px){.fb2{padding:16px 16px 14px;flex-direction:column;gap:0}}
@@ -77,7 +160,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .fc.acq .fn{text-decoration:line-through;color:var(--t3)}
 .fh{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
 @media(min-width:768px){.fh{margin-bottom:12px}}
-.caut{font-size:10px;color:#C8884A;background:rgba(200,136,74,.12);padding:2px 7px;border-radius:999px;display:inline-block;margin-bottom:8px}
+.fcat{font-size:10px;color:#C8884A;background:rgba(200,136,74,.12);padding:2px 7px;border-radius:999px;display:inline-block;margin-bottom:8px}
 .notes{display:flex;gap:4px;flex-wrap:wrap}
 .np{font-size:10px;padding:2px 7px;border-radius:999px;background:var(--note-bg);color:var(--note-c);white-space:nowrap}
 .lon{font-size:10px;color:var(--t3);margin-bottom:4px}
@@ -89,20 +172,210 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .ci{display:none}
 .fc.acq .ci{display:block}
 .spc{flex:1}
-.footer{text-align:center;padding:0 16px 40px;font-size:10px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase}
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--gold);color:var(--ink);font-size:11px;font-weight:500;padding:10px 20px;border-radius:999px;white-space:nowrap;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,.4);letter-spacing:.04em;opacity:0;transition:all .25s;pointer-events:none}
+
+/* ── MONTHS PAST ── */
+#months{background:var(--bg);min-height:100vh}
+.months-body{padding:20px 20px 56px}
+@media(min-width:768px){.months-body{padding:24px 56px 64px}}
+.month-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 18px 16px;margin-bottom:12px}
+.month-title{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:12px}
+.month-stat{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.month-stat-label{font-size:11px;color:var(--t3)}
+.month-stat-value{font-size:12px;color:var(--t1);font-weight:500}
+.month-top{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:11px;color:var(--t2);font-style:italic}
+.month-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+
+/* ── YEAR END ── */
+#yearend{background:var(--bg);min-height:100vh}
+.ye-body{padding:20px 20px 56px}
+@media(min-width:768px){.ye-body{padding:24px 56px 64px}}
+.ye-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px}
+.ye-card-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.ye-card-value{font-size:26px;font-weight:300;color:var(--gold);font-style:italic;margin-bottom:4px}
+.ye-card-sub{font-size:12px;color:var(--t2)}
+.ye-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+
+/* ── SUGGESTIONS ── */
+#suggestions{background:var(--bg);min-height:100vh}
+.sugg-body{padding:20px 20px 56px}
+@media(min-width:768px){.sugg-body{padding:24px 56px 64px}}
+.sugg-tier{margin-bottom:28px}
+.sugg-tier-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sugg-tier-line{flex:1;height:1px;background:var(--line)}
+.sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px}
+.sugg-name{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:2px}
+.sugg-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
+.sugg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.sugg-tag{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--note-bg);color:var(--note-c)}
+.sugg-tag.dupe{background:rgba(160,120,60,0.15);color:var(--gold2)}
+.sugg-price{font-size:11px;color:var(--gold);font-weight:500}
+.sugg-reason{font-size:11px;color:var(--t3);font-style:italic;margin-top:6px;line-height:1.5}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--gold);color:var(--bg);font-size:11px;font-weight:600;padding:10px 20px;border-radius:999px;white-space:nowrap;z-index:200;box-shadow:0 4px 24px rgba(0,0,0,.4);letter-spacing:.04em;opacity:0;transition:all .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-style:italic;color:var(--t3);font-size:15px}
+
+.footer-pad{height:40px}
 </style>
 </head>
 <body>
-<div id="app"><div class="loading">Loading...</div></div>
-<div class="toast" id="toast"></div>
-<script>
-const FB_BASE="https://fragrances-ccf69-default-rtdb.firebaseio.com";
-const FB_FRAGS=FB_BASE+"/fragrances.json";
-const FB_STATE=FB_BASE+"/collection.json";
 
+<!-- COVER -->
+<div id="cover" class="page" onclick="enterApp()">
+  <div class="cover-bg-glow"></div>
+  <div class="cover-chars">香馥</div>
+  <div class="cover-title">The Edit</div>
+  <div class="cover-sub">by Mark Lee</div>
+  <div class="cover-btn">Tap To Enter</div>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="page hidden">
+  <div class="menu-header">
+    <div class="menu-logo">The <em>Edit</em></div>
+    <div class="menu-byline">by Mark Lee</div>
+  </div>
+  <div id="menu-weather" class="menu-weather" style="display:none">
+    <div class="menu-weather-icon" id="mw-icon">—</div>
+    <div>
+      <div class="menu-weather-temp" id="mw-temp">—</div>
+      <div class="menu-weather-text" id="mw-desc">Loading weather...</div>
+    </div>
+  </div>
+  <div class="menu-nav">
+    <div class="menu-section">
+      <div class="menu-parent" onclick="toggleMenu('wardrobe')">
+        <span class="menu-parent-label">Wardrobe</span>
+        <span class="menu-arrow" id="arrow-wardrobe">›</span>
+      </div>
+      <div class="menu-children" id="children-wardrobe">
+        <div class="menu-child" onclick="goTo('collection')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">My Collection</span>
+        </div>
+        <div class="menu-child" onclick="goTo('suggestions')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Suggested Purchases</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu-section">
+      <div class="menu-parent" onclick="toggleMenu('recommended')">
+        <span class="menu-parent-label">Recommended</span>
+        <span class="menu-arrow" id="arrow-recommended">›</span>
+      </div>
+      <div class="menu-children" id="children-recommended">
+        <div class="menu-child" onclick="goTo('today')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Today's Pick</span>
+        </div>
+        <div class="menu-child" onclick="goTo('today','surprise')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Surprise Me!</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu-section">
+      <div class="menu-parent" onclick="toggleMenu('yearwrap')">
+        <span class="menu-parent-label">Year Wrap</span>
+        <span class="menu-arrow" id="arrow-yearwrap">›</span>
+      </div>
+      <div class="menu-children" id="children-yearwrap">
+        <div class="menu-child" onclick="goTo('months')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Months Past</span>
+        </div>
+        <div class="menu-child" onclick="goTo('yearend')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Year-End Report</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-pad"></div>
+</div>
+
+<!-- TODAY'S PICK -->
+<div id="today" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Menu</button>
+    <div><div class="inner-title">Recommended</div><div class="inner-sub">Today's Pick</div></div>
+  </div>
+  <div class="pick-body">
+    <div class="pick-weather-bar" id="pick-weather-bar">
+      <div class="pick-weather-icon" id="pw-icon">—</div>
+      <div class="pick-weather-desc" id="pw-desc">Loading weather...</div>
+      <div class="pick-weather-temp" id="pw-temp">—</div>
+    </div>
+    <div class="pick-label">Today's Pick</div>
+    <div id="pick-card-wrap"></div>
+    <div class="pick-divider">or</div>
+    <div class="surprise-card" onclick="renderSurprise()">
+      <div class="surprise-label">Surprise Me!</div>
+      <div class="surprise-sub">Weather-aware · ignores wear history</div>
+    </div>
+  </div>
+</div>
+
+<!-- COLLECTION -->
+<div id="collection" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Menu</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">My Collection</div></div>
+  </div>
+  <div class="coll-toolbar" id="coll-toolbar"></div>
+  <div class="coll-progress">
+    <div class="coll-prog-track"><div class="coll-prog-fill" id="coll-prog-fill" style="width:0%"></div></div>
+    <div class="coll-prog-label" id="coll-prog-label">0 / 0</div>
+  </div>
+  <div class="coll-main" id="coll-main"></div>
+</div>
+
+<!-- MONTHS PAST -->
+<div id="months" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Year Wrap</button>
+    <div><div class="inner-title">Year Wrap</div><div class="inner-sub">Months Past</div></div>
+  </div>
+  <div class="months-body" id="months-body"></div>
+</div>
+
+<!-- YEAR END -->
+<div id="yearend" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Year Wrap</button>
+    <div><div class="inner-title">Year Wrap</div><div class="inner-sub">Year-End Report</div></div>
+  </div>
+  <div class="ye-body" id="ye-body"></div>
+</div>
+
+<!-- SUGGESTIONS -->
+<div id="suggestions" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Suggested Purchases</div></div>
+  </div>
+  <div class="sugg-body" id="sugg-body"></div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="modal-overlay" id="log-modal" onclick="closeLogModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">What did you wear today?</div>
+    <div class="modal-sub">Select all that apply</div>
+    <div id="log-list"></div>
+    <div class="log-other">
+      <input class="log-other-input" id="log-other-input" type="text" placeholder="Other (tested but not in collection)">
+    </div>
+    <button class="log-confirm" onclick="confirmLog()">Log It</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FB="https://fragrances-ccf69-default-rtdb.firebaseio.com";
 const SLOTS=[
   {id:"everyday",     label:"Everyday",         color:"#3A5C44"},
   {id:"professional", label:"Professional",     color:"#5C6B7A"},
@@ -110,131 +383,475 @@ const SLOTS=[
   {id:"special",      label:"Special Occasion", color:"#6B4C2A"},
   {id:"unknown",      label:"Unknown",          color:"#7A6A5A"},
 ];
+const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
+let FRAGS=[],acquired={},logSelected={},weatherData=null,currentFilter="all",pageHistory=["menu"];
 
-const SEED=[
-  {id:"aquatica",   name:"Rayhaan Aquatica",     house:"Rayhaan",            slot:"everyday",     maxSprays:"3 sprays max",          longevity:"5-7h",   notes:["Coconut","Lime","Musk"],                                    tint:"rgba(120,200,120,0.13)"},
-  {id:"pacific",    name:"Rayhaan Pacific",       house:"Rayhaan",            slot:"everyday",     maxSprays:"3 sprays max",          longevity:"4-6h",   notes:["Citrus","Aquatic","Musk"],       caution:"Skin-chemistry dependent", tint:"rgba(255,140,60,0.13)"},
-  {id:"myslf",      name:"YSL MYSLF EDP",         house:"Yves Saint Laurent", slot:"everyday",     maxSprays:"2-3 sprays max",        longevity:"6-8h",   notes:["Bergamot","Orange Blossom","Sandalwood"],                   tint:"rgba(255,200,100,0.13)"},
-  {id:"khamrah",    name:"Lattafa Khamrah Qahwa", house:"Lattafa",            slot:"professional", maxSprays:"1 spray max in office", longevity:"8-10h",  notes:["Coffee","Oud","Vanilla","Amber"],  caution:"Bold for enclosed spaces", tint:"rgba(200,90,20,0.16)"},
-  {id:"asad",       name:"Lattafa Asad",          house:"Lattafa",            slot:"special",      maxSprays:"2 sprays max",          longevity:"8-10h",  notes:["Dark Vanilla","Spice","Smoke"],  caution:"Turns sour in heat",       tint:"rgba(10,10,10,0.22)"},
-  {id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"professional", maxSprays:"1 spray only",          longevity:"8-10h",  notes:["Vanilla","Pepper","Boozy"],      synced:true,                        tint:"rgba(200,110,40,0.14)"},
-  {id:"capitale",   name:"La Capitale",           house:"Xerjoff",            slot:"date",         maxSprays:"2 sprays max",          longevity:"8-10h",  notes:["Strawberry","Saffron","Oud","Leather"],                     tint:"rgba(180,60,80,0.13)"},
-  {id:"angels",     name:"Angels Share",          house:"By Kilian",          slot:"date",         maxSprays:"2 sprays max",          longevity:"8-10h",  notes:["Cognac","Oak","Cinnamon","Tonka"],                          tint:"rgba(160,100,40,0.13)"},
-  {id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"date",         maxSprays:"1 spray only",          longevity:"8-10h",  notes:["Vanilla","Pepper","Boozy"],      synced:true,                        tint:"rgba(200,110,40,0.14)"},
-  {id:"vulcan",     name:"Vulcan Feu EDP",        house:"French Avenue",      slot:"special",      maxSprays:"2 sprays max",          longevity:"8-10h",  notes:["Smoke","Wood","Leather"],                                   tint:"rgba(220,80,40,0.14)"},
-  {id:"vanguard",   name:"Maison Asrar Vanguard", house:"Maison Asrar",       slot:"special",      maxSprays:"2 sprays max",          longevity:"7-8h",   notes:["Pineapple","Blackcurrant","Leather","Cedar"],               tint:"rgba(230,200,40,0.14)"},
-  {id:"reflection", name:"Amouage Reflection Man",house:"Amouage",            slot:"special",      maxSprays:"2-3 sprays max",        longevity:"10-12h", notes:["Neroli","Iris","Jasmine","Sandalwood"],                     tint:"rgba(180,160,200,0.13)"},
-  {id:"liquidbrun", name:"Liquid Brun",           house:"French Avenue",      slot:"special",      maxSprays:"1 spray only",          longevity:"8-10h",  notes:["Vanilla","Pepper","Boozy"],      synced:true,                        tint:"rgba(200,110,40,0.14)"},
-];
+// ── FIREBASE ──
+async function fbGet(path){try{const r=await fetch(FB+path+".json");return await r.json();}catch(e){return null;}}
+async function fbSet(path,data){try{await fetch(FB+path+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});}catch(e){}}
 
-let FRAGRANCES=[],acquired={},currentFilter="all",uniqueCount=0,toastTimer;
+// ── INIT ──
+(async()=>{
+  const [fd,sd]=await Promise.all([fbGet("/fragrances"),fbGet("/collection")]);
+  if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
+  else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
+  if(sd&&typeof sd==="object")acquired=sd;
+  await maybeCompileLastMonth();
+  getWeather();
+})();
 
-async function seedIfEmpty(){
-  try{
-    const r=await fetch(FB_FRAGS);
-    const d=await r.json();
-    const has=d&&(Array.isArray(d)?d.length>0:Object.keys(d).length>0);
-    if(has)return;
-    await fetch(FB_FRAGS,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(SEED)});
-    FRAGRANCES=SEED;
-    uniqueCount=[...new Set(SEED.map(f=>f.id))].length;
-  }catch(e){}
+// ── WEATHER ──
+function getWeather(){
+  if(!navigator.geolocation){setWeatherFallback();return;}
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit`);
+      const d=await r.json();
+      const cw=d.current_weather;
+      const code=cw.weathercode;
+      const temp=Math.round(cw.temperature);
+      const desc=wDesc(code);
+      const icon=wIcon(code);
+      weatherData={temp,desc,icon,code};
+      document.getElementById("pw-icon").textContent=icon;
+      document.getElementById("pw-desc").textContent=desc+" · "+temp+"°F";
+      document.getElementById("pw-temp").textContent=temp+"°F";
+      const mwEl=document.getElementById("menu-weather");
+      document.getElementById("mw-icon").textContent=icon;
+      document.getElementById("mw-temp").textContent=temp+"°F";
+      document.getElementById("mw-desc").textContent=desc;
+      mwEl.style.display="flex";
+      renderPick();
+    }catch(e){setWeatherFallback();}
+  },()=>setWeatherFallback());
+}
+function setWeatherFallback(){
+  weatherData={temp:85,desc:"Warm & Humid",icon:"☀️",code:0};
+  document.getElementById("pw-icon").textContent="☀️";
+  document.getElementById("pw-desc").textContent="Houston — Warm & Humid";
+  document.getElementById("pw-temp").textContent="85°F";
+  renderPick();
+}
+function wDesc(c){
+  if(c===0)return"Clear Sky";
+  if(c<=2)return"Partly Cloudy";
+  if(c<=3)return"Overcast";
+  if(c<=49)return"Foggy";
+  if(c<=59)return"Drizzle";
+  if(c<=69)return"Rainy";
+  if(c<=79)return"Snowy";
+  if(c<=99)return"Thunderstorm";
+  return"Unknown";
+}
+function wIcon(c){
+  if(c===0)return"☀️";
+  if(c<=2)return"⛅";
+  if(c<=3)return"☁️";
+  if(c<=49)return"🌫️";
+  if(c<=69)return"🌧️";
+  if(c<=79)return"❄️";
+  return"⛈️";
 }
 
-async function loadAll(){
-  try{
-    const [fr,sr]=await Promise.all([fetch(FB_FRAGS),fetch(FB_STATE)]);
-    const fd=await fr.json();
-    const sd=await sr.json();
-    if(Array.isArray(fd)&&fd.length>0)FRAGRANCES=fd;
-    else if(fd&&typeof fd==="object"&&Object.keys(fd).length>0)FRAGRANCES=Object.values(fd);
-    uniqueCount=[...new Set(FRAGRANCES.map(f=>f.id))].length;
-    if(sd&&typeof sd==="object")acquired=sd;
-  }catch(e){}
+// ── SMART PICK ──
+async function getRecentWorn(){
+  const logs=await fbGet("/logs")||{};
+  const recent={};
+  const today=new Date();
+  Object.entries(logs).forEach(([date,entry])=>{
+    const d=new Date(date);
+    const daysAgo=Math.floor((today-d)/(1000*60*60*24));
+    if(daysAgo<=14&&entry.worn){
+      entry.worn.forEach(id=>{
+        recent[id]=(recent[id]||0)+(14-daysAgo);
+      });
+    }
+  });
+  return recent;
 }
 
-async function saveState(){
-  try{await fetch(FB_STATE,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(acquired)});}catch(e){}
+function getWeatherScore(frag,temp,code){
+  let score=50;
+  const notes=(frag.notes||[]).map(n=>n.toLowerCase());
+  const isRainy=code>=60&&code<=69;
+  const isCold=temp<60;
+  const isHot=temp>85;
+  const isNice=!isRainy&&temp>=65&&temp<=82;
+  if(isHot&&(notes.some(n=>n.includes("citrus")||n.includes("aquatic")||n.includes("coconut")||n.includes("lime")||n.includes("green tea"))))score+=30;
+  if(isHot&&(notes.some(n=>n.includes("tobacco")||n.includes("oud")||n.includes("smoke")||n.includes("leather"))))score-=20;
+  if(isCold&&(notes.some(n=>n.includes("vanilla")||n.includes("amber")||n.includes("tobacco")||n.includes("cognac")||n.includes("spice")||n.includes("coffee")||n.includes("oud"))))score+=30;
+  if(isRainy&&(notes.some(n=>n.includes("woody")||n.includes("amber")||n.includes("leather"))))score+=15;
+  if(isNice)score+=5;
+  return score;
 }
 
-function showToast(msg){
-  const t=document.getElementById("toast");
-  t.textContent=msg;t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+async function computePick(surprise=false){
+  const acqIds=Object.keys(acquired).filter(id=>acquired[id]);
+  const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id)&&f.slot!=="unknown");
+  if(acqFrags.length===0)return null;
+  const recent=surprise?{}:await getRecentWorn();
+  const temp=weatherData?weatherData.temp:85;
+  const code=weatherData?weatherData.code:0;
+  const hour=new Date().getHours();
+  const scored=acqFrags.map(f=>{
+    let s=getWeatherScore(f,temp,code);
+    if(!surprise){
+      const wornScore=recent[f.id]||0;
+      s-=wornScore*2;
+    }
+    // time of day preference
+    if(hour>=6&&hour<12&&(f.slot==="everyday"||f.slot==="professional"))s+=10;
+    if(hour>=12&&hour<18&&f.slot==="professional")s+=8;
+    if(hour>=18&&(f.slot==="date"||f.slot==="special"))s+=15;
+    s+=Math.random()*8;
+    return{...f,score:s};
+  });
+  scored.sort((a,b)=>b.score-a.score);
+  return scored[0];
 }
 
-function toggle(id){acquired[id]=!acquired[id];saveState();render();showToast(acquired[id]?"Acquired":"Removed");}
-function resetAll(){acquired={};saveState();render();showToast("Reset");}
-function setFilter(f){currentFilter=f;render();}
+function pickReason(frag,temp,code,surprise){
+  const hour=new Date().getHours();
+  const parts=[];
+  if(surprise)parts.push("A spontaneous pick just for you");
+  else{
+    if(temp>85)parts.push("Light choice for the heat today");
+    else if(temp<60)parts.push("Warm and rich for the cold");
+    else parts.push("A great fit for today's weather");
+    if(hour>=18)parts.push("perfect for this evening");
+    else if(hour>=12)parts.push("a refined afternoon choice");
+    else parts.push("a clean start to the day");
+  }
+  return parts.join(" — ");
+}
 
-function render(){
-  const uids=[...new Set(FRAGRANCES.map(f=>f.id))];
-  const ac=uids.filter(id=>acquired[id]).length;
-  const pct=uniqueCount>0?Math.round((ac/uniqueCount)*100):0;
-  const vs=currentFilter==="all"?SLOTS:SLOTS.filter(s=>s.id===currentFilter);
-  const chk='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="'+((currentFilter==="all"?'#1A1714':'#1A1714'))+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const checkSVG='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// ── RENDER PICK ──
+async function renderPick(surprise=false){
+  const wrap=document.getElementById("pick-card-wrap");
+  wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-style:italic;font-size:12px">Finding your pick...</div>';
+  const frag=await computePick(surprise);
+  if(!frag){
+    wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-style:italic;font-size:12px">No acquired fragrances yet — add some to your collection first.</div>';
+    return;
+  }
+  const slot=SLOTMAP[frag.slot]||SLOTMAP.everyday;
+  const temp=weatherData?weatherData.temp:85;
+  const code=weatherData?weatherData.code:0;
+  const reason=pickReason(frag,temp,code,surprise);
+  const pills=(frag.notes||[]).map(n=>'<span class="pick-note">'+n+'</span>').join("");
+  wrap.innerHTML=
+    '<div class="pick-card">'
+      +'<div class="pick-card-accent" style="background:'+slot.color+'"></div>'
+      +'<div class="pick-card-body">'
+        +'<div class="pick-name">'+frag.name+'</div>'
+        +'<div class="pick-house">'+frag.house+'</div>'
+        +'<div class="pick-notes">'+pills+'</div>'
+        +'<div class="pick-reason">'+reason+'</div>'
+        +'<span class="pick-spray" style="color:'+slot.color+';background:'+slot.color+'22">'+(frag.maxSprays||"2 sprays max")+'</span>'
+        +'<div class="pick-actions">'
+          +'<button class="pick-btn primary" onclick="openLogModal()">Worn Today</button>'
+          +'<button class="pick-btn" onclick="renderPick(false)">New Pick</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+}
 
-  const fbtns=[{id:"all",label:"All"},...SLOTS].map(s=>
-    '<button class="fb'+(currentFilter===s.id?" active":"")+'" onclick="setFilter(\''+s.id+'\')">'+s.label+'</button>'
+function renderSurprise(){renderPick(true);}
+
+// ── LOG MODAL ──
+function openLogModal(){
+  const acqIds=Object.keys(acquired).filter(id=>acquired[id]);
+  const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id));
+  logSelected={};
+  const list=document.getElementById("log-list");
+  list.innerHTML=acqFrags.map(f=>
+    '<div class="log-item" id="log-'+f.id+'" onclick="toggleLog(\''+f.id+'\')">'
+      +'<div><div class="log-item-name">'+f.name+'</div><div class="log-item-house">'+f.house+'</div></div>'
+      +'<div class="log-check" id="logck-'+f.id+'"></div>'
+    +'</div>'
   ).join("");
+  document.getElementById("log-other-input").value="";
+  document.getElementById("log-modal").classList.add("open");
+}
 
-  const secs=SLOTS.map(slot=>{
-    const frags=FRAGRANCES.filter(f=>f.slot===slot.id);
+function closeLogModal(e){
+  if(e.target===document.getElementById("log-modal"))
+    document.getElementById("log-modal").classList.remove("open");
+}
+
+function toggleLog(id){
+  logSelected[id]=!logSelected[id];
+  const ck=document.getElementById("logck-"+id);
+  if(logSelected[id]){
+    ck.classList.add("checked");
+    ck.innerHTML='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }else{
+    ck.classList.remove("checked");
+    ck.innerHTML="";
+  }
+}
+
+async function confirmLog(){
+  const worn=Object.keys(logSelected).filter(id=>logSelected[id]);
+  const other=document.getElementById("log-other-input").value.trim();
+  if(worn.length===0&&!other){showToast("Select at least one");return;}
+  const today=new Date().toISOString().split("T")[0];
+  const entry={worn,..( other?{other}:{})};
+  await fbSet("/logs/"+today,entry);
+  document.getElementById("log-modal").classList.remove("open");
+  showToast("Logged ✓");
+}
+
+// ── COLLECTION ──
+function renderCollection(){
+  const uids=[...new Set(FRAGS.map(f=>f.id))];
+  const ac=uids.filter(id=>acquired[id]).length;
+  document.getElementById("coll-prog-label").textContent=ac+" / "+uids.length;
+  document.getElementById("coll-prog-fill").style.width=Math.round((ac/uids.length)*100)+"%";
+  const vs=currentFilter==="all"?SLOTS:SLOTS.filter(s=>s.id===currentFilter);
+  const chk='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // toolbar
+  document.getElementById("coll-toolbar").innerHTML=
+    [{ id:"all",label:"All"},...SLOTS].map(s=>
+      '<button class="fb'+(currentFilter===s.id?" active":"")+'" onclick="setFilter(\''+s.id+'\')" >'+s.label+'</button>'
+    ).join("")+'<button class="rb" onclick="resetAcquired()">Reset</button>';
+  // sections
+  document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
+    const frags=FRAGS.filter(f=>f.slot===slot.id);
     const hidden=!vs.find(s=>s.id===slot.id);
     const cards=frags.map(frag=>{
       const isAcq=!!acquired[frag.id];
       const tint=frag.tint||"rgba(160,140,120,0.08)";
       const accent=frag.synced?"linear-gradient(180deg,#5C6B7A,#8C3A3A,#6B4C2A)":slot.color;
       const pills=(frag.notes||[]).map(n=>'<span class="np">'+n+'</span>').join("");
-      const caut=frag.caution?'<div class="caut">'+frag.caution+'</div>':"";
+      const caut=frag.caution?'<div class="fcat">'+frag.caution+'</div>':"";
       const ss="color:"+slot.color+";background:"+slot.color+"22";
       return '<div class="fc'+(isAcq?" acq":"")+(frag.synced?" syn":"")
-        +'" style="background:linear-gradient(90deg,#241E1A 45%,'+tint+' 100%)" onclick="toggle(\''+frag.id+'\')">'
+        +'" style="background:linear-gradient(90deg,#241E1A 45%,'+tint+' 100%)" onclick="toggleAcq(\''+frag.id+'\')">'
         +'<div class="fa" style="background:'+accent+'"></div>'
         +'<div class="fb2">'
-        +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
-        +'<div class="mr"><div class="cb">'+(isAcq?checkSVG:"")+'</div><div class="spc"></div><div class="notes">'+pills+'</div></div>'
-        +'<div class="di">'
-          +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="fn">'+frag.name+'</div><div class="cb">'+(isAcq?checkSVG:"")+'</div></div>'
-          +'<div class="fh">'+frag.house+'</div>'
-          +'<div class="notes" style="margin-bottom:12px">'+pills+'</div>'
-          +caut
-          +'<div class="spc"></div>'
-          +'<div class="br"><span style="font-size:10px;color:#4A4038">'+(frag.longevity||"")+'</span><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
-        +'</div>'
+          +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
+          +'<div class="mr"><div class="cb">'+(isAcq?chk:"")+'</div><div class="spc"></div><div class="notes">'+pills+'</div></div>'
+          +'<div class="di">'
+            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="fn">'+frag.name+'</div><div class="cb">'+(isAcq?chk:"")+'</div></div>'
+            +'<div class="fh">'+frag.house+'</div>'
+            +'<div class="notes" style="margin-bottom:12px">'+pills+'</div>'
+            +caut
+            +'<div class="spc"></div>'
+            +'<div class="br"><span style="font-size:10px;color:var(--t3)">'+(frag.longevity||"")+'</span><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
+          +'</div>'
         +'</div></div>';
     }).join("");
-
-    return '<div class="sec'+(hidden?" hidden":"")+'" data-slot="'+slot.id+'">'
+    return '<div class="sec'+(hidden?" hidden":"")+'">'
       +'<div class="shm"><div class="sl"></div><div style="display:flex;align-items:center;gap:5px"><div class="sd" style="background:'+slot.color+'"></div><span class="slbl">'+slot.label+'</span></div><div class="sl"></div></div>'
       +'<div class="shd"><div class="sls"></div><div class="sdl" style="background:'+slot.color+'"></div><span class="slbl">'+slot.label+'</span><div class="sl"></div></div>'
       +'<div class="cg">'+cards+'</div></div>';
   }).join("");
-
-  document.getElementById("app").innerHTML=
-    '<div class="hdr">'
-      +'<div class="wm">&#39365;</div>'
-      +'<div style="position:relative;z-index:1">'
-        +'<div class="eyebrow">Fragrance</div>'
-        +'<div class="title">The <em>Edit</em></div>'
-        +'<div class="subtitle">by Mark Lee</div>'
-      +'</div>'
-      +'<div class="pw" style="position:relative;z-index:1">'
-        +'<div class="pc"><span class="big">'+ac+'</span><span class="sm"> / '+uniqueCount+'</span><span class="lbl">Acquired</span></div>'
-        +'<div class="pbw"><div class="pt"><div class="pf" style="width:'+pct+'%"></div></div><span class="pm">'+ac+' / '+uniqueCount+'</span></div>'
-      +'</div>'
-    +'</div>'
-    +'<div class="toolbar">'+fbtns+'<button class="rb" onclick="resetAll()">Reset</button></div>'
-    +'<div class="main">'+secs+'</div>'
-    +'<div class="footer">The Edit &middot; chalkedit</div>';
 }
 
-(async()=>{
-  try{await seedIfEmpty();await loadAll();}catch(e){}
-  render();
-})();
+function toggleAcq(id){
+  acquired[id]=!acquired[id];
+  fbSet("/collection",acquired);
+  renderCollection();
+  showToast(acquired[id]?"Acquired":"Removed");
+}
+
+function resetAcquired(){acquired={};fbSet("/collection",acquired);renderCollection();showToast("Reset");}
+function setFilter(f){currentFilter=f;renderCollection();}
+
+// ── MONTHS PAST ──
+async function renderMonths(){
+  const monthly=await fbGet("/monthly")||{};
+  const keys=Object.keys(monthly).sort().reverse();
+  const body=document.getElementById("months-body");
+  if(keys.length===0){
+    body.innerHTML='<div class="month-empty">No monthly data yet — wear logs will compile automatically at the end of each month.</div>';
+    return;
+  }
+  body.innerHTML=keys.map(k=>{
+    const m=monthly[k];
+    const [y,mo]=k.split("-");
+    const label=new Date(y,mo-1).toLocaleString("default",{month:"long",year:"numeric"});
+    return '<div class="month-card">'
+      +'<div class="month-title">'+label+'</div>'
+      +'<div class="month-stat"><span class="month-stat-label">Days logged</span><span class="month-stat-value">'+(m.days||0)+'</span></div>'
+      +'<div class="month-stat"><span class="month-stat-label">Unique fragrances worn</span><span class="month-stat-value">'+(m.unique||0)+'</span></div>'
+      +'<div class="month-stat"><span class="month-stat-label">Total wears</span><span class="month-stat-value">'+(m.total||0)+'</span></div>'
+      +(m.top?'<div class="month-top">Most worn: '+m.top+'</div>':"")
+      +(m.topSlot?'<div class="month-top" style="margin-top:4px">Top occasion: '+m.topSlot+'</div>':"")
+    +'</div>';
+  }).join("");
+}
+
+// ── LAZY MONTHLY COMPILE ──
+async function maybeCompileLastMonth(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const mo=now.getMonth(); // 0-indexed, so this is last month if we're in a new month
+  if(now.getDate()>3)return; // only compile in first 3 days of month
+  const lastMo=mo===0?12:mo;
+  const lastY=mo===0?y-1:y;
+  const key=lastY+"-"+String(lastMo).padStart(2,"0");
+  const existing=await fbGet("/monthly/"+key);
+  if(existing)return; // already compiled
+  // fetch logs from last month
+  const logs=await fbGet("/logs")||{};
+  const monthLogs=Object.entries(logs).filter(([d])=>d.startsWith(key));
+  if(monthLogs.length===0)return;
+  const wornCounts={},slotCounts={};
+  let total=0;
+  monthLogs.forEach(([,entry])=>{
+    (entry.worn||[]).forEach(id=>{
+      wornCounts[id]=(wornCounts[id]||0)+1;
+      total++;
+      const f=FRAGS.find(fr=>fr.id===id);
+      if(f){slotCounts[f.slot]=(slotCounts[f.slot]||0)+1;}
+    });
+  });
+  const topId=Object.entries(wornCounts).sort((a,b)=>b[1]-a[1])[0];
+  const topSlotId=Object.entries(slotCounts).sort((a,b)=>b[1]-a[1])[0];
+  const topFrag=topId?FRAGS.find(f=>f.id===topId[0]):null;
+  const topSlot=topSlotId?SLOTMAP[topSlotId[0]]:null;
+  await fbSet("/monthly/"+key,{
+    days:monthLogs.length,
+    unique:Object.keys(wornCounts).length,
+    total,
+    top:topFrag?topFrag.name:null,
+    topSlot:topSlot?topSlot.label:null,
+  });
+}
+
+// ── YEAR END ──
+async function renderYearEnd(){
+  const monthly=await fbGet("/monthly")||{};
+  const body=document.getElementById("ye-body");
+  const year=new Date().getFullYear();
+  const yearKeys=Object.keys(monthly).filter(k=>k.startsWith(year+"-"));
+  if(yearKeys.length===0){
+    body.innerHTML='<div class="ye-empty">Year-end report will be ready in December once you\'ve been logging your wears throughout the year.</div>';
+    return;
+  }
+  let totalDays=0,totalWears=0,allTop={};
+  yearKeys.forEach(k=>{
+    const m=monthly[k];
+    totalDays+=m.days||0;
+    totalWears+=m.total||0;
+  });
+  // find top fragrance across all months
+  const logs=await fbGet("/logs")||{};
+  Object.entries(logs).filter(([d])=>d.startsWith(year+"-")).forEach(([,e])=>{
+    (e.worn||[]).forEach(id=>{allTop[id]=(allTop[id]||0)+1;});
+  });
+  const topEntry=Object.entries(allTop).sort((a,b)=>b[1]-a[1])[0];
+  const topFrag=topEntry?FRAGS.find(f=>f.id===topEntry[0]):null;
+  body.innerHTML=
+    '<div class="ye-card"><div class="ye-card-label">Days Logged</div><div class="ye-card-value">'+totalDays+'</div><div class="ye-card-sub">days of wear tracked this year</div></div>'
+    +'<div class="ye-card"><div class="ye-card-label">Total Wears</div><div class="ye-card-value">'+totalWears+'</div><div class="ye-card-sub">fragrance applications logged</div></div>'
+    +'<div class="ye-card"><div class="ye-card-label">Months Logged</div><div class="ye-card-value">'+yearKeys.length+'</div><div class="ye-card-sub">of 12 months tracked</div></div>'
+    +(topFrag?'<div class="ye-card"><div class="ye-card-label">Most Worn</div><div class="ye-card-value">'+topFrag.name+'</div><div class="ye-card-sub">'+topFrag.house+' · worn '+(topEntry[1])+'x</div></div>':"");
+}
+
+// ── SUGGESTIONS ──
+const SUGGESTIONS=[
+  // 50% affordable (<$80)
+  {name:"Afnan 9PM",house:"Afnan",price:"~$30",tier:"affordable",tags:["Date Night","Sweet","Vanilla"],dupe:false,reason:"Fills the sweet evening gap left after Liquid Brun — loud, crowd-pleasing, great value."},
+  {name:"Lattafa Khamrah",house:"Lattafa",price:"~$35",tier:"affordable",tags:["Special Occasion","Oud","Sweet"],dupe:false,reason:"Dark and rich, complements Asad without duplicating it."},
+  {name:"Fragrance World Carbon Z",house:"Fragrance World",price:"~$25",tier:"affordable",tags:["Everyday","Fresh","Aquatic"],dupe:true,dupeOf:"Creed Aventus",reason:"Bridges your aquatic everyday rotation with a smoky-fresh character neither Aquatica nor Pacific has."},
+  {name:"Rasasi Hawas",house:"Rasasi",price:"~$40",tier:"affordable",tags:["Everyday","Aquatic","Woody"],dupe:false,reason:"A step above your Rayhaan dailies — aquatic-woody hybrid with excellent longevity for Houston summers."},
+  {name:"Armaf Club de Nuit Intense Man",house:"Armaf",price:"~$35",tier:"affordable",tags:["Professional","Fresh","Birch"],dupe:true,dupeOf:"Creed Aventus",reason:"Strong Aventus DNA — smoky birch opening that would complement Vulcan Sable in the professional slot."},
+  {name:"Lattafa Asad Gold",house:"Lattafa",price:"~$30",tier:"affordable",tags:["Date Night","Warm","Amber"],dupe:false,reason:"Warmer and more amber-forward than Asad — fills the warm evening gap in your date night rotation."},
+  // 35% mid ($80-200)
+  {name:"Nishane Hacivat",house:"Nishane",price:"~$150",tier:"mid",tags:["Everyday","Woody","Citrus"],dupe:false,reason:"An elevated everyday fragrance that would sit above your Rayhaan pair — complex pineapple-woody-citrus that works in Houston heat."},
+  {name:"Initio Atomic Rose",house:"Initio",price:"~$180",tier:"mid",tags:["Date Night","Rose","Musk"],dupe:false,reason:"Adds a floral dimension completely absent from your date night slot — dark rose and musk that works close to skin."},
+  {name:"Montale Intense Cafe",house:"Montale",price:"~$100",tier:"mid",tags:["Special Occasion","Coffee","Rose"],dupe:false,reason:"Coffee-rose-vanilla — bridges your Khamrah Qahwa and your sweeter evening fragrances in one composition."},
+  {name:"ALT. Fragrances Reality",house:"ALT.",price:"~$75",tier:"mid",tags:["Everyday","Tropical","Fresh"],dupe:true,dupeOf:"LV Imagination",reason:"Fills the LV Imagination gap you identified earlier at a fraction of the cost."},
+  // 15% luxury (>$200)
+  {name:"Creed Virgin Island Water",house:"Creed",price:"~$260",tier:"luxury",tags:["Everyday","Coconut","Lime"],dupe:false,reason:"The original your Rayhaan Aquatica dupes — owning the real thing elevates your everyday rotation to another level."},
+  {name:"Tom Ford Tobacco Oud",house:"Tom Ford",price:"~$280",tier:"luxury",tags:["Special Occasion","Tobacco","Oud"],dupe:false,reason:"Bridges Tobacco Vanille and your oud-heavy special occasion pieces — richer and more complex than either alone."},
+];
+
+function renderSuggestions(){
+  const tiers=[
+    {key:"affordable",label:"Affordable · Under $80",pct:"50%"},
+    {key:"mid",label:"Mid-Range · $80–200",pct:"35%"},
+    {key:"luxury",label:"Luxury · $200+",pct:"15%"},
+  ];
+  document.getElementById("sugg-body").innerHTML=tiers.map(t=>{
+    const items=SUGGESTIONS.filter(s=>s.tier===t.key);
+    return '<div class="sugg-tier">'
+      +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
+      +items.map(s=>
+        '<div class="sugg-card">'
+          +'<div class="sugg-name">'+s.name+'</div>'
+          +'<div class="sugg-house">'+s.house+'</div>'
+          +'<div class="sugg-tags">'
+            +s.tags.map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+            +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
+          +'</div>'
+          +'<div class="sugg-price">'+s.price+'</div>'
+          +'<div class="sugg-reason">'+s.reason+'</div>'
+        +'</div>'
+      ).join("")
+    +'</div>';
+  }).join("");
+}
+
+// ── NAVIGATION ──
+function enterApp(){
+  document.getElementById("cover").classList.add("slide-left");
+  document.getElementById("menu").classList.remove("hidden");
+  pageHistory=["menu"];
+}
+
+function goTo(page,mode){
+  const cur=pageHistory[pageHistory.length-1];
+  document.getElementById(cur).classList.add("slide-left");
+  const el=document.getElementById(page);
+  el.classList.remove("hidden");
+  el.classList.remove("slide-left");
+  pageHistory.push(page);
+  // render on navigate
+  if(page==="today"){renderPick(mode==="surprise");}
+  if(page==="collection"){renderCollection();}
+  if(page==="months"){renderMonths();}
+  if(page==="yearend"){renderYearEnd();}
+  if(page==="suggestions"){renderSuggestions();}
+}
+
+function goBack(){
+  if(pageHistory.length<=1)return;
+  const cur=pageHistory.pop();
+  const prev=pageHistory[pageHistory.length-1];
+  document.getElementById(cur).classList.add("hidden");
+  const el=document.getElementById(prev);
+  el.classList.remove("slide-left");
+  el.classList.remove("hidden");
+}
+
+function toggleMenu(key){
+  const children=document.getElementById("children-"+key);
+  const arrow=document.getElementById("arrow-"+key);
+  const isOpen=children.classList.contains("open");
+  // close all
+  ["wardrobe","recommended","yearwrap"].forEach(k=>{
+    document.getElementById("children-"+k).classList.remove("open");
+    document.getElementById("arrow-"+k).classList.remove("open");
+  });
+  if(!isOpen){
+    children.classList.add("open");
+    arrow.classList.add("open");
+  }
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+}
 </script>
 </body>
 </html>
