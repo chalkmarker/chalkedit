@@ -601,7 +601,8 @@ async function confirmLog(){
   const other=document.getElementById("log-other-input").value.trim();
   if(worn.length===0&&!other){showToast("Select at least one");return;}
   const today=new Date().toISOString().split("T")[0];
-  const entry={worn,..( other?{other}:{})};
+  const entry={worn:worn};
+  if(other)entry.other=other;;
   await fbSet("/logs/"+today,entry);
   document.getElementById("log-modal").classList.remove("open");
   showToast("Logged ✓");
