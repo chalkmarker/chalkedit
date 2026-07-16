@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>The Edit</title>
+<title>The Gallery</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -210,11 +210,34 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px;position:relative}
 .sugg-name{padding-right:26px}
 .sugg-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+.sugg-refresh{font-size:10px;letter-spacing:.04em;color:var(--t3);text-align:right;padding:0 16px 10px;text-transform:uppercase}
+
+/* ── ADD FRAGRANCE ── */
+.addfrag-body{padding:16px}
+.af-search-row{display:flex;gap:8px;margin-bottom:12px}
+.af-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--t1);font-size:14px;outline:none}
+.af-input:focus{border-color:var(--gold2)}
+.af-search-btn{background:var(--gold2);color:#1A1714;border:none;border-radius:10px;padding:12px 18px;font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer;white-space:nowrap}
+.af-hint{font-size:11px;color:var(--t3);line-height:1.5;margin-bottom:16px}
+.af-result-card{position:relative;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 46px 40px 16px;margin-bottom:10px}
+.af-manual-fields{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.af-manual-fields input{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--t1);font-size:12px;outline:none;width:100%}
+.af-manual-fields input:focus{border-color:var(--gold2)}
+.af-add-btn{position:absolute;bottom:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--gold2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s}
+.af-add-btn:hover{transform:scale(1.1) rotate(90deg)}
+.af-add-btn svg{width:15px;height:15px}
+.af-add-btn svg path{stroke:#1A1714;stroke-width:2.2;stroke-linecap:round}
+.af-menu{position:absolute;bottom:46px;right:10px;background:#2A231D;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:5;min-width:150px}
+.af-menu-item{padding:11px 14px;font-size:12px;color:var(--t1);cursor:pointer;transition:background .15s;white-space:nowrap}
+.af-menu-item:hover{background:rgba(212,176,122,.12)}
+.af-menu-item+.af-menu-item{border-top:1px solid var(--border)}
 .sugg-name{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:2px}
 .sugg-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
 .sugg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
 .sugg-tag{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--note-bg);color:var(--note-c)}
 .sugg-tag.dupe{background:rgba(160,120,60,0.15);color:var(--gold2)}
+.sugg-tag.ai{background:rgba(120,150,190,0.15);color:#8CAAD4}
+.af-loading{font-size:12px;color:var(--t3);font-style:italic;padding:14px 16px}
 .sugg-price{font-size:11px;color:var(--gold);font-weight:500}
 .sugg-reason{font-size:11px;color:var(--t3);font-style:italic;margin-top:6px;line-height:1.5}
 
@@ -363,7 +386,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 <div id="cover" class="page">
   <div class="cover-bg-glow"></div>
   <div class="cover-chars">香馥</div>
-  <div class="cover-title">The Edit</div>
+  <div class="cover-title">The Gallery</div>
   <div class="cover-sub">by Mark Lee</div>
   <div class="cover-btn-row">
     <svg class="rooster-egg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -399,7 +422,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 <!-- MENU -->
 <div id="menu" class="page hidden">
   <div class="menu-header">
-    <div class="menu-logo">The <em>Edit</em></div>
+    <div class="menu-logo">The <em>Gallery</em></div>
     <div class="menu-byline">by Mark Lee</div>
   </div>
   <div id="menu-weather" class="menu-weather" style="display:none">
@@ -427,6 +450,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
         <div class="menu-child" onclick="goTo('wishlist')">
           <div class="menu-child-dot"></div>
           <span class="menu-child-label">Wishlist</span>
+        </div>
+        <div class="menu-child" onclick="goTo('addfrag')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Add Fragrance</span>
         </div>
       </div>
     </div>
@@ -538,6 +565,22 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   <div class="sugg-body" id="wishlist-body"></div>
 </div>
 
+<!-- ADD FRAGRANCE -->
+<div id="addfrag" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Add Fragrance</div></div>
+  </div>
+  <div class="addfrag-body">
+    <div class="af-search-row">
+      <input type="text" id="af-search-input" class="af-input" placeholder="Search a fragrance name or house..." onkeydown="if(event.key==='Enter')searchFragrance()">
+      <button class="af-search-btn" onclick="searchFragrance()">Search</button>
+    </div>
+    <div class="af-hint">Checks your existing catalog and suggestions first, then asks Claude if it recognizes the fragrance (marked "AI Match" — worth double-checking details before adding). Still can't find it? Add it manually — give it a few notes/accords and the card color, longevity, and max sprays are worked out automatically when it's added to your Collection.</div>
+    <div id="af-results"></div>
+  </div>
+</div>
+
 <!-- LOG MODAL -->
 <div class="modal-overlay" id="log-modal" onclick="closeLogModal(event)">
   <div class="modal-sheet">
@@ -560,6 +603,8 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("cover").addEventListener("click",enterApp);
 });
 const FB="https://fragrances-ccf69-default-rtdb.firebaseio.com";
+// TODO: replace with your deployed Cloud Functions base URL after `firebase deploy` — see DEPLOY_INSTRUCTIONS.md
+const FUNCTIONS_BASE="https://us-central1-fragrances-ccf69.cloudfunctions.net";
 const SLOTS=[
   {id:"everyday",     label:"Everyday",         color:"#3A5C44"},
   {id:"professional", label:"Professional",     color:"#5C6B7A"},
@@ -568,7 +613,7 @@ const SLOTS=[
   {id:"unknown",      label:"Unknown",          color:"#7A6A5A"},
 ];
 const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
-let FRAGS=[],acquired={},wishlist={},logSelected={},weatherData=null,currentFilter="all",pageHistory=["menu"];
+let FRAGS=[],acquired={},wishlist={},customFrags={},logSelected={},weatherData=null,currentFilter="all",pageHistory=["menu"];
 
 // ── FIREBASE ──
 async function fbGet(path){try{const r=await fetch(FB+path+".json");return await r.json();}catch(e){return null;}}
@@ -576,12 +621,14 @@ async function fbSet(path,data){try{await fetch(FB+path+".json",{method:"PUT",he
 
 // ── INIT ──
 (async()=>{
-  const [fd,sd,wd]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist")]);
+  const [fd,sd,wd,cd]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags")]);
   if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
   else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
   if(sd&&typeof sd==="object")acquired=sd;
   if(wd&&typeof wd==="object")wishlist=wd;
+  if(cd&&typeof cd==="object")customFrags=cd;
   await maybeCompileLastMonth();
+  loadRemoteSuggestions();
   getWeather();
 })();
 
@@ -965,14 +1012,63 @@ const SUGGESTIONS=[
   {id:"tf-tobacco-oud",name:"Tom Ford Tobacco Oud",house:"Tom Ford",price:"~$280",tier:"luxury",tags:["Special Occasion","Tobacco","Oud"],dupe:false,reason:"Bridges Tobacco Vanille and your oud-heavy special occasion pieces — richer and more complex than either alone."},
 ];
 
+// ── BI-WEEKLY SUGGESTION ROTATION (refreshes Sundays & Thursdays at midnight) ──
+let REMOTE_SUGGESTIONS=null,REMOTE_SUGGESTIONS_META=null;
+async function loadRemoteSuggestions(){
+  try{
+    const [rs,meta]=await Promise.all([fbGet("/suggestions"),fbGet("/suggestionsMeta")]);
+    if(Array.isArray(rs)&&rs.length>0){
+      REMOTE_SUGGESTIONS=rs;
+      REMOTE_SUGGESTIONS_META=meta;
+      if(pageHistory[pageHistory.length-1]==="suggestions")renderSuggestions();
+    }
+  }catch(e){}
+}
+function currentSuggestionPeriod(){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
+  while(d.getDay()!==0&&d.getDay()!==4){d.setDate(d.getDate()-1);}
+  return d;
+}
+function nextSuggestionPeriod(period){
+  const d=new Date(period);
+  do{d.setDate(d.getDate()+1);}while(d.getDay()!==0&&d.getDay()!==4);
+  return d;
+}
+function seededShuffle(arr,seedStr){
+  let seed=0;
+  for(let i=0;i<seedStr.length;i++)seed=(seed*31+seedStr.charCodeAt(i))>>>0;
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    seed=(seed*1103515245+12345)>>>0;
+    const j=seed%(i+1);
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function fmtShortDate(d){
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+
 function renderSuggestions(){
   const tiers=[
     {key:"affordable",label:"Affordable · Under $80",pct:"50%"},
     {key:"mid",label:"Mid-Range · $80–200",pct:"35%"},
     {key:"luxury",label:"Luxury · $200+",pct:"15%"},
   ];
-  document.getElementById("sugg-body").innerHTML=tiers.map(t=>{
-    const items=SUGGESTIONS.filter(s=>s.tier===t.key);
+  let pool,refreshLabel;
+  if(REMOTE_SUGGESTIONS){
+    pool=REMOTE_SUGGESTIONS;
+    const refreshedAt=REMOTE_SUGGESTIONS_META&&REMOTE_SUGGESTIONS_META.refreshedAt?new Date(REMOTE_SUGGESTIONS_META.refreshedAt):null;
+    refreshLabel='<div class="sugg-refresh">'+(refreshedAt?"Curated "+fmtShortDate(refreshedAt)+" for your collection":"Curated for your collection")+'</div>';
+  }else{
+    const period=currentSuggestionPeriod();
+    const periodKey=period.toISOString().slice(0,10);
+    pool=seededShuffle(SUGGESTIONS,periodKey);
+    refreshLabel='<div class="sugg-refresh">Refreshed '+fmtShortDate(period)+' · next refresh '+fmtShortDate(nextSuggestionPeriod(period))+'</div>';
+  }
+  document.getElementById("sugg-body").innerHTML=refreshLabel+tiers.map(t=>{
+    const items=pool.filter(s=>s.tier===t.key);
     return '<div class="sugg-tier">'
       +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
       +items.map(s=>{
@@ -996,7 +1092,9 @@ function renderSuggestions(){
 
 // ── WISHLIST ──
 function renderWishlist(){
-  const items=SUGGESTIONS.filter(s=>!!wishlist[s.id]);
+  const suggItems=SUGGESTIONS.filter(s=>!!wishlist[s.id]);
+  const customItems=Object.values(customFrags).filter(c=>!!wishlist[c.id]);
+  const items=[...suggItems,...customItems];
   const body=document.getElementById("wishlist-body");
   if(items.length===0){
     body.innerHTML='<div class="sugg-empty">Nothing shady to see here! 👀</div>';
@@ -1009,13 +1107,200 @@ function renderWishlist(){
       +'<div class="sugg-name">'+s.name+'</div>'
       +'<div class="sugg-house">'+s.house+'</div>'
       +'<div class="sugg-tags">'
-        +s.tags.map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+        +(s.tags||[]).map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
         +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
       +'</div>'
-      +'<div class="sugg-price">'+s.price+'</div>'
-      +'<div class="sugg-reason">'+s.reason+'</div>'
+      +(s.price?'<div class="sugg-price">'+s.price+'</div>':"")
+      +(s.reason?'<div class="sugg-reason">'+s.reason+'</div>':"")
     +'</div>';
   }).join("");
+}
+
+// ── NOTE-BASED INFERENCE (tint / longevity / sprays from notes) ──
+const NOTE_FAMILIES=[
+  {weight:3,color:[92,58,46],  keywords:["oud","tobacco","leather","incense","dark musk","animalic","birch tar"]},
+  {weight:3,color:[140,90,42], keywords:["vanilla","amber","gourmand","caramel","chocolate","coffee","tonka","benzoin"]},
+  {weight:2,color:[107,82,56], keywords:["woody","cedar","sandalwood","patchouli","vetiver","guaiac","oakmoss"]},
+  {weight:2,color:[200,122,154],keywords:["floral","rose","jasmine","peony","iris","orange blossom","tuberose","ylang"]},
+  {weight:2,color:[168,98,46], keywords:["spice","pepper","cardamom","cinnamon","ginger","clove","saffron"]},
+  {weight:1,color:[212,184,74],keywords:["citrus","bergamot","lemon","lime","grapefruit","orange","mandarin","yuzu"]},
+  {weight:1,color:[92,138,160],keywords:["aquatic","marine","ozonic","sea salt","coconut","melon"]},
+  {weight:1,color:[122,154,92],keywords:["green tea","herbal","fresh","mint","green","tea"]},
+];
+function deriveFragranceProfile(notes){
+  notes=(notes||[]).map(n=>n.toLowerCase().trim()).filter(Boolean);
+  if(notes.length===0){
+    return {longevity:"4-6h",maxSprays:"2-3 sprays max",tint:"rgba(160,140,120,0.08)"};
+  }
+  let totalWeight=0,matchCount=0,rSum=0,gSum=0,bSum=0;
+  notes.forEach(n=>{
+    const fam=NOTE_FAMILIES.find(f=>f.keywords.some(k=>n.includes(k)));
+    if(fam){
+      totalWeight+=fam.weight;matchCount++;
+      rSum+=fam.color[0];gSum+=fam.color[1];bSum+=fam.color[2];
+    }
+  });
+  const avg=matchCount>0?totalWeight/matchCount:1.5;
+  let longevity,maxSprays;
+  if(avg>=2.3){longevity="8-10h";maxSprays="1-2 sprays max";}
+  else if(avg>=1.6){longevity="6-8h";maxSprays="2-3 sprays max";}
+  else{longevity="4-6h";maxSprays="3-4 sprays max";}
+  let tint;
+  if(matchCount>0){
+    const r=Math.round(rSum/matchCount),g=Math.round(gSum/matchCount),b=Math.round(bSum/matchCount);
+    tint="rgba("+r+","+g+","+b+",0.1)";
+  }else{
+    tint="rgba(160,140,120,0.08)";
+  }
+  return {longevity,maxSprays,tint};
+}
+
+// ── ADD FRAGRANCE ──
+async function searchFragrance(){
+  const q=document.getElementById("af-search-input").value.trim();
+  const resultsEl=document.getElementById("af-results");
+  if(!q){resultsEl.innerHTML="";return;}
+  const ql=q.toLowerCase();
+  const pool=[
+    ...FRAGS.map(f=>({id:f.id,name:f.name,house:f.house,tags:f.notes||[],price:"",reason:"Already in your collection.",inCollection:true})),
+    ...SUGGESTIONS.map(s=>({id:s.id,name:s.name,house:s.house,tags:s.tags,price:s.price,reason:s.reason,dupe:s.dupe,dupeOf:s.dupeOf})),
+    ...Object.values(customFrags)
+  ];
+  const seen=new Set();
+  const matches=pool.filter(p=>{
+    if(seen.has(p.id))return false;
+    const hit=p.name.toLowerCase().includes(ql)||(p.house||"").toLowerCase().includes(ql);
+    if(hit)seen.add(p.id);
+    return hit;
+  });
+  let html=matches.map(afResultCard).join("");
+  html+='<div id="af-ai-slot"><div class="af-loading">Checking for a match…</div></div>';
+  html+=afManualCard(q);
+  resultsEl.innerHTML=html;
+
+  const searchToken=q;
+  try{
+    const res=await fetch(FUNCTIONS_BASE+"/lookupFragrance?q="+encodeURIComponent(q));
+    const data=await res.json();
+    if(document.getElementById("af-search-input").value.trim()!==searchToken)return;
+    const slot=document.getElementById("af-ai-slot");
+    if(!slot)return;
+    if(data&&data.found){
+      const id="ai-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+      const aiMatch={
+        id,
+        name:data.name,
+        house:data.house,
+        tags:data.tags||[],
+        price:data.price||"",
+        reason:(data.reason||"")+" — AI match, double-check details before adding.",
+        aiMatch:true,
+      };
+      slot.outerHTML=afResultCard(aiMatch);
+    }else{
+      slot.remove();
+    }
+  }catch(e){
+    const slot=document.getElementById("af-ai-slot");
+    if(slot)slot.remove();
+  }
+}
+
+function afResultCard(m){
+  const tagsHtml=(m.tags||[]).map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+    +(m.dupe?'<span class="sugg-tag dupe">Dupe of '+m.dupeOf+'</span>':"")
+    +(m.aiMatch?'<span class="sugg-tag ai">AI Match</span>':"");
+  const dataAttr=encodeURIComponent(JSON.stringify(m));
+  return '<div class="af-result-card">'
+    +'<div class="sugg-name">'+m.name+'</div>'
+    +'<div class="sugg-house">'+m.house+'</div>'
+    +(tagsHtml?'<div class="sugg-tags">'+tagsHtml+'</div>':"")
+    +(m.price?'<div class="sugg-price">'+m.price+'</div>':"")
+    +(m.reason?'<div class="sugg-reason">'+m.reason+'</div>':"")
+    +'<div class="af-add-btn" onclick="toggleAfMenu(\''+m.id+'\',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></div>'
+    +'<div class="af-menu" id="afmenu-'+m.id+'" style="display:none">'
+      +'<div class="af-menu-item" onclick="addResultTo(\''+dataAttr+'\',\'wishlist\')">Add to Wishlist</div>'
+      +'<div class="af-menu-item" onclick="addResultTo(\''+dataAttr+'\',\'collection\')">Add to Collection</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function afManualCard(q){
+  return '<div class="af-result-card">'
+    +'<div class="sugg-name">Can\'t find it? Add manually</div>'
+    +'<div class="af-manual-fields">'
+      +'<input type="text" id="af-m-name" placeholder="Name" value="'+q.replace(/"/g,"&quot;")+'">'
+      +'<input type="text" id="af-m-house" placeholder="House / Brand">'
+      +'<input type="text" id="af-m-notes" placeholder="Notes / accords, comma separated (e.g. oud, vanilla, amber)">'
+      +'<input type="text" id="af-m-price" placeholder="Price (optional)">'
+    +'</div>'
+    +'<div class="af-add-btn" onclick="toggleAfMenu(\'manual\',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></div>'
+    +'<div class="af-menu" id="afmenu-manual" style="display:none">'
+      +'<div class="af-menu-item" onclick="addManualTo(\'wishlist\')">Add to Wishlist</div>'
+      +'<div class="af-menu-item" onclick="addManualTo(\'collection\')">Add to Collection</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function toggleAfMenu(id,e){
+  if(e)e.stopPropagation();
+  document.querySelectorAll(".af-menu").forEach(m=>{if(m.id!=="afmenu-"+id)m.style.display="none";});
+  const menu=document.getElementById("afmenu-"+id);
+  if(menu)menu.style.display=menu.style.display==="block"?"none":"block";
+}
+document.addEventListener("click",function(e){
+  if(!e.target.closest(".af-add-btn")&&!e.target.closest(".af-menu")){
+    document.querySelectorAll(".af-menu").forEach(m=>m.style.display="none");
+  }
+});
+
+function addResultTo(encoded,dest){
+  const m=JSON.parse(decodeURIComponent(encoded));
+  if(dest==="wishlist"){
+    if(!SUGGESTIONS.find(s=>s.id===m.id)){
+      customFrags[m.id]=m;
+      fbSet("/customFrags",customFrags);
+    }
+    wishlist[m.id]=true;
+    fbSet("/wishlist",wishlist);
+    showToast("Added to wishlist ♥");
+  }else{
+    if(!FRAGS.find(f=>f.id===m.id)){
+      const prof=deriveFragranceProfile(m.tags);
+      FRAGS.push({id:m.id,name:m.name,house:m.house,notes:m.tags||[],slot:"unknown",longevity:prof.longevity,maxSprays:prof.maxSprays,tint:prof.tint,synced:false});
+      fbSet("/fragrances",FRAGS);
+    }
+    acquired[m.id]=true;
+    fbSet("/collection",acquired);
+    showToast("Added to Collection");
+  }
+  const menu=document.getElementById("afmenu-"+m.id);
+  if(menu)menu.style.display="none";
+}
+
+function addManualTo(dest){
+  const name=document.getElementById("af-m-name").value.trim();
+  const house=document.getElementById("af-m-house").value.trim()||"Unknown";
+  const notes=document.getElementById("af-m-notes").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const price=document.getElementById("af-m-price").value.trim();
+  if(!name){showToast("Enter a name first");return;}
+  const id="custom-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")+"-"+Date.now();
+  if(dest==="wishlist"){
+    customFrags[id]={id:id,name:name,house:house,tags:notes,price:price,reason:"Added manually"};
+    fbSet("/customFrags",customFrags);
+    wishlist[id]=true;
+    fbSet("/wishlist",wishlist);
+    showToast("Added to wishlist ♥");
+  }else{
+    const prof=deriveFragranceProfile(notes);
+    FRAGS.push({id:id,name:name,house:house,notes:notes,slot:"unknown",longevity:prof.longevity,maxSprays:prof.maxSprays,tint:prof.tint,synced:false});
+    fbSet("/fragrances",FRAGS);
+    acquired[id]=true;
+    fbSet("/collection",acquired);
+    showToast("Added to Collection");
+  }
+  document.getElementById("afmenu-manual").style.display="none";
+  searchFragrance();
 }
 
 // ── NAVIGATION ──
@@ -1056,6 +1341,7 @@ function goTo(page,mode){
   if(page==="yearend"){renderYearEnd();}
   if(page==="suggestions"){renderSuggestions();}
   if(page==="wishlist"){renderWishlist();}
+  if(page==="addfrag"){document.getElementById("af-search-input").value="";document.getElementById("af-results").innerHTML="";}
 }
 
 function goBack(){
