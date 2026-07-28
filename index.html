@@ -57,6 +57,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .menu-weather-icon{font-size:22px}
 .menu-weather-text{font-size:12px;color:var(--t2)}
 .menu-weather-temp{font-size:15px;font-weight:500;color:var(--t1)}
+.menu-pick-wrap{margin:12px 28px 0}
+.menu-pick-card{position:relative;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px 14px 20px;cursor:pointer;overflow:hidden;transition:border-color .15s}
+.menu-pick-card:hover{border-color:var(--gold2)}
+.menu-pick-accent{position:absolute;left:0;top:0;bottom:0;width:4px}
+.menu-pick-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.menu-pick-name{font-size:14px;font-weight:600;color:var(--t1)}
+.menu-pick-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:6px}
+.menu-pick-reason{font-size:11px;color:var(--t3);line-height:1.5;font-style:italic}
 
 /* ── INNER HEADER ── */
 .inner-header{display:flex;align-items:center;gap:14px;padding:20px 20px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
@@ -195,6 +203,27 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #wearlog{background:var(--bg);min-height:100vh}
 .wearlog-body{padding:16px}
 .wearlog-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+.chart-btn{margin-left:auto;border:1px solid #6B1F1F;border-radius:999px;padding:7px 14px;font-size:11px;color:var(--gold);background:rgba(107,31,31,0.1);cursor:pointer;white-space:nowrap;transition:all .15s}
+.chart-btn:hover{border-color:#8C2A2A;background:rgba(107,31,31,0.18);transform:translateY(-1px)}
+.wearchart-body{padding:16px}
+.chart-row{margin-bottom:16px}
+.chart-row-label{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--t1);margin-bottom:5px;gap:10px}
+.chart-row-name{font-weight:500}
+.chart-row-house{color:var(--t3);font-weight:400;font-size:11px}
+.chart-row-count{color:var(--gold);font-weight:600;flex-shrink:0}
+.chart-bar-track{height:10px;border-radius:5px;background:var(--card);border:1px solid var(--border);overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--gold2),var(--gold3));transition:width .5s ease}
+.chart-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+
+/* ── COVERAGE ANALYSIS ── */
+.coverage-body{padding:16px}
+.cov-loading{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+.cov-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
+.cov-summary{font-size:13px;color:var(--t1);line-height:1.6;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.cov-gap{background:var(--card);border:1px solid var(--border);border-left:3px solid #C97B4A;border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.cov-gap-cat{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#A9C08A;margin-bottom:6px}
+.cov-gap-issue{font-size:13px;color:var(--t1);margin-bottom:6px;font-weight:500}
+.cov-gap-suggestion{font-size:12px;color:var(--t3);font-style:italic;line-height:1.5}
 .wearlog-day{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
 .wearlog-date{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
 .wearlog-frag{font-size:13px;color:var(--t1);padding:3px 0}
@@ -470,6 +499,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
       <div class="menu-weather-text" id="mw-desc">Loading weather...</div>
     </div>
   </div>
+  <div id="menu-pick-wrap" class="menu-pick-wrap"></div>
   <div class="menu-nav">
     <div class="menu-section">
       <div class="menu-parent" onclick="toggleMenu('wardrobe')">
@@ -492,6 +522,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
         <div class="menu-child" onclick="goTo('addfrag')">
           <div class="menu-child-dot"></div>
           <span class="menu-child-label">Add Fragrance</span>
+        </div>
+        <div class="menu-child" onclick="goTo('coverage')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Coverage Analysis</span>
         </div>
       </div>
     </div>
@@ -577,8 +611,18 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   <div class="inner-header">
     <button class="back-btn" onclick="goBack()">‹ Year Wrap</button>
     <div><div class="inner-title">Year Wrap</div><div class="inner-sub">Wear Log</div></div>
+    <button class="chart-btn" onclick="goTo('wearchart')">📊 Chart</button>
   </div>
   <div class="wearlog-body" id="wearlog-body"></div>
+</div>
+
+<!-- WEAR CHART -->
+<div id="wearchart" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Wear Log</button>
+    <div><div class="inner-title">Year Wrap</div><div class="inner-sub">Times Worn</div></div>
+  </div>
+  <div class="wearchart-body" id="wearchart-body"></div>
 </div>
 
 <!-- MONTHS PAST -->
@@ -613,8 +657,18 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   <div class="inner-header">
     <button class="back-btn" onclick="goBack()">‹ Wardrobe</button>
     <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Suggested Purchases</div></div>
+    <button class="chart-btn" onclick="goTo('coverage')">🔍 Analyze Gaps</button>
   </div>
   <div class="sugg-body" id="sugg-body"></div>
+</div>
+
+<!-- COVERAGE ANALYSIS -->
+<div id="coverage" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Suggested Purchases</button>
+    <div><div class="inner-title">Wardrobe</div><div class="inner-sub">Coverage Analysis</div></div>
+  </div>
+  <div class="coverage-body" id="coverage-body"></div>
 </div>
 
 <!-- WISHLIST -->
@@ -738,6 +792,13 @@ function setWeatherFallback(){
   document.getElementById("pw-temp").textContent="85°F";
   const advEl=document.getElementById("pick-weather-advisory");
   if(advEl)advEl.textContent=weatherAdvisory(85,new Date().getHours(),0);
+  const mwEl=document.getElementById("menu-weather");
+  if(mwEl){
+    document.getElementById("mw-icon").textContent="☀️";
+    document.getElementById("mw-temp").textContent="85°F";
+    document.getElementById("mw-desc").textContent="Houston — Warm & Humid";
+    mwEl.style.display="flex";
+  }
   renderPick();
 }
 function weatherAdvisory(temp,hour,code){
@@ -851,9 +912,11 @@ function pickReason(frag,temp,code,surprise){
 async function renderPick(surprise=false){
   const wrap=document.getElementById("pick-card-wrap");
   wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-style:italic;font-size:12px">Finding your pick...</div>';
+  const menuWrap=document.getElementById("menu-pick-wrap");
   const frag=await computePick(surprise);
   if(!frag){
     wrap.innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-style:italic;font-size:12px">No acquired fragrances yet — add some to your collection first.</div>';
+    if(menuWrap)menuWrap.innerHTML="";
     return;
   }
   const slot=SLOTMAP[frag.slot]||SLOTMAP.everyday;
@@ -876,6 +939,16 @@ async function renderPick(surprise=false){
         +'</div>'
       +'</div>'
     +'</div>';
+
+  if(menuWrap){
+    menuWrap.innerHTML='<div class="menu-pick-card" onclick="goTo(\'today\')">'
+      +'<div class="menu-pick-accent" style="background:'+slot.color+'"></div>'
+      +'<div class="menu-pick-label">Today\'s Pick</div>'
+      +'<div class="menu-pick-name">'+frag.name+'</div>'
+      +'<div class="menu-pick-house">'+frag.house+'</div>'
+      +'<div class="menu-pick-reason">'+reason+'</div>'
+    +'</div>';
+  }
 }
 
 function renderSurprise(){renderPick(true);}
@@ -1029,6 +1102,63 @@ async function renderWearLog(){
       +'<div class="wearlog-date">'+label+'</div>'
       +fragHtml
       +(entry.other?'<div class="wearlog-other">'+entry.other+'</div>':"")
+    +'</div>';
+  }).join("");
+}
+
+async function renderCoverageAnalysis(){
+  const body=document.getElementById("coverage-body");
+  body.innerHTML='<div class="cov-loading">Analyzing your collection…</div>';
+  try{
+    const res=await fetch(FUNCTIONS_BASE+"/analyzeCoverage");
+    const data=await res.json();
+    if(!data||data.error){
+      body.innerHTML='<div class="cov-empty">Couldn\'t analyze your collection right now — try again in a moment.</div>';
+      return;
+    }
+    let html=data.summary?'<div class="cov-summary">'+data.summary+'</div>':"";
+    if(!data.gaps||data.gaps.length===0){
+      html+='<div class="cov-empty">No specific gaps flagged — your collection looks well balanced!</div>';
+    }else{
+      html+=data.gaps.map(g=>
+        '<div class="cov-gap">'
+          +'<div class="cov-gap-cat">'+(g.category||"General")+'</div>'
+          +'<div class="cov-gap-issue">'+(g.issue||"")+'</div>'
+          +(g.suggestion?'<div class="cov-gap-suggestion">'+g.suggestion+'</div>':"")
+        +'</div>'
+      ).join("");
+    }
+    body.innerHTML=html;
+  }catch(e){
+    body.innerHTML='<div class="cov-empty">Couldn\'t reach the analysis backend — make sure the Cloud Function is deployed (see DEPLOY_INSTRUCTIONS.md).</div>';
+  }
+}
+
+async function renderWearChart(){
+  const logs=await fbGet("/logs")||{};
+  const counts={};
+  Object.values(logs).forEach(entry=>{
+    (entry.worn||[]).forEach(id=>{counts[id]=(counts[id]||0)+1;});
+  });
+  const rows=Object.entries(counts).map(([id,count])=>{
+    const f=FRAGS.find(fr=>fr.id===id);
+    return {id,name:f?f.name:id,house:f?f.house:"",count};
+  }).sort((a,b)=>b.count-a.count);
+
+  const body=document.getElementById("wearchart-body");
+  if(rows.length===0){
+    body.innerHTML='<div class="chart-empty">No wear data logged yet — log what you wore from Today\'s Pick to start building this chart.</div>';
+    return;
+  }
+  const max=rows[0].count;
+  body.innerHTML=rows.map(r=>{
+    const pct=Math.max(4,Math.round((r.count/max)*100));
+    return '<div class="chart-row">'
+      +'<div class="chart-row-label">'
+        +'<span class="chart-row-name">'+r.name+(r.house?' <span class="chart-row-house">— '+r.house+'</span>':"")+'</span>'
+        +'<span class="chart-row-count">'+r.count+'×</span>'
+      +'</div>'
+      +'<div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+pct+'%"></div></div>'
     +'</div>';
   }).join("");
 }
@@ -1562,8 +1692,10 @@ function goTo(page,mode){
   if(page==="months"){renderMonths();}
   if(page==="monthdetail"){renderMonthDetail(currentMonthKey);}
   if(page==="wearlog"){renderWearLog();}
+  if(page==="wearchart"){renderWearChart();}
   if(page==="yearend"){renderYearEnd();}
   if(page==="suggestions"){renderSuggestions();}
+  if(page==="coverage"){renderCoverageAnalysis();}
   if(page==="wishlist"){renderWishlist();}
   if(page==="addfrag"){document.getElementById("af-search-input").value="";document.getElementById("af-results").innerHTML="";}
 }
