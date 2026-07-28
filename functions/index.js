@@ -210,36 +210,36 @@ exports.lookupFragrance = onRequest(
         return;
       }
 
-      const prompt = `Search the web to identify the real, currently-or-recently
-released fragrance that best matches this search: "${q}".
+      const prompt = `Search text: "${q}"
 
-Use web search to confirm the fragrance actually exists and to verify its
-house/brand, notes, and approximate retail price — don't rely on memory alone,
-and don't guess if search doesn't turn up a confident match.
+First decide: is this search text naming a specific fragrance (e.g. "Sauvage",
+"Baccarat Rouge 540"), or is it naming a fragrance HOUSE/BRAND as a whole
+(e.g. "Dior", "Maison Francis Kurkdjian", "Creed")?
 
-After searching, respond with ONLY this JSON (no prose, no markdown fences,
-nothing before or after it):
+Then search the web (use as few searches as you can to answer confidently —
+usually 1, at most 2) and respond with ONLY this JSON, nothing else, no
+markdown fences:
 {
   "found": true|false,
+  "queryType": "house"|"fragrance",
   "candidates": [
-    {
-      "name": "...",
-      "house": "...",
-      "tags": ["3-5 top notes/accords"],
-      "price": "approx retail like ~$85",
-      "reason": "one sentence describing its character, based on what you found"
-    }
+    {"name":"...","house":"...","tags":["2-3 notes"],"price":"~$85","reason":"under 12 words"}
   ]
 }
 
-Include up to 3 candidates ONLY if the search query is genuinely ambiguous
-between a few real fragrances (e.g. matches a name used by multiple houses).
-Otherwise include exactly 1 candidate. If nothing found searching the web
-confidently matches, respond with {"found":false,"candidates":[]}.`;
+Rules for candidates:
+- If queryType is "fragrance": include exactly 1 candidate, UNLESS the name
+  genuinely matches multiple different real fragrances (e.g. reused across
+  houses) — then include up to 3.
+- If queryType is "house": list EVERY current, real, notable fragrance you can
+  verify that house sells right now — do not cap at 3, include as many as you
+  can confidently confirm (commonly 5-15). Keep each "reason" very short.
+- Keep every field concise — this is a quick-reference list, not a review.
+- If nothing confidently matches, respond with {"found":false,"queryType":"fragrance","candidates":[]}.`;
 
       try {
-        const raw = await callClaude(prompt, 1200, {
-          tools: [{type: "web_search_20250305", name: "web_search"}],
+        const raw = await callClaude(prompt, 1800, {
+          tools: [{type: "web_search_20250305", name: "web_search", max_uses: 2}],
         });
         const parsed = extractJson(raw);
         if (!parsed.candidates) parsed.candidates = [];
