@@ -295,6 +295,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .af-menu-item{padding:11px 14px;font-size:12px;color:var(--t1);cursor:pointer;transition:background .15s;white-space:nowrap}
 .af-menu-item:hover{background:rgba(212,176,122,.12)}
 .af-menu-item+.af-menu-item{border-top:1px solid var(--border)}
+.af-confirm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.af-confirm-label{font-size:11px;color:var(--t2)}
+.af-confirm-btns{display:flex;gap:8px}
+.af-confirm-yes,.af-confirm-no{font-size:11px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:transparent;font-family:inherit}
+.af-confirm-yes{color:#1a1410;background:var(--accent,#D4B07A);border-color:var(--accent,#D4B07A)}
+.af-confirm-no{color:var(--t2)}
+.af-confirm-yes:hover{opacity:.85}
+.af-confirm-no:hover{background:rgba(255,255,255,.05)}
 .sugg-name{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:2px}
 .sugg-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
 .sugg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
@@ -1500,7 +1508,7 @@ async function searchFragrance(){
     return hit;
   });
   let html=matches.map(afResultCard).join("");
-  html+='<div id="af-ai-slot"><div class="af-loading">Checking for a match…</div></div>';
+  html+='<div id="af-ai-slot"><div class="af-loading">Searching the web for a match…</div></div>';
   html+=afManualCard(q);
   resultsEl.innerHTML=html;
 
@@ -1511,18 +1519,13 @@ async function searchFragrance(){
     if(document.getElementById("af-search-input").value.trim()!==searchToken)return;
     const slot=document.getElementById("af-ai-slot");
     if(!slot)return;
-    if(data&&data.found){
-      const id="ai-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
-      const aiMatch={
-        id,
-        name:data.name,
-        house:data.house,
-        tags:data.tags||[],
-        price:data.price||"",
-        reason:(data.reason||"")+" — AI match, double-check details before adding.",
-        aiMatch:true,
-      };
-      slot.outerHTML=afResultCard(aiMatch);
+    if(data&&data.found&&Array.isArray(data.candidates)&&data.candidates.length){
+      const cardsHtml=data.candidates.map((c,i)=>{
+        const id="ai-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")+"-"+i;
+        const aiMatch={id,name:c.name,house:c.house,tags:c.tags||[],price:c.price||"",reason:c.reason||"",aiMatch:true};
+        return afConfirmCard(aiMatch);
+      }).join("");
+      slot.outerHTML='<div id="af-ai-slot">'+cardsHtml+'</div>';
     }else{
       slot.remove();
     }
@@ -1530,6 +1533,34 @@ async function searchFragrance(){
     const slot=document.getElementById("af-ai-slot");
     if(slot)slot.remove();
   }
+}
+
+// A web-search result that hasn't been confirmed yet — asks "is this it?"
+// before exposing the normal add-to-wishlist/collection menu.
+function afConfirmCard(m){
+  const tagsHtml=(m.tags||[]).map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+    +'<span class="sugg-tag ai">Found via web search</span>';
+  const dataAttr=encodeURIComponent(JSON.stringify(m));
+  return '<div class="af-result-card" id="afcard-'+m.id+'">'
+    +'<div class="sugg-name">'+m.name+'</div>'
+    +'<div class="sugg-house">'+m.house+'</div>'
+    +(tagsHtml?'<div class="sugg-tags">'+tagsHtml+'</div>':"")
+    +(m.price?'<div class="sugg-price">'+m.price+'</div>':"")
+    +(m.reason?'<div class="sugg-reason">'+m.reason+'</div>':"")
+    +'<div class="af-confirm-row">'
+      +'<span class="af-confirm-label">Is this what you were looking for?</span>'
+      +'<div class="af-confirm-btns">'
+        +'<button class="af-confirm-yes" onclick="confirmAfMatch(\''+dataAttr+'\')">Yes, that\'s it</button>'
+        +'<button class="af-confirm-no" onclick="document.getElementById(\'afcard-'+m.id+'\').remove()">Not it</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function confirmAfMatch(encoded){
+  const m=JSON.parse(decodeURIComponent(encoded));
+  const card=document.getElementById("afcard-"+m.id);
+  if(card)card.outerHTML=afResultCard(m);
 }
 
 function afResultCard(m){
