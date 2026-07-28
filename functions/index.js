@@ -33,11 +33,20 @@ async function callClaude(prompt, maxTokens) {
   }
   const data = await res.json();
   const textBlock = (data.content || []).find((b) => b.type === "text");
+  if (data.stop_reason === "max_tokens") {
+    console.warn("callClaude: response was truncated by max_tokens — consider raising the cap");
+  }
   return textBlock ? textBlock.text : "";
 }
 
 function extractJson(text) {
-  const cleaned = text.replace(/```json|```/g, "").trim();
+  let cleaned = text.replace(/```json|```/g, "").trim();
+  // If there's leading/trailing prose around the JSON, grab the outermost
+  // {...} or [...] span instead of assuming the whole string is JSON.
+  const firstBrace = cleaned.search(/[{[]/);
+  if (firstBrace > 0) {
+    cleaned = cleaned.slice(firstBrace);
+  }
   return JSON.parse(cleaned);
 }
 
@@ -153,7 +162,7 @@ Respond with ONLY this JSON (no prose, no markdown fences):
 }
 Include 3-6 gaps, ordered by importance.`;
 
-        const raw = await callClaude(prompt, 1400);
+        const raw = await callClaude(prompt, 2200);
         const parsed = extractJson(raw);
         res.json(parsed);
       } catch (err) {
