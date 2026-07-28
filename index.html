@@ -303,6 +303,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .af-confirm-no{color:var(--t2)}
 .af-confirm-yes:hover{opacity:.85}
 .af-confirm-no:hover{background:rgba(255,255,255,.05)}
+.af-house-header{font-size:11px;color:var(--t2);padding:6px 2px 10px;letter-spacing:.02em}
 .sugg-name{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:2px}
 .sugg-house{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
 .sugg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
@@ -1525,7 +1526,10 @@ async function searchFragrance(){
         const aiMatch={id,name:c.name,house:c.house,tags:c.tags||[],price:c.price||"",reason:c.reason||"",aiMatch:true};
         return afConfirmCard(aiMatch);
       }).join("");
-      slot.outerHTML='<div id="af-ai-slot">'+cardsHtml+'</div>';
+      const header=(data.queryType==="house"&&data.candidates.length>1)
+        ?'<div class="af-house-header">'+data.candidates.length+' fragrances found — confirm each one you want to add</div>'
+        :"";
+      slot.outerHTML='<div id="af-ai-slot">'+header+cardsHtml+'</div>';
     }else{
       slot.remove();
     }
