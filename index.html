@@ -275,6 +275,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .sugg-name{padding-right:26px}
 .sugg-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
 .sugg-refresh{font-size:10px;letter-spacing:.04em;color:var(--t3);text-align:right;padding:0 16px 10px;text-transform:uppercase}
+.sugg-refresh-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.sugg-refresh-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sugg-refresh-psa{font-size:10px;color:var(--t3);letter-spacing:.02em}
+.sugg-refresh-countdown{font-size:13px;color:var(--t1);font-variant-numeric:tabular-nums}
+.sugg-refresh-countdown b{color:#A9C08A;font-weight:600}
+.sugg-refresh-btn{flex-shrink:0;font-size:11px;padding:9px 14px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--t1);cursor:pointer;font-family:inherit;white-space:nowrap;transition:opacity .15s}
+.sugg-refresh-btn:hover{background:rgba(255,255,255,.05)}
+.sugg-refresh-btn:disabled{opacity:.5;cursor:default}
 
 /* ── ADD FRAGRANCE ── */
 .addfrag-body{padding:16px}
@@ -1359,16 +1367,74 @@ async function loadRemoteSuggestions(){
     }
   }catch(e){}
 }
+// Suggestions refresh on a cron running in America/Chicago — compute the
+// next Sun/Thu midnight in that zone (not the browser's local zone) so the
+// countdown actually matches when the backend job fires.
+function chicagoNowAsUTC(){
+  const parts=new Intl.DateTimeFormat("en-US",{
+    timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,
+  }).formatToParts(new Date());
+  const get=(t)=>{const v=parts.find(p=>p.type===t).value;return v==="24"?"0":v;};
+  return new Date(Date.UTC(+get("year"),+get("month")-1,+get("day"),+get("hour"),+get("minute"),+get("second")));
+}
 function currentSuggestionPeriod(){
-  const now=new Date();
-  const d=new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0);
-  while(d.getDay()!==0&&d.getDay()!==4){d.setDate(d.getDate()-1);}
+  const chiNow=chicagoNowAsUTC();
+  const d=new Date(chiNow);
+  d.setUTCHours(0,0,0,0);
+  while(d.getUTCDay()!==0&&d.getUTCDay()!==4){d.setUTCDate(d.getUTCDate()-1);}
   return d;
 }
 function nextSuggestionPeriod(period){
   const d=new Date(period);
-  do{d.setDate(d.getDate()+1);}while(d.getDay()!==0&&d.getDay()!==4);
+  do{d.setUTCDate(d.getUTCDate()+1);}while(d.getUTCDay()!==0&&d.getUTCDay()!==4);
   return d;
+}
+// Real wall-clock instant (a genuine Date, safe to diff against Date.now())
+// of the next scheduled refresh.
+function nextRefreshRealTime(){
+  const chiNow=chicagoNowAsUTC();
+  const chiTarget=nextSuggestionPeriod(currentSuggestionPeriod());
+  const diffMs=chiTarget.getTime()-chiNow.getTime();
+  return new Date(Date.now()+diffMs);
+}
+function fmtCountdown(ms){
+  if(ms<=0)return "due any moment";
+  const s=Math.floor(ms/1000);
+  const d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  const pad=(n)=>String(n).padStart(2,"0");
+  return d>0?d+"d "+pad(h)+"h "+pad(m)+"m":h+"h "+pad(m)+"m "+pad(sec)+"s";
+}
+let SUGG_COUNTDOWN_TARGET=null;
+setInterval(()=>{
+  const el=document.getElementById("sugg-countdown-val");
+  if(!el)return;
+  if(!SUGG_COUNTDOWN_TARGET)SUGG_COUNTDOWN_TARGET=nextRefreshRealTime();
+  el.textContent=fmtCountdown(SUGG_COUNTDOWN_TARGET.getTime()-Date.now());
+},1000);
+async function manualRefreshSuggestions(){
+  const btn=document.getElementById("sugg-refresh-btn");
+  if(!btn||btn.disabled)return;
+  btn.disabled=true;
+  btn.textContent="Refreshing…";
+  try{
+    const res=await fetch(FUNCTIONS_BASE+"/refreshSuggestionsNow");
+    const data=await res.json();
+    if(data&&data.ok){
+      SUGG_COUNTDOWN_TARGET=null;
+      await loadRemoteSuggestions();
+    }else{
+      btn.textContent="Refresh failed — try again";
+      setTimeout(()=>{btn.disabled=false;btn.textContent="↻ Refresh Now";},2500);
+      return;
+    }
+  }catch(e){
+    btn.textContent="Refresh failed — try again";
+    setTimeout(()=>{btn.disabled=false;btn.textContent="↻ Refresh Now";},2500);
+    return;
+  }
+  btn.disabled=false;
+  btn.textContent="↻ Refresh Now";
 }
 function seededShuffle(arr,seedStr){
   let seed=0;
@@ -1383,6 +1449,12 @@ function seededShuffle(arr,seedStr){
 }
 function fmtShortDate(d){
   return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+// For the fake-UTC dates from currentSuggestionPeriod/nextSuggestionPeriod,
+// which encode Chicago wall-clock date in UTC fields — format as UTC so the
+// displayed date isn't shifted by the viewer's own timezone.
+function fmtShortDateUTC(d){
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric",timeZone:"UTC"});
 }
 
 function renderSuggestions(){
@@ -1400,9 +1472,17 @@ function renderSuggestions(){
     const period=currentSuggestionPeriod();
     const periodKey=period.toISOString().slice(0,10);
     pool=seededShuffle(SUGGESTIONS,periodKey);
-    refreshLabel='<div class="sugg-refresh">Refreshed '+fmtShortDate(period)+' · next refresh '+fmtShortDate(nextSuggestionPeriod(period))+'</div>';
+    refreshLabel='<div class="sugg-refresh">Refreshed '+fmtShortDateUTC(period)+' · next refresh '+fmtShortDateUTC(nextSuggestionPeriod(period))+'</div>';
   }
-  document.getElementById("sugg-body").innerHTML=refreshLabel+tiers.map(t=>{
+  SUGG_COUNTDOWN_TARGET=nextRefreshRealTime();
+  const refreshPanel='<div class="sugg-refresh-panel">'
+    +'<div class="sugg-refresh-info">'
+      +'<div class="sugg-refresh-psa">Suggestions refresh automatically every Sunday &amp; Thursday at midnight, Central Time</div>'
+      +'<div class="sugg-refresh-countdown">Next auto-refresh in <b id="sugg-countdown-val">'+fmtCountdown(SUGG_COUNTDOWN_TARGET.getTime()-Date.now())+'</b></div>'
+    +'</div>'
+    +'<button class="sugg-refresh-btn" id="sugg-refresh-btn" onclick="manualRefreshSuggestions()">↻ Refresh Now</button>'
+  +'</div>';
+  document.getElementById("sugg-body").innerHTML=refreshPanel+refreshLabel+tiers.map(t=>{
     const items=pool.filter(s=>s.tier===t.key);
     return '<div class="sugg-tier">'
       +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
