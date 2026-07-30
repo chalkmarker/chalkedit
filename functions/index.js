@@ -55,7 +55,63 @@ function extractJson(text) {
   if (firstBrace > 0) {
     cleaned = cleaned.slice(firstBrace);
   }
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    // Response likely got cut off mid-object (max_tokens truncation). Try to
+    // salvage a valid partial result: walk backward from the end to the last
+    // point where brackets/braces/quotes were all balanced, trim there, and
+    // close off whatever's still open.
+    const repaired = repairTruncatedJson(cleaned);
+    if (repaired !== null) {
+      console.warn("extractJson: repaired a truncated response");
+      return repaired;
+    }
+    throw err;
+  }
+}
+
+function repairTruncatedJson(cleaned) {
+  const opener = cleaned[0];
+  if (opener !== "[" && opener !== "{") return null;
+  const closer = opener === "[" ? "]" : "}";
+  // Scan forward tracking nesting depth and string state; remember every
+  // index where we're back at depth 1 right after closing a complete element
+  // (a top-level comma, or the position just before a top-level closer).
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let lastSafeCut = -1;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (inString) {
+      if (escape) {
+        escape = false;
+      } else if (ch === "\\") {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+    } else if (ch === "{" || ch === "[") {
+      depth++;
+    } else if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 1) lastSafeCut = i + 1; // just closed a complete element
+    } else if (ch === "," && depth === 1) {
+      lastSafeCut = i; // safe to cut right before this comma
+    }
+  }
+  if (lastSafeCut === -1) return null;
+  const candidate = cleaned.slice(0, lastSafeCut) + closer;
+  try {
+    return JSON.parse(candidate);
+  } catch (e) {
+    return null;
+  }
 }
 
 async function runSuggestionsRefresh() {
@@ -82,7 +138,10 @@ would round out or elevate their collection: 3 affordable (under $80), 3 mid-ran
 night / special occasion use cases, and avoid repeating anything too similar to
 what they already own.
 
-Respond with ONLY a JSON array (no prose, no markdown fences) in exactly this shape:
+Respond with ONLY a JSON array — your entire response must start with [ and
+end with ], with no prose, no markdown fences, no explanation, and no text
+before or after it. Keep every "reason" to one short sentence so the full
+response stays compact. Shape:
 [
   {
     "id": "kebab-case-unique-id",
@@ -97,9 +156,10 @@ Respond with ONLY a JSON array (no prose, no markdown fences) in exactly this sh
   }
 ]`;
 
-  const raw = await callClaude(prompt, 2200);
+  const raw = await callClaude(prompt, 4096);
   const suggestions = extractJson(raw);
   if (!Array.isArray(suggestions)) throw new Error("Response was not an array");
+  if (suggestions.length < 3) throw new Error(`Only got ${suggestions.length} usable suggestions, discarding`);
 
   await db.ref("/suggestions").set(suggestions);
   await db.ref("/suggestionsMeta").set({refreshedAt: Date.now()});
@@ -177,7 +237,10 @@ imbalanced, missing an occasion/intensity/season option, or too repetitive in
 notes/character. Be specific and reference actual fragrances or categories from
 the list above rather than generic advice.
 
-Respond with ONLY this JSON (no prose, no markdown fences):
+Respond with ONLY this JSON — your entire response must start with { and end
+with }, no prose, no markdown fences, no text before or after it. Keep
+"issue" and "suggestion" each to one short sentence so the response stays
+compact:
 {
   "summary": "2-3 sentence overview of how balanced the collection is overall",
   "gaps": [
@@ -190,7 +253,7 @@ Respond with ONLY this JSON (no prose, no markdown fences):
 }
 Include 3-6 gaps, ordered by importance.`;
 
-        const raw = await callClaude(prompt, 2200);
+        const raw = await callClaude(prompt, 3200);
         const parsed = extractJson(raw);
         res.json(parsed);
       } catch (err) {
@@ -217,8 +280,9 @@ First decide: is this search text naming a specific fragrance (e.g. "Sauvage",
 (e.g. "Dior", "Maison Francis Kurkdjian", "Creed")?
 
 Then search the web (use as few searches as you can to answer confidently —
-usually 1, at most 2) and respond with ONLY this JSON, nothing else, no
-markdown fences:
+usually 1, at most 2) and respond with ONLY this JSON — your entire response
+must start with { and end with }, no prose, no markdown fences, no text
+before or after it:
 {
   "found": true|false,
   "queryType": "house"|"fragrance",
@@ -238,7 +302,7 @@ Rules for candidates:
 - If nothing confidently matches, respond with {"found":false,"queryType":"fragrance","candidates":[]}.`;
 
       try {
-        const raw = await callClaude(prompt, 1800, {
+        const raw = await callClaude(prompt, 2600, {
           tools: [{type: "web_search_20250305", name: "web_search", max_uses: 2}],
         });
         const parsed = extractJson(raw);
