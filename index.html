@@ -130,6 +130,9 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .log-other-input::placeholder{color:var(--t3)}
 .log-confirm{margin:16px 20px 0;width:calc(100% - 40px);padding:13px;border-radius:10px;background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;letter-spacing:.04em;cursor:pointer;border:none;transition:opacity .2s}
 .log-confirm:hover{opacity:.9}
+.congrats-slot-field{padding:4px 20px 0}
+.congrats-slot-field label{display:block;font-size:11px;color:var(--t3);margin-bottom:8px;text-align:center}
+.congrats-slot-field select{width:100%;padding:12px 14px;border-radius:10px;background:#2A231D;border:1px solid var(--border);color:var(--t1);font-size:13px;font-family:inherit;cursor:pointer}
 
 /* ── COLLECTION ── */
 #collection{background:var(--bg);min-height:100vh}
@@ -147,6 +150,26 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .coll-prog-label{font-size:10px;color:var(--gold);font-weight:500;white-space:nowrap}
 .coll-main{padding:4px 0 56px}
 @media(min-width:768px){.coll-main{padding:16px 56px 72px}}
+.closet-body{padding:20px 20px 64px}
+@media(min-width:768px){.closet-body{padding:24px 56px 72px}}
+.closet-house{margin-bottom:38px}
+.closet-house-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#C4AE84;margin-bottom:14px}
+.closet-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;padding:18px 16px 22px;border-bottom:3px solid #4A3C2C;background:linear-gradient(180deg,rgba(212,176,122,0.04),rgba(212,176,122,0) 60%)}
+.closet-shelf::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:linear-gradient(180deg,rgba(0,0,0,.35),transparent)}
+.closet-bottle{position:relative;width:64px;flex-shrink:0;cursor:pointer}
+.closet-bottle svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
+.closet-bottle.locked svg{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
+.closet-lock{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:15px;opacity:.85;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.closet-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(4px);min-width:150px;max-width:200px;background:rgba(26,20,16,.92);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:20;backdrop-filter:blur(2px)}
+.closet-bottle:hover .closet-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
+.closet-tooltip-name{font-size:12px;color:var(--t1);font-weight:500}
+.closet-tooltip-house{font-size:10px;color:#C4AE84;margin-top:1px}
+.closet-tooltip-notes{margin-top:6px;font-size:10px;color:var(--t3);line-height:1.6}
+.closet-tooltip-notes b{color:var(--t2);font-weight:500}
+.closet-empty{text-align:center;padding:60px 20px;color:var(--t3);font-size:12px}
+.closet-legend{display:flex;gap:16px;font-size:10px;color:var(--t3);margin-bottom:24px;flex-wrap:wrap}
+.closet-legend span{display:flex;align-items:center;gap:6px}
+.closet-legend-swatch{width:9px;height:9px;border-radius:2px}
 .sec{margin-bottom:0}
 @media(min-width:768px){.sec{margin-bottom:48px}}
 .sec.hidden{display:none}
@@ -321,6 +344,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .af-loading{font-size:12px;color:var(--t3);font-style:italic;padding:14px 16px}
 .sugg-price{font-size:11px;color:var(--gold);font-weight:500}
 .sugg-reason{font-size:11px;color:var(--t3);font-style:italic;margin-top:6px;line-height:1.5}
+.wl-move-btn{margin-top:10px;width:100%;padding:9px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--t1);font-size:11px;font-family:inherit;letter-spacing:.03em;cursor:pointer;transition:background .15s}
+.wl-move-btn:hover{background:rgba(212,176,122,.12)}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--gold);color:var(--bg);font-size:11px;font-weight:600;padding:10px 20px;border-radius:999px;white-space:nowrap;z-index:200;box-shadow:0 4px 24px rgba(0,0,0,.4);letter-spacing:.04em;opacity:0;transition:all .25s;pointer-events:none}
@@ -519,6 +544,12 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   <div id="menu-pick-wrap" class="menu-pick-wrap"></div>
   <div class="menu-nav">
     <div class="menu-section">
+      <div class="menu-parent" onclick="goTo('closet')">
+        <span class="menu-parent-label">Closet</span>
+        <span class="menu-arrow">›</span>
+      </div>
+    </div>
+    <div class="menu-section">
       <div class="menu-parent" onclick="toggleMenu('wardrobe')">
         <span class="menu-parent-label">Wardrobe</span>
         <span class="menu-arrow" id="arrow-wardrobe">›</span>
@@ -528,17 +559,9 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <div class="menu-child-dot"></div>
           <span class="menu-child-label">My Collection</span>
         </div>
-        <div class="menu-child" onclick="goTo('suggestions')">
-          <div class="menu-child-dot"></div>
-          <span class="menu-child-label">Suggested Purchases</span>
-        </div>
         <div class="menu-child" onclick="goTo('wishlist')">
           <div class="menu-child-dot"></div>
           <span class="menu-child-label">Wishlist</span>
-        </div>
-        <div class="menu-child" onclick="goTo('addfrag')">
-          <div class="menu-child-dot"></div>
-          <span class="menu-child-label">Add Fragrance</span>
         </div>
         <div class="menu-child" onclick="goTo('coverage')">
           <div class="menu-child-dot"></div>
@@ -559,6 +582,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
         <div class="menu-child" onclick="goTo('today','surprise')">
           <div class="menu-child-dot"></div>
           <span class="menu-child-label">Surprise Me!</span>
+        </div>
+        <div class="menu-child" onclick="goTo('suggestions')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Suggested Purchases</span>
+        </div>
+        <div class="menu-child" onclick="goTo('addfrag')">
+          <div class="menu-child-dot"></div>
+          <span class="menu-child-label">Add Fragrance</span>
         </div>
       </div>
     </div>
@@ -607,6 +638,15 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
       <div class="surprise-sub">Weather-aware · ignores wear history</div>
     </div>
   </div>
+</div>
+
+<!-- CLOSET -->
+<div id="closet" class="page hidden">
+  <div class="inner-header">
+    <button class="back-btn" onclick="goBack()">‹ Menu</button>
+    <div><div class="inner-title">Closet</div><div class="inner-sub">Your collection, on the shelf</div></div>
+  </div>
+  <div class="closet-body" id="closet-body"></div>
 </div>
 
 <!-- COLLECTION -->
@@ -734,6 +774,19 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div class="modal-title" style="text-align:center">A quick PSA</div>
     <div class="modal-sub" style="text-align:center;border-bottom:none">Don't overspray and be obnoxious. Your coworkers, dates, and elevator mates will thank you.</div>
     <button class="log-confirm" onclick="closeSprayWarning()">OK</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="congrats-modal" onclick="if(event.target===this)closeCongratsModal()">
+  <div class="modal-sheet" style="padding-bottom:28px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="text-align:center">🎉 Congrats!</div>
+    <div class="modal-sub" id="congrats-sub" style="text-align:center;border-bottom:none">Added to your collection</div>
+    <div class="congrats-slot-field">
+      <label>Where does it fit?</label>
+      <select id="congrats-slot-select"></select>
+    </div>
+    <button class="log-confirm" onclick="confirmCongratsSlot()">Save</button>
   </div>
 </div>
 
@@ -1004,6 +1057,34 @@ function closeSprayWarning(){
     pendingLeaveAction=null;
     action();
   }
+}
+
+// Shown any time a fragrance newly enters the collection (via search-add or
+// moved from the wishlist) — lets the person immediately assign it a slot.
+let CONGRATS_PENDING_ID=null;
+function showCongratsModal(fragId,fragName){
+  CONGRATS_PENDING_ID=fragId;
+  document.getElementById("congrats-sub").textContent=(fragName||"It")+" is officially in your collection";
+  const sel=document.getElementById("congrats-slot-select");
+  sel.innerHTML=SLOTS.map(s=>'<option value="'+s.id+'">'+s.label+'</option>').join("");
+  sel.value="unknown";
+  document.getElementById("congrats-modal").classList.add("open");
+}
+function closeCongratsModal(){
+  document.getElementById("congrats-modal").classList.remove("open");
+  CONGRATS_PENDING_ID=null;
+}
+function confirmCongratsSlot(){
+  const slotId=document.getElementById("congrats-slot-select").value;
+  const frag=FRAGS.find(f=>f.id===CONGRATS_PENDING_ID);
+  if(frag){
+    frag.slot=slotId;
+    fbSet("/fragrances",FRAGS);
+  }
+  document.getElementById("congrats-modal").classList.remove("open");
+  CONGRATS_PENDING_ID=null;
+  showToast("Slot saved");
+  if(typeof renderCollection==="function")renderCollection();
 }
 
 function toggleLog(id){
@@ -1527,8 +1608,26 @@ function renderWishlist(){
       +'</div>'
       +(s.price?'<div class="sugg-price">'+s.price+'</div>':"")
       +(s.reason?'<div class="sugg-reason">'+s.reason+'</div>':"")
+      +'<button class="wl-move-btn" onclick="moveWishlistToCollection(\''+s.id+'\',event)">Move to Collection</button>'
     +'</div>';
   }).join("");
+}
+
+function moveWishlistToCollection(id,e){
+  if(e)e.stopPropagation();
+  const s=SUGGESTIONS.find(x=>x.id===id)||customFrags[id];
+  if(!s)return;
+  if(!FRAGS.find(f=>f.id===id)){
+    const prof=deriveFragranceProfile(s.tags||[]);
+    FRAGS.push({id:s.id,name:s.name,house:s.house,notes:s.tags||[],slot:"unknown",longevity:prof.longevity,maxSprays:prof.maxSprays,tint:prof.tint,synced:false});
+    fbSet("/fragrances",FRAGS);
+  }
+  acquired[id]=true;
+  fbSet("/collection",acquired);
+  delete wishlist[id];
+  fbSet("/wishlist",wishlist);
+  renderWishlist();
+  showCongratsModal(s.id,s.name);
 }
 
 // ── NOTE-BASED INFERENCE (tint / longevity / sprays from notes) ──
@@ -1568,6 +1667,152 @@ function deriveFragranceProfile(notes){
     tint="rgba(160,140,120,0.08)";
   }
   return {longevity,maxSprays,tint};
+}
+
+// Solid (non-washed-out) color for the same note families, used to tint the
+// liquid inside a closet bottle rather than the pale background wash above.
+function deriveLiquidColor(notes){
+  notes=(notes||[]).map(n=>n.toLowerCase().trim()).filter(Boolean);
+  let matchCount=0,rSum=0,gSum=0,bSum=0;
+  notes.forEach(n=>{
+    const fam=NOTE_FAMILIES.find(f=>f.keywords.some(k=>n.includes(k)));
+    if(fam){matchCount++;rSum+=fam.color[0];gSum+=fam.color[1];bSum+=fam.color[2];}
+  });
+  if(matchCount===0)return "rgb(178,158,120)";
+  return "rgb("+Math.round(rSum/matchCount)+","+Math.round(gSum/matchCount)+","+Math.round(bSum/matchCount)+")";
+}
+
+// ── CLOSET (visual shelf) ──
+// Rough top/heart/base guess from a flat notes list — the data model doesn't
+// store a real pyramid, so this buckets known note keywords by where they
+// typically sit (bright/light notes read as top, richer ones as base).
+const NOTE_PYRAMID_BUCKETS={
+  top:["citrus","bergamot","lemon","lime","grapefruit","orange","mandarin","yuzu",
+    "aquatic","marine","ozonic","sea salt","melon","green tea","herbal","fresh","mint","green","tea"],
+  heart:["floral","rose","jasmine","peony","iris","orange blossom","tuberose","ylang",
+    "spice","pepper","cardamom","cinnamon","ginger","clove","saffron","coconut"],
+  base:["oud","tobacco","leather","incense","dark musk","animalic","birch tar",
+    "vanilla","amber","gourmand","caramel","chocolate","coffee","tonka","benzoin",
+    "woody","cedar","sandalwood","patchouli","vetiver","guaiac","oakmoss"],
+};
+function deriveNotePyramid(notes){
+  notes=(notes||[]).map(n=>n.trim()).filter(Boolean);
+  const used=new Set();
+  function pick(bucket){
+    const hit=notes.find(n=>!used.has(n)&&NOTE_PYRAMID_BUCKETS[bucket].some(k=>n.toLowerCase().includes(k)));
+    if(hit)used.add(hit);
+    return hit;
+  }
+  let top=pick("top"),heart=pick("heart"),base=pick("base");
+  const leftover=notes.filter(n=>!used.has(n));
+  if(!top)top=leftover.shift();
+  if(!heart)heart=leftover.shift();
+  if(!base)base=leftover.shift();
+  return {top:top||"—",heart:heart||"—",base:base||"—"};
+}
+
+// Tiny deterministic PRNG so each fragrance always renders the same bottle
+// shape across reloads, seeded from its id.
+function closetSeed(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=(h<<5)-h+str.charCodeAt(i);h|=0;}
+  return Math.abs(h)||1;
+}
+function closetRand(seed){
+  let s=seed%2147483647;
+  if(s<=0)s+=2147483646;
+  return function(){s=(s*16807)%2147483647;return (s-1)/2147483646;};
+}
+const CAP_COLORS=["#B8860B","#8A8A8E","#2A2622","#C9A227","#6B6B6F"];
+
+// Original, stylized bottle silhouette — NOT a reproduction of any real
+// product's packaging. Shape/cap/proportions vary per fragrance id so a
+// shelf of different fragrances reads as visually distinct, colored by the
+// note-derived tint. Purely decorative placeholder art.
+function bottleSvg(id,liquidColor){
+  const rnd=closetRand(closetSeed(id));
+  const capStyle=Math.floor(rnd()*3); // 0 round, 1 square, 2 wide disc
+  const bodyW=30+Math.floor(rnd()*14);
+  const bodyH=54+Math.floor(rnd()*16);
+  const bodyRx=Math.floor(rnd()*9);
+  const neckH=6+Math.floor(rnd()*6);
+  const capColor=CAP_COLORS[Math.floor(rnd()*CAP_COLORS.length)];
+  const vbW=60,vbH=118;
+  const bodyX=(vbW-bodyW)/2, bodyY=vbH-bodyH-6;
+  const neckW=Math.max(10,bodyW*0.28), neckX=(vbW-neckW)/2, neckY=bodyY-neckH;
+  let capW,capH,capRx;
+  if(capStyle===0){capW=neckW+8;capH=14+Math.floor(rnd()*6);capRx=capW/2;}
+  else if(capStyle===1){capW=neckW+10;capH=12+Math.floor(rnd()*6);capRx=2;}
+  else{capW=neckW+18;capH=8+Math.floor(rnd()*4);capRx=3;}
+  const capX=(vbW-capW)/2, capY=neckY-capH;
+  const labelW=bodyW*0.62, labelX=(vbW-labelW)/2, labelY=bodyY+bodyH*0.42;
+  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">'
+    +'<ellipse cx="'+(vbW/2)+'" cy="'+(vbY_base(bodyY,bodyH))+'" rx="'+(bodyW*0.55)+'" ry="4" fill="rgba(0,0,0,.3)"/>'
+    +'<rect x="'+capX+'" y="'+capY+'" width="'+capW+'" height="'+capH+'" rx="'+capRx+'" fill="'+capColor+'"/>'
+    +'<rect x="'+neckX+'" y="'+neckY+'" width="'+neckW+'" height="'+neckH+2+'" fill="#DCD3C4"/>'
+    +'<rect x="'+bodyX+'" y="'+bodyY+'" width="'+bodyW+'" height="'+bodyH+'" rx="'+bodyRx+'" fill="'+liquidColor+'" fill-opacity="0.82" stroke="rgba(255,255,255,.35)" stroke-width="1"/>'
+    +'<rect x="'+bodyX+'" y="'+bodyY+'" width="'+bodyW+'" height="'+(bodyH*0.22)+'" rx="'+bodyRx+'" fill="rgba(255,255,255,.18)"/>'
+    +'<rect x="'+labelX+'" y="'+labelY+'" width="'+labelW+'" height="'+(bodyH*0.24)+'" rx="1.5" fill="rgba(20,16,12,.35)"/>'
+    +'<rect x="'+(labelX+labelW*0.15)+'" y="'+(labelY+bodyH*0.24*0.3)+'" width="'+(labelW*0.7)+'" height="1.4" fill="rgba(230,220,200,.55)"/>'
+    +'<rect x="'+(labelX+labelW*0.15)+'" y="'+(labelY+bodyH*0.24*0.6)+'" width="'+(labelW*0.45)+'" height="1.4" fill="rgba(230,220,200,.4)"/>'
+  +'</svg>';
+}
+function vbY_base(bodyY,bodyH){return bodyY+bodyH+3;}
+
+function closetEntries(){
+  const owned=FRAGS.filter(f=>acquired[f.id]).map(f=>({
+    id:f.id,name:f.name,house:f.house||"Unknown House",notes:f.notes||[],locked:false,
+  }));
+  const wishSugg=SUGGESTIONS.filter(s=>wishlist[s.id]&&!acquired[s.id]);
+  const wishCustom=Object.values(customFrags).filter(c=>wishlist[c.id]&&!acquired[c.id]);
+  const wishlisted=[...wishSugg,...wishCustom].map(s=>({
+    id:s.id,name:s.name,house:s.house||"Unknown House",notes:s.tags||[],locked:true,
+  }));
+  return [...owned,...wishlisted];
+}
+
+function renderCloset(){
+  const body=document.getElementById("closet-body");
+  const entries=closetEntries();
+  if(entries.length===0){
+    body.innerHTML='<div class="closet-empty">Nothing on the shelf yet — add a fragrance or wishlist one to see it here.</div>';
+    return;
+  }
+  const byHouse={};
+  entries.forEach(e=>{(byHouse[e.house]=byHouse[e.house]||[]).push(e);});
+  const houses=Object.keys(byHouse).sort((a,b)=>a.localeCompare(b));
+
+  const legend='<div class="closet-legend">'
+    +'<span><span class="closet-legend-swatch" style="background:#B8860B"></span>In your collection</span>'
+    +'<span><span class="closet-legend-swatch" style="background:#5a5a5a;filter:grayscale(1)"></span>🔒 On your wishlist</span>'
+  +'</div>';
+
+  const shelves=houses.map(house=>{
+    const bottles=byHouse[house].map(e=>{
+      const liquid=deriveLiquidColor(e.notes);
+      const pyr=deriveNotePyramid(e.notes);
+      const svg=bottleSvg(e.id,liquid);
+      return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
+        +svg
+        +(e.locked?'<div class="closet-lock">🔒</div>':"")
+        +'<div class="closet-tooltip">'
+          +'<div class="closet-tooltip-name">'+e.name+'</div>'
+          +'<div class="closet-tooltip-house">'+e.house+'</div>'
+          +'<div class="closet-tooltip-notes">'
+            +'<div><b>Top:</b> '+pyr.top+'</div>'
+            +'<div><b>Heart:</b> '+pyr.heart+'</div>'
+            +'<div><b>Base:</b> '+pyr.base+'</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join("");
+    return '<div class="closet-house">'
+      +'<div class="closet-house-label">'+house+'</div>'
+      +'<div class="closet-shelf">'+bottles+'</div>'
+    +'</div>';
+  }).join("");
+
+  body.innerHTML=legend+shelves;
 }
 
 // ── ADD FRAGRANCE ──
@@ -1713,7 +1958,7 @@ function addResultTo(encoded,dest){
     }
     acquired[m.id]=true;
     fbSet("/collection",acquired);
-    showToast("Added to Collection");
+    showCongratsModal(m.id,m.name);
   }
   const menu=document.getElementById("afmenu-"+m.id);
   if(menu)menu.style.display="none";
@@ -1738,7 +1983,7 @@ function addManualTo(dest){
     fbSet("/fragrances",FRAGS);
     acquired[id]=true;
     fbSet("/collection",acquired);
-    showToast("Added to Collection");
+    showCongratsModal(id,name);
   }
   document.getElementById("afmenu-manual").style.display="none";
   searchFragrance();
@@ -1803,6 +2048,7 @@ function goTo(page,mode){
   pageHistory.push(page);
   // render on navigate
   if(page==="today"){renderPick(mode==="surprise");}
+  if(page==="closet"){renderCloset();}
   if(page==="collection"){renderCollection();}
   if(page==="months"){renderMonths();}
   if(page==="monthdetail"){renderMonthDetail(currentMonthKey);}
