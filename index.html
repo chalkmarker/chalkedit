@@ -76,6 +76,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 
 /* ── TODAY'S PICK ── */
 #today{background:var(--bg);min-height:100vh}
+#closet{background:var(--bg);min-height:100vh}
 .pick-body{padding:28px 20px 48px}
 @media(min-width:768px){.pick-body{padding:32px 56px 64px}}
 .pick-weather-bar{display:flex;align-items:center;gap:8px;margin-bottom:24px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
@@ -157,8 +158,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;padding:18px 16px 22px;border-bottom:3px solid #4A3C2C;background:linear-gradient(180deg,rgba(212,176,122,0.04),rgba(212,176,122,0) 60%)}
 .closet-shelf::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:linear-gradient(180deg,rgba(0,0,0,.35),transparent)}
 .closet-bottle{position:relative;width:64px;flex-shrink:0;cursor:pointer}
+.closet-bottle-imgwrap{position:relative}
 .closet-bottle svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
-.closet-bottle.locked svg{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
+.closet-bottle img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
+.closet-bottle.locked svg,.closet-bottle.locked img{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-lock{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:15px;opacity:.85;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .closet-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(4px);min-width:150px;max-width:200px;background:rgba(26,20,16,.92);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:20;backdrop-filter:blur(2px)}
 .closet-bottle:hover .closet-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1724,15 +1727,24 @@ function closetRand(seed){
   return function(){s=(s*16807)%2147483647;return (s-1)/2147483646;};
 }
 function closetPolyPts(pts){return pts.map(p=>p[0]+","+p[1]).join(" ");}
+function hexPts(cx,cy,r,squash){
+  squash=squash||0.87;
+  const pts=[];
+  for(let a=0;a<6;a++){const ang=Math.PI/6+a*Math.PI/3;pts.push([cx+r*Math.cos(ang),cy+r*squash*Math.sin(ang)]);}
+  return pts;
+}
 
 // Which general silhouette family a house's bottles tend to follow — based
 // on shape/proportion/cap-style only (not tracing any photo, no logos/text).
 // Matched as a substring against the fragrance's house name.
 const HOUSE_SHAPES=[
-  {match:["tom ford","yves saint laurent","ysl","afnan"],shape:"flatcap"},
+  {match:["tom ford"],shape:"flatcap-ridged"},
+  {match:["yves saint laurent","ysl","afnan"],shape:"flatcap"},
   {match:["azzaro"],shape:"ribbed"},
   {match:["maison margiela","replica"],shape:"apothecary"},
-  {match:["kilian","stephane humbert lucas","xerjoff"],shape:"gemband"},
+  {match:["kilian"],shape:"cutcrystal"},
+  {match:["stephane humbert lucas"],shape:"hexcrown"},
+  {match:["xerjoff"],shape:"teardrop"},
   {match:["initio"],shape:"diamond"},
   {match:["french avenue"],shape:"wrapped"},
   {match:["roja"],shape:"ornateband"},
@@ -1759,10 +1771,21 @@ function bottleSvg(id,liquidColor,house){
   const shadow='<ellipse cx="30" cy="114" rx="20" ry="4" fill="rgba(0,0,0,.3)"/>';
   let defs="",body="";
 
-  if(shape==="ribbed"){
-    // Azzaro-style: squat rounded cylinder, ribbed lower band, chunky faceted cap
+  if(shape==="flatcap-ridged"){
+    // Tom Ford-style: short, wide, glossy bottle, cap flush with the full
+    // body width (not narrower), large gold label spanning most of the front
+    const bw=40,bh=48,bx=(vbW-bw)/2,by=vbH-bh-8;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.95" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.18)+'" rx="2" fill="rgba(255,255,255,.18)"/>';
+    body+='<rect x="'+(bx+3)+'" y="'+(by+bh*0.4)+'" width="'+(bw-6)+'" height="'+(bh*0.28)+'" fill="#C9A227" fill-opacity=".85"/>';
+    const capH=13;
+    body+='<rect x="'+bx+'" y="'+(by-capH)+'" width="'+bw+'" height="'+capH+'" rx="1.5" fill="#1A1714"/>';
+    body+='<rect x="'+bx+'" y="'+(by-capH)+'" width="'+bw+'" height="'+(capH*0.3)+'" rx="1.5" fill="rgba(255,255,255,.1)"/>';
+  }
+  else if(shape==="ribbed"){
+    // Azzaro-style: squat rounded cylinder, ribbed lower band, hexagonal faceted cap
     const bw=36+Math.floor(rnd()*4),bh=50+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
-    const capW=24+Math.floor(rnd()*4),capH=15,capX=(vbW-capW)/2,capY=by-14;
+    const capR=13,capCx=vbW/2,capCy=by-14;
     body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="10" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
     for(let i=0;i<5;i++){
       const ly=by+bh*0.55+i*4;
@@ -1770,68 +1793,126 @@ function bottleSvg(id,liquidColor,house){
     }
     body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.3)+'" rx="10" fill="rgba(255,255,255,.2)"/>';
     body+='<rect x="'+(vbW/2-6)+'" y="'+(by-8)+'" width="12" height="10" fill="#DCD3C4"/>';
-    body+='<polygon points="'+closetPolyPts([[capX,capY+capH],[capX+4,capY],[capX+capW-4,capY],[capX+capW,capY+capH]])+'" fill="#C9A227"/>';
-    body+='<rect x="'+capX+'" y="'+(capY+capH-4)+'" width="'+capW+'" height="6" fill="#8a6a1a"/>';
+    body+='<polygon points="'+closetPolyPts(hexPts(capCx,capCy,capR,0.75))+'" fill="#C9A227"/>';
   }
   else if(shape==="apothecary"){
-    // Maison Margiela Replica-style: rect apothecary bottle, large paper label, pump nozzle
+    // Maison Margiela Replica-style: rect apothecary bottle, large paper label, angled pump nozzle
     const bw=30+Math.floor(rnd()*4),bh=60+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
     body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.5" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+(bx+2)+'" y="'+(by+bh*0.18)+'" width="'+(bw-4)+'" height="'+(bh*0.62)+'" fill="rgba(245,242,235,.94)" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>';
-    for(let i=0;i<5;i++){
-      body+='<line x1="'+(bx+5)+'" y1="'+(by+bh*0.25+i*5)+'" x2="'+(bx+bw-6)+'" y2="'+(by+bh*0.25+i*5)+'" stroke="rgba(30,25,20,.35)" stroke-width="1"/>';
+    for(let i=0;i<6;i++){
+      body+='<line x1="'+(bx+5)+'" y1="'+(by+bh*0.23+i*4.5)+'" x2="'+(bx+bw-6)+'" y2="'+(by+bh*0.23+i*4.5)+'" stroke="rgba(30,25,20,.35)" stroke-width="1"/>';
     }
     body+='<rect x="'+(vbW/2-3)+'" y="'+(by-14)+'" width="6" height="14" fill="#DCD3C4"/>';
-    body+='<rect x="'+(vbW/2-9)+'" y="'+(by-20)+'" width="18" height="7" rx="2" fill="#B9B4A8"/>';
-    body+='<rect x="'+(vbW/2-2)+'" y="'+(by-24)+'" width="4" height="5" fill="#8f8b80"/>';
+    body+='<rect x="'+(vbW/2-9)+'" y="'+(by-19)+'" width="18" height="6" rx="2" fill="#B9B4A8"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2+9,by-17.5],[vbW/2+15,by-15],[vbW/2+9,by-13.5]])+'" fill="#8f8b80"/>';
   }
-  else if(shape==="gemband"){
-    // Kilian / Xerjoff / SHL777-style: faceted cut-corner body, diagonal ribbon band
-    const bw=34+Math.floor(rnd()*6),bh=54+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-8,cut=8;
-    const pts=[[bx+cut,by],[bx+bw-cut,by],[bx+bw,by+cut],[bx+bw,by+bh-cut],[bx+bw-cut,by+bh],[bx+cut,by+bh],[bx,by+bh-cut],[bx,by+cut]];
-    body='<polygon points="'+closetPolyPts(pts)+'" fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.35)"/>';
-    body+='<polygon points="'+closetPolyPts([[bx-2,by+bh*0.35],[bx+bw+2,by+bh*0.2],[bx+bw+2,by+bh*0.32],[bx-2,by+bh*0.47]])+'" fill="#C9A227" fill-opacity=".92"/>';
-    body+='<circle cx="'+(vbW/2)+'" cy="'+(by+bh*0.28)+'" r="3" fill="#F0E6C0"/>';
-    body+='<rect x="'+(vbW/2-7)+'" y="'+(by-12)+'" width="14" height="12" rx="3" fill="#D8D8DC"/>';
+  else if(shape==="cutcrystal"){
+    // Kilian-style: short wide faceted jar, hobnail diamond-cut texture,
+    // wide flat faceted cap, round base coaster
+    const bw=44,bh=42,bx=(vbW-bw)/2,by=vbH-bh-16;
+    body='<ellipse cx="'+(vbW/2)+'" cy="'+(by+bh+6)+'" rx="'+(bw*0.6)+'" ry="5" fill="#B8B4A8" fill-opacity=".5"/>';
+    body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="6" fill="'+liquidColor+'" fill-opacity="0.8" stroke="rgba(255,255,255,.4)"/>';
+    for(let r=0;r<4;r++){for(let c=0;c<5;c++){
+      const dx=bx+6+c*8,dy=by+6+r*9;
+      const shade=((r+c)%2===0)?"rgba(255,255,255,.28)":"rgba(0,0,0,.12)";
+      body+='<rect x="'+(dx-3)+'" y="'+(dy-3)+'" width="6" height="6" fill="'+shade+'" transform="rotate(45 '+dx+' '+dy+')"/>';
+    }}
+    const capW=bw*0.82,capH=10,capX=(vbW-capW)/2,capY=by-capH-1;
+    body+='<rect x="'+capX+'" y="'+capY+'" width="'+capW+'" height="'+capH+'" rx="3" fill="#E8DEC4"/>';
+    for(let c=0;c<5;c++){
+      body+='<line x1="'+(capX+capW*c/5)+'" y1="'+capY+'" x2="'+(capX+capW*c/5)+'" y2="'+(capY+capH)+'" stroke="rgba(0,0,0,.15)" stroke-width="1"/>';
+    }
+  }
+  else if(shape==="hexcrown"){
+    // Stephane Humbert Lucas 777-style: tall flat rect body with honeycomb
+    // texture, dramatic oversized hex-textured dome/crown cap wider than the body
+    const bw=32,bh=44,bx=(vbW-bw)/2,by=vbH-bh-8;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.92" stroke="rgba(255,255,255,.25)"/>';
+    for(let r=0;r<4;r++){for(let c=0;c<3;c++){
+      const hx=bx+7+c*9+(r%2?4.5:0),hy=by+8+r*8;
+      if(hx>bx+bw-5)continue;
+      body+='<polygon points="'+closetPolyPts(hexPts(hx,hy,4))+'" fill="#C9A227" fill-opacity=".55" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>';
+    }}
+    const plateW=bw*1.15,plateX=(vbW-plateW)/2,plateY=by-6;
+    body+='<rect x="'+plateX+'" y="'+plateY+'" width="'+plateW+'" height="6" rx="1" fill="#C9A227"/>';
+    const domeW=bw*1.35,domeH=22,domeX=(vbW-domeW)/2,domeTopY=plateY-domeH;
+    body+='<path d="M'+domeX+' '+plateY+' Q '+(vbW/2)+' '+(domeTopY-4)+' '+(domeX+domeW)+' '+plateY+' Z" fill="#C9A227" fill-opacity=".92" stroke="rgba(255,255,255,.3)"/>';
+    for(let r=0;r<2;r++){for(let c=0;c<4;c++){
+      const hx=domeX+8+c*7+(r%2?3.5:0),hy=plateY-6-r*7;
+      if(hy<domeTopY+2||hx>domeX+domeW-5)continue;
+      body+='<polygon points="'+closetPolyPts(hexPts(hx,hy,3.2))+'" fill="#8a6a1a" fill-opacity=".7"/>';
+    }}
+  }
+  else if(shape==="teardrop"){
+    // Xerjoff-style: rounded bulb body tapering to a neck, ornate ball-finial gold cap
+    const w=34+Math.floor(rnd()*4),topY=vbH-70,botY=vbH-8,cx=vbW/2;
+    body='<path d="M'+(cx-w*0.3)+' '+topY+' '
+      +'C '+(cx-w/2)+' '+(topY+10)+', '+(cx-w/2)+' '+(botY-18)+', '+(cx-w/2)+' '+(botY-14)+' '
+      +'C '+(cx-w/2)+' '+botY+', '+(cx+w/2)+' '+botY+', '+(cx+w/2)+' '+(botY-14)+' '
+      +'C '+(cx+w/2)+' '+(botY-18)+', '+(cx+w/2)+' '+(topY+10)+', '+(cx+w*0.3)+' '+topY+' Z" '
+      +'fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+(cx-6)+'" y="'+(topY-8)+'" width="12" height="8" fill="#DCD3C4"/>';
+    body+='<ellipse cx="'+cx+'" cy="'+(topY-13)+'" rx="9" ry="7" fill="#C9A227"/>';
+    body+='<circle cx="'+cx+'" cy="'+(topY-20)+'" r="3.5" fill="#E8D9C0"/>';
   }
   else if(shape==="diamond"){
-    // Initio-style: tall flat-front rect, small centered rotated diamond emblem, wide flat cap
-    const bw=32+Math.floor(rnd()*4),bh=58+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.9" stroke="rgba(255,255,255,.3)"/>';
-    body+='<rect x="'+(vbW/2-6)+'" y="'+(by+bh*0.38)+'" width="12" height="12" fill="#C9A227" fill-opacity=".85" transform="rotate(45 '+(vbW/2)+' '+(by+bh*0.44)+')"/>';
-    body+='<rect x="'+(vbW/2-10)+'" y="'+(by-10)+'" width="20" height="10" fill="#2A2622"/>';
+    // Initio-style: taller slim body, small centered diamond medallion, and
+    // a distinctive wide slab cap that overhangs the body on both sides
+    const bw=30,bh=62,bx=(vbW-bw)/2,by=vbH-bh-6;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.92" stroke="rgba(255,255,255,.25)"/>';
+    body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.14)+'" fill="rgba(255,255,255,.12)"/>';
+    body+='<rect x="'+(vbW/2-6)+'" y="'+(by+bh*0.42)+'" width="12" height="12" fill="#C9A227" fill-opacity=".85" transform="rotate(45 '+(vbW/2)+' '+(by+bh*0.48)+')"/>';
+    const riserW=bw*0.5,riserH=6,riserX=(vbW-riserW)/2,riserY=by-riserH;
+    body+='<rect x="'+riserX+'" y="'+riserY+'" width="'+riserW+'" height="'+riserH+'" fill="'+liquidColor+'" fill-opacity="0.92"/>';
+    const capW=bw+14,capH=11,capX=(vbW-capW)/2,capY=riserY-capH;
+    body+='<rect x="'+capX+'" y="'+capY+'" width="'+capW+'" height="'+capH+'" rx="1" fill="'+liquidColor+'" fill-opacity="1"/>';
+    body+='<rect x="'+capX+'" y="'+capY+'" width="'+capW+'" height="'+(capH*0.3)+'" rx="1" fill="rgba(255,255,255,.15)"/>';
   }
   else if(shape==="wrapped"){
-    // French Avenue-style: tapered hourglass body, diagonal wrap band, dome cap
+    // French Avenue-style: tapered hourglass body, diagonal cord wrap, dome cap
     const topW=38+Math.floor(rnd()*4),botW=28+Math.floor(rnd()*4),bh=52+Math.floor(rnd()*8),by=vbH-bh-8;
     const pts=[[vbW/2-topW/2,by],[vbW/2+topW/2,by],[vbW/2+botW/2,by+bh],[vbW/2-botW/2,by+bh]];
     body='<polygon points="'+closetPolyPts(pts)+'" fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.3)"/>';
-    body+='<polygon points="'+closetPolyPts([[vbW/2-topW/2-2,by+bh*0.3],[vbW/2+topW/2+2,by+bh*0.12],[vbW/2+topW/2+2,by+bh*0.24],[vbW/2-topW/2-2,by+bh*0.42]])+'" fill="#C9A227"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-topW/2-2,by+bh*0.32],[vbW/2+topW/2+2,by+bh*0.16],[vbW/2+topW/2+2,by+bh*0.26],[vbW/2-topW/2-2,by+bh*0.42]])+'" fill="#C9A227"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-topW/2-2,by+bh*0.5],[vbW/2+topW/2+2,by+bh*0.34],[vbW/2+topW/2+2,by+bh*0.44],[vbW/2-topW/2-2,by+bh*0.6]])+'" fill="#8a6a1a"/>';
     body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-8)+'" rx="9" ry="8" fill="#C9A227"/>';
   }
   else if(shape==="ornateband"){
-    // Roja-style: squat wide rect, thin gold trim lines, colored band near base, dome cap
-    const bw=40+Math.floor(rnd()*4),bh=44+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-10;
+    // Roja-style: tall elegant rect, thin gold trim lines, colored band, dome cap
+    const bw=32+Math.floor(rnd()*4),bh=58+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
     body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+bx+'" y="'+(by+2)+'" width="'+bw+'" height="1.5" fill="#C9A227"/>';
-    body+='<rect x="'+bx+'" y="'+(by+bh-10)+'" width="'+bw+'" height="7" fill="#8C1C1C"/>';
+    body+='<rect x="'+bx+'" y="'+(by+bh*0.62)+'" width="'+bw+'" height="6" fill="#8C1C1C"/>';
     body+='<rect x="'+bx+'" y="'+(by+bh-2)+'" width="'+bw+'" height="1.5" fill="#C9A227"/>';
-    body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-9)+'" rx="10" ry="9" fill="#C9A227"/>';
+    body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-8)+'" rx="9" ry="8" fill="#C9A227"/>';
   }
   else if(shape==="torch"){
-    // Mind Games-style: slim tall cylinder, wide flared conical metallic cap
+    // Mind Games-style: slim tall cylinder, wide flared twisted conical metallic cap
     const bw=18+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-8;
     body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="9" fill="'+liquidColor+'" fill-opacity="0.55" stroke="rgba(255,255,255,.35)"/>';
     body+='<polygon points="'+closetPolyPts([[vbW/2-16,by],[vbW/2+16,by],[vbW/2+6,by-22],[vbW/2-6,by-22]])+'" fill="#8A8A8E"/>';
-    body+='<polygon points="'+closetPolyPts([[vbW/2-6,by-22],[vbW/2+6,by-22],[vbW/2+3,by-30],[vbW/2-3,by-30]])+'" fill="#6B6B6F"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-11,by-6],[vbW/2+11,by-6],[vbW/2+4,by-20],[vbW/2-4,by-20]])+'" fill="#6B6B6F"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-6,by-22],[vbW/2+6,by-22],[vbW/2+3,by-30],[vbW/2-3,by-30]])+'" fill="#DADADC"/>';
   }
   else if(shape==="plaque"){
-    // Rayhaan-style: rect body with vertical gradient, gold plaque label, gold cap
-    defs='<linearGradient id="g'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fae8a"/><stop offset="1" stop-color="#2a6f9e"/></linearGradient>';
-    const bw=32+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="url(#g'+uid+')" stroke="rgba(255,255,255,.3)"/>';
-    body+='<rect x="'+(vbW/2-9)+'" y="'+(by+bh*0.35)+'" width="18" height="14" fill="#C9A227" fill-opacity=".85"/>';
-    body+='<rect x="'+(vbW/2-6)+'" y="'+(by-10)+'" width="12" height="10" fill="#C9A227"/>';
+    // Rayhaan-style: alternates between a gradient body w/ gold plaque, or an
+    // ornate all-over mosaic-tile pattern — reflecting the brand's range
+    if(rnd()<0.5){
+      defs='<linearGradient id="g'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fae8a"/><stop offset="1" stop-color="#2a6f9e"/></linearGradient>';
+      const bw=32+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
+      body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="url(#g'+uid+')" stroke="rgba(255,255,255,.3)"/>';
+      body+='<rect x="'+(vbW/2-9)+'" y="'+(by+bh*0.35)+'" width="18" height="14" fill="#C9A227" fill-opacity=".85"/>';
+      body+='<rect x="'+(vbW/2-6)+'" y="'+(by-10)+'" width="12" height="10" fill="#C9A227"/>';
+    }else{
+      const bw=34,bh=54,bx=(vbW-bw)/2,by=vbH-bh-8;
+      body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="#D9D9DC" stroke="rgba(255,255,255,.4)"/>';
+      for(let r=0;r<6;r++){for(let c=0;c<4;c++){
+        const mx=bx+4+c*7,my=by+4+r*8;
+        body+='<rect x="'+mx+'" y="'+my+'" width="5" height="6" fill="'+(((r+c)%2===0)?"#3fae8a":"#B8C4C8")+'" fill-opacity=".8"/>';
+      }}
+      body+='<rect x="'+(vbW/2-9)+'" y="'+(by-9)+'" width="18" height="9" fill="#D9D9DC"/>';
+    }
   }
   else if(shape==="crossband"){
     // Lattafa-style: squat rounded-shoulder, gold X-cross band, gold ring, dome cap
@@ -1840,7 +1921,7 @@ function bottleSvg(id,liquidColor,house){
     body+='<line x1="'+bx+'" y1="'+(by+bh*0.35)+'" x2="'+(bx+bw)+'" y2="'+(by+bh*0.7)+'" stroke="#C9A227" stroke-width="4"/>';
     body+='<line x1="'+bx+'" y1="'+(by+bh*0.7)+'" x2="'+(bx+bw)+'" y2="'+(by+bh*0.35)+'" stroke="#C9A227" stroke-width="4"/>';
     body+='<circle cx="'+(vbW/2)+'" cy="'+(by+bh*0.52)+'" r="5" fill="#F0E6C0"/>';
-    body+='<rect x="'+(vbW/2-7)+'" y="'+(by-8)+'" width="14" height="8" fill="#C9A227"/>';
+    body+='<rect x="'+(vbW/2-7)+'" y="'+(by-8)+'" width="14" height="4" fill="#C9A227"/>';
     body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-9)+'" rx="8" ry="6" fill="#DCC06A"/>';
   }
   else{
@@ -1866,6 +1947,14 @@ function closetEntries(){
   return [...owned,...wishlisted];
 }
 
+// If a real bottle photo exists at images/bottles/<slug>.png in the repo, it
+// renders on top of the stylized SVG automatically; if it 404s, it's removed
+// and the SVG underneath shows through. Slug is predictable from house+name
+// so you know exactly what to name the file.
+function bottleImgSlug(house,name){
+  return ((house||"")+"-"+(name||"")).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+
 function renderCloset(){
   const body=document.getElementById("closet-body");
   const entries=closetEntries();
@@ -1887,8 +1976,12 @@ function renderCloset(){
       const liquid=deriveLiquidColor(e.notes);
       const pyr=deriveNotePyramid(e.notes);
       const svg=bottleSvg(e.id,liquid,e.house);
+      const slug=bottleImgSlug(e.house,e.name);
       return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
-        +svg
+        +'<div class="closet-bottle-imgwrap">'
+          +svg
+          +'<img src="images/bottles/'+slug+'.png" alt="" loading="lazy" onerror="this.remove()">'
+        +'</div>'
         +(e.locked?'<div class="closet-lock">🔒</div>':"")
         +'<div class="closet-tooltip">'
           +'<div class="closet-tooltip-name">'+e.name+'</div>'
@@ -2136,7 +2229,11 @@ function performBackToCover(){
 
 function goTo(page,mode){
   const cur=pageHistory[pageHistory.length-1];
-  document.getElementById(cur).classList.add("slide-left");
+  document.querySelectorAll(".page").forEach(p=>{
+    if(p.id===page)return;
+    if(p.id===cur){p.classList.remove("hidden");p.classList.add("slide-left");}
+    else{p.classList.add("hidden");p.classList.remove("slide-left");}
+  });
   const el=document.getElementById(page);
   el.classList.remove("hidden");
   el.classList.remove("slide-left");
@@ -2158,12 +2255,12 @@ function goTo(page,mode){
 
 function goBack(){
   if(pageHistory.length<=1)return;
-  const cur=pageHistory.pop();
-  const prev=pageHistory[pageHistory.length-1];
-  document.getElementById(cur).classList.add("hidden");
-  const el=document.getElementById(prev);
-  el.classList.remove("slide-left");
-  el.classList.remove("hidden");
+  const leaving=pageHistory.pop();
+  const target=pageHistory[pageHistory.length-1];
+  document.querySelectorAll(".page").forEach(p=>{
+    if(p.id===target){p.classList.remove("hidden");p.classList.remove("slide-left");}
+    else{p.classList.add("hidden");p.classList.remove("slide-left");}
+  });
 }
 
 function toggleMenu(key){
