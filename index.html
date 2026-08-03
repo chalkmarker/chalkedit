@@ -1723,41 +1723,136 @@ function closetRand(seed){
   if(s<=0)s+=2147483646;
   return function(){s=(s*16807)%2147483647;return (s-1)/2147483646;};
 }
-const CAP_COLORS=["#B8860B","#8A8A8E","#2A2622","#C9A227","#6B6B6F"];
+function closetPolyPts(pts){return pts.map(p=>p[0]+","+p[1]).join(" ");}
 
-// Original, stylized bottle silhouette — NOT a reproduction of any real
-// product's packaging. Shape/cap/proportions vary per fragrance id so a
-// shelf of different fragrances reads as visually distinct, colored by the
-// note-derived tint. Purely decorative placeholder art.
-function bottleSvg(id,liquidColor){
-  const rnd=closetRand(closetSeed(id));
-  const capStyle=Math.floor(rnd()*3); // 0 round, 1 square, 2 wide disc
-  const bodyW=30+Math.floor(rnd()*14);
-  const bodyH=54+Math.floor(rnd()*16);
-  const bodyRx=Math.floor(rnd()*9);
-  const neckH=6+Math.floor(rnd()*6);
-  const capColor=CAP_COLORS[Math.floor(rnd()*CAP_COLORS.length)];
-  const vbW=60,vbH=118;
-  const bodyX=(vbW-bodyW)/2, bodyY=vbH-bodyH-6;
-  const neckW=Math.max(10,bodyW*0.28), neckX=(vbW-neckW)/2, neckY=bodyY-neckH;
-  let capW,capH,capRx;
-  if(capStyle===0){capW=neckW+8;capH=14+Math.floor(rnd()*6);capRx=capW/2;}
-  else if(capStyle===1){capW=neckW+10;capH=12+Math.floor(rnd()*6);capRx=2;}
-  else{capW=neckW+18;capH=8+Math.floor(rnd()*4);capRx=3;}
-  const capX=(vbW-capW)/2, capY=neckY-capH;
-  const labelW=bodyW*0.62, labelX=(vbW-labelW)/2, labelY=bodyY+bodyH*0.42;
-  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">'
-    +'<ellipse cx="'+(vbW/2)+'" cy="'+(vbY_base(bodyY,bodyH))+'" rx="'+(bodyW*0.55)+'" ry="4" fill="rgba(0,0,0,.3)"/>'
-    +'<rect x="'+capX+'" y="'+capY+'" width="'+capW+'" height="'+capH+'" rx="'+capRx+'" fill="'+capColor+'"/>'
-    +'<rect x="'+neckX+'" y="'+neckY+'" width="'+neckW+'" height="'+neckH+2+'" fill="#DCD3C4"/>'
-    +'<rect x="'+bodyX+'" y="'+bodyY+'" width="'+bodyW+'" height="'+bodyH+'" rx="'+bodyRx+'" fill="'+liquidColor+'" fill-opacity="0.82" stroke="rgba(255,255,255,.35)" stroke-width="1"/>'
-    +'<rect x="'+bodyX+'" y="'+bodyY+'" width="'+bodyW+'" height="'+(bodyH*0.22)+'" rx="'+bodyRx+'" fill="rgba(255,255,255,.18)"/>'
-    +'<rect x="'+labelX+'" y="'+labelY+'" width="'+labelW+'" height="'+(bodyH*0.24)+'" rx="1.5" fill="rgba(20,16,12,.35)"/>'
-    +'<rect x="'+(labelX+labelW*0.15)+'" y="'+(labelY+bodyH*0.24*0.3)+'" width="'+(labelW*0.7)+'" height="1.4" fill="rgba(230,220,200,.55)"/>'
-    +'<rect x="'+(labelX+labelW*0.15)+'" y="'+(labelY+bodyH*0.24*0.6)+'" width="'+(labelW*0.45)+'" height="1.4" fill="rgba(230,220,200,.4)"/>'
-  +'</svg>';
+// Which general silhouette family a house's bottles tend to follow — based
+// on shape/proportion/cap-style only (not tracing any photo, no logos/text).
+// Matched as a substring against the fragrance's house name.
+const HOUSE_SHAPES=[
+  {match:["tom ford","yves saint laurent","ysl","afnan"],shape:"flatcap"},
+  {match:["azzaro"],shape:"ribbed"},
+  {match:["maison margiela","replica"],shape:"apothecary"},
+  {match:["kilian","stephane humbert lucas","xerjoff"],shape:"gemband"},
+  {match:["initio"],shape:"diamond"},
+  {match:["french avenue"],shape:"wrapped"},
+  {match:["roja"],shape:"ornateband"},
+  {match:["mind games"],shape:"torch"},
+  {match:["rayhaan"],shape:"plaque"},
+  {match:["lattafa"],shape:"crossband"},
+];
+function houseShapeFor(house){
+  const h=(house||"").toLowerCase();
+  const found=HOUSE_SHAPES.find(s=>s.match.some(m=>h.includes(m)));
+  return found?found.shape:"default";
 }
-function vbY_base(bodyY,bodyH){return bodyY+bodyH+3;}
+
+// Original, stylized bottle silhouettes — NOT reproductions or traces of any
+// real product photo. Each house gets a general archetype (shape family,
+// cap style, proportions) inspired by its typical packaging language, with
+// per-fragrance seeded variation within that archetype. Purely decorative;
+// no brand logos, wordmarks, or exact packaging designs are reproduced.
+function bottleSvg(id,liquidColor,house){
+  const rnd=closetRand(closetSeed(id));
+  const shape=houseShapeFor(house);
+  const vbW=60,vbH=118;
+  const uid=id.replace(/[^a-z0-9]/gi,"");
+  const shadow='<ellipse cx="30" cy="114" rx="20" ry="4" fill="rgba(0,0,0,.3)"/>';
+  let defs="",body="";
+
+  if(shape==="ribbed"){
+    // Azzaro-style: squat rounded cylinder, ribbed lower band, chunky faceted cap
+    const bw=36+Math.floor(rnd()*4),bh=50+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
+    const capW=24+Math.floor(rnd()*4),capH=15,capX=(vbW-capW)/2,capY=by-14;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="10" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
+    for(let i=0;i<5;i++){
+      const ly=by+bh*0.55+i*4;
+      body+='<line x1="'+(bx+3)+'" y1="'+ly+'" x2="'+(bx+bw-3)+'" y2="'+ly+'" stroke="rgba(0,0,0,.18)" stroke-width="1.3"/>';
+    }
+    body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.3)+'" rx="10" fill="rgba(255,255,255,.2)"/>';
+    body+='<rect x="'+(vbW/2-6)+'" y="'+(by-8)+'" width="12" height="10" fill="#DCD3C4"/>';
+    body+='<polygon points="'+closetPolyPts([[capX,capY+capH],[capX+4,capY],[capX+capW-4,capY],[capX+capW,capY+capH]])+'" fill="#C9A227"/>';
+    body+='<rect x="'+capX+'" y="'+(capY+capH-4)+'" width="'+capW+'" height="6" fill="#8a6a1a"/>';
+  }
+  else if(shape==="apothecary"){
+    // Maison Margiela Replica-style: rect apothecary bottle, large paper label, pump nozzle
+    const bw=30+Math.floor(rnd()*4),bh=60+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.5" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+(bx+2)+'" y="'+(by+bh*0.18)+'" width="'+(bw-4)+'" height="'+(bh*0.62)+'" fill="rgba(245,242,235,.94)" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>';
+    for(let i=0;i<5;i++){
+      body+='<line x1="'+(bx+5)+'" y1="'+(by+bh*0.25+i*5)+'" x2="'+(bx+bw-6)+'" y2="'+(by+bh*0.25+i*5)+'" stroke="rgba(30,25,20,.35)" stroke-width="1"/>';
+    }
+    body+='<rect x="'+(vbW/2-3)+'" y="'+(by-14)+'" width="6" height="14" fill="#DCD3C4"/>';
+    body+='<rect x="'+(vbW/2-9)+'" y="'+(by-20)+'" width="18" height="7" rx="2" fill="#B9B4A8"/>';
+    body+='<rect x="'+(vbW/2-2)+'" y="'+(by-24)+'" width="4" height="5" fill="#8f8b80"/>';
+  }
+  else if(shape==="gemband"){
+    // Kilian / Xerjoff / SHL777-style: faceted cut-corner body, diagonal ribbon band
+    const bw=34+Math.floor(rnd()*6),bh=54+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-8,cut=8;
+    const pts=[[bx+cut,by],[bx+bw-cut,by],[bx+bw,by+cut],[bx+bw,by+bh-cut],[bx+bw-cut,by+bh],[bx+cut,by+bh],[bx,by+bh-cut],[bx,by+cut]];
+    body='<polygon points="'+closetPolyPts(pts)+'" fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.35)"/>';
+    body+='<polygon points="'+closetPolyPts([[bx-2,by+bh*0.35],[bx+bw+2,by+bh*0.2],[bx+bw+2,by+bh*0.32],[bx-2,by+bh*0.47]])+'" fill="#C9A227" fill-opacity=".92"/>';
+    body+='<circle cx="'+(vbW/2)+'" cy="'+(by+bh*0.28)+'" r="3" fill="#F0E6C0"/>';
+    body+='<rect x="'+(vbW/2-7)+'" y="'+(by-12)+'" width="14" height="12" rx="3" fill="#D8D8DC"/>';
+  }
+  else if(shape==="diamond"){
+    // Initio-style: tall flat-front rect, small centered rotated diamond emblem, wide flat cap
+    const bw=32+Math.floor(rnd()*4),bh=58+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.9" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+(vbW/2-6)+'" y="'+(by+bh*0.38)+'" width="12" height="12" fill="#C9A227" fill-opacity=".85" transform="rotate(45 '+(vbW/2)+' '+(by+bh*0.44)+')"/>';
+    body+='<rect x="'+(vbW/2-10)+'" y="'+(by-10)+'" width="20" height="10" fill="#2A2622"/>';
+  }
+  else if(shape==="wrapped"){
+    // French Avenue-style: tapered hourglass body, diagonal wrap band, dome cap
+    const topW=38+Math.floor(rnd()*4),botW=28+Math.floor(rnd()*4),bh=52+Math.floor(rnd()*8),by=vbH-bh-8;
+    const pts=[[vbW/2-topW/2,by],[vbW/2+topW/2,by],[vbW/2+botW/2,by+bh],[vbW/2-botW/2,by+bh]];
+    body='<polygon points="'+closetPolyPts(pts)+'" fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.3)"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-topW/2-2,by+bh*0.3],[vbW/2+topW/2+2,by+bh*0.12],[vbW/2+topW/2+2,by+bh*0.24],[vbW/2-topW/2-2,by+bh*0.42]])+'" fill="#C9A227"/>';
+    body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-8)+'" rx="9" ry="8" fill="#C9A227"/>';
+  }
+  else if(shape==="ornateband"){
+    // Roja-style: squat wide rect, thin gold trim lines, colored band near base, dome cap
+    const bw=40+Math.floor(rnd()*4),bh=44+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-10;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+bx+'" y="'+(by+2)+'" width="'+bw+'" height="1.5" fill="#C9A227"/>';
+    body+='<rect x="'+bx+'" y="'+(by+bh-10)+'" width="'+bw+'" height="7" fill="#8C1C1C"/>';
+    body+='<rect x="'+bx+'" y="'+(by+bh-2)+'" width="'+bw+'" height="1.5" fill="#C9A227"/>';
+    body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-9)+'" rx="10" ry="9" fill="#C9A227"/>';
+  }
+  else if(shape==="torch"){
+    // Mind Games-style: slim tall cylinder, wide flared conical metallic cap
+    const bw=18+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-8;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="9" fill="'+liquidColor+'" fill-opacity="0.55" stroke="rgba(255,255,255,.35)"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-16,by],[vbW/2+16,by],[vbW/2+6,by-22],[vbW/2-6,by-22]])+'" fill="#8A8A8E"/>';
+    body+='<polygon points="'+closetPolyPts([[vbW/2-6,by-22],[vbW/2+6,by-22],[vbW/2+3,by-30],[vbW/2-3,by-30]])+'" fill="#6B6B6F"/>';
+  }
+  else if(shape==="plaque"){
+    // Rayhaan-style: rect body with vertical gradient, gold plaque label, gold cap
+    defs='<linearGradient id="g'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fae8a"/><stop offset="1" stop-color="#2a6f9e"/></linearGradient>';
+    const bw=32+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="url(#g'+uid+')" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+(vbW/2-9)+'" y="'+(by+bh*0.35)+'" width="18" height="14" fill="#C9A227" fill-opacity=".85"/>';
+    body+='<rect x="'+(vbW/2-6)+'" y="'+(by-10)+'" width="12" height="10" fill="#C9A227"/>';
+  }
+  else if(shape==="crossband"){
+    // Lattafa-style: squat rounded-shoulder, gold X-cross band, gold ring, dome cap
+    const bw=34+Math.floor(rnd()*4),bh=46+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="14" fill="'+liquidColor+'" fill-opacity="0.9" stroke="rgba(255,255,255,.3)"/>';
+    body+='<line x1="'+bx+'" y1="'+(by+bh*0.35)+'" x2="'+(bx+bw)+'" y2="'+(by+bh*0.7)+'" stroke="#C9A227" stroke-width="4"/>';
+    body+='<line x1="'+bx+'" y1="'+(by+bh*0.7)+'" x2="'+(bx+bw)+'" y2="'+(by+bh*0.35)+'" stroke="#C9A227" stroke-width="4"/>';
+    body+='<circle cx="'+(vbW/2)+'" cy="'+(by+bh*0.52)+'" r="5" fill="#F0E6C0"/>';
+    body+='<rect x="'+(vbW/2-7)+'" y="'+(by-8)+'" width="14" height="8" fill="#C9A227"/>';
+    body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-9)+'" rx="8" ry="6" fill="#DCC06A"/>';
+  }
+  else{
+    // Default/flatcap: tall matte rect, thin gold accent band, flat square cap
+    const bw=32+Math.floor(rnd()*8),bh=58+Math.floor(rnd()*10),bx=(vbW-bw)/2,by=vbH-bh-6;
+    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
+    body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.2)+'" rx="2" fill="rgba(255,255,255,.15)"/>';
+    body+='<rect x="'+(bx+4)+'" y="'+(by+bh*0.45)+'" width="'+(bw-8)+'" height="9" fill="#C9A227" fill-opacity=".8"/>';
+    body+='<rect x="'+(vbW/2-8)+'" y="'+(by-10)+'" width="16" height="10" fill="#1A1714"/>';
+  }
+  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">'+(defs?'<defs>'+defs+'</defs>':"")+shadow+body+'</svg>';
+}
 
 function closetEntries(){
   const owned=FRAGS.filter(f=>acquired[f.id]).map(f=>({
@@ -1791,7 +1886,7 @@ function renderCloset(){
     const bottles=byHouse[house].map(e=>{
       const liquid=deriveLiquidColor(e.notes);
       const pyr=deriveNotePyramid(e.notes);
-      const svg=bottleSvg(e.id,liquid);
+      const svg=bottleSvg(e.id,liquid,e.house);
       return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
         +svg
         +(e.locked?'<div class="closet-lock">🔒</div>':"")
