@@ -153,10 +153,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.coll-main{padding:16px 56px 72px}}
 .closet-body{padding:20px 20px 64px}
 @media(min-width:768px){.closet-body{padding:24px 56px 72px}}
-.closet-house{margin-bottom:38px}
-.closet-house-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#C4AE84;margin-bottom:14px}
-.closet-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;padding:18px 16px 22px;border-bottom:3px solid #4A3C2C;background:linear-gradient(180deg,rgba(212,176,122,0.04),rgba(212,176,122,0) 60%)}
-.closet-shelf::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:linear-gradient(180deg,rgba(0,0,0,.35),transparent)}
 .closet-bottle{position:relative;width:64px;flex-shrink:0;cursor:pointer}
 .closet-bottle-imgwrap{position:relative}
 .closet-bottle svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
@@ -170,9 +166,17 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-tooltip-notes{margin-top:6px;font-size:10px;color:var(--t3);line-height:1.6}
 .closet-tooltip-notes b{color:var(--t2);font-weight:500}
 .closet-empty{text-align:center;padding:60px 20px;color:var(--t3);font-size:12px}
-.closet-legend{display:flex;gap:16px;font-size:10px;color:var(--t3);margin-bottom:24px;flex-wrap:wrap}
+.closet-legend{display:flex;gap:16px;font-size:10px;color:var(--t3);margin-bottom:20px;flex-wrap:wrap;justify-content:center}
 .closet-legend span{display:flex;align-items:center;gap:6px}
 .closet-legend-swatch{width:9px;height:9px;border-radius:2px}
+.wardrobe-wrap{display:flex;align-items:center;justify-content:center;gap:8px;max-width:520px;margin:0 auto}
+.wardrobe-frame{position:relative;flex:1;max-width:420px;min-height:460px;border:2px solid #4A3C2C;border-radius:50% 50% 10px 10px/22% 22% 3px 3px;background:linear-gradient(180deg,rgba(212,176,122,.05),rgba(0,0,0,0) 40%);padding:58px 18px 22px;box-sizing:border-box;overflow:hidden}
+.wardrobe-house-label{position:absolute;top:24px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#C4AE84;background:rgba(42,35,29,.75);border:1px solid var(--border);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
+.wardrobe-shelves{display:flex;flex-direction:column;gap:14px;margin-top:14px;height:100%;overflow-y:auto}
+.wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:2px solid #4A3C2C;min-height:70px}
+.wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
+.wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
 .sec{margin-bottom:0}
 @media(min-width:768px){.sec{margin-bottom:48px}}
 .sec.hidden{display:none}
@@ -649,7 +653,21 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <button class="back-btn" onclick="goBack()">‹ Menu</button>
     <div><div class="inner-title">Closet</div><div class="inner-sub">Your collection, on the shelf</div></div>
   </div>
-  <div class="closet-body" id="closet-body"></div>
+  <div class="closet-body" id="closet-body">
+    <div class="closet-legend">
+      <span><span class="closet-legend-swatch" style="background:#B8860B"></span>In your collection</span>
+      <span><span class="closet-legend-swatch" style="background:#5a5a5a;filter:grayscale(1)"></span>🔒 On your wishlist</span>
+    </div>
+    <div class="wardrobe-wrap">
+      <button class="wardrobe-nav-btn prev" onclick="closetPrevHouse()" aria-label="Previous house">‹</button>
+      <div class="wardrobe-frame">
+        <div class="wardrobe-house-label" id="wardrobe-house-label">House Name</div>
+        <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
+      </div>
+      <button class="wardrobe-nav-btn next" onclick="closetNextHouse()" aria-label="Next house">›</button>
+    </div>
+    <div class="wardrobe-hint">‹ &nbsp;&amp;&nbsp; › to move between houses</div>
+  </div>
 </div>
 
 <!-- COLLECTION -->
@@ -1739,7 +1757,7 @@ function hexPts(cx,cy,r,squash){
 // Matched as a substring against the fragrance's house name.
 const HOUSE_SHAPES=[
   {match:["tom ford"],shape:"flatcap-ridged"},
-  {match:["yves saint laurent","ysl","afnan"],shape:"flatcap"},
+  {match:["yves saint laurent","ysl"],shape:"flatcap"},
   {match:["azzaro"],shape:"ribbed"},
   {match:["maison margiela","replica"],shape:"apothecary"},
   {match:["kilian"],shape:"cutcrystal"},
@@ -1947,60 +1965,497 @@ function closetEntries(){
   return [...owned,...wishlisted];
 }
 
-// If a real bottle photo exists at images/bottles/<slug>.png in the repo, it
-// renders on top of the stylized SVG automatically; if it 404s, it's removed
-// and the SVG underneath shows through. Slug is predictable from house+name
-// so you know exactly what to name the file.
+// Real bottle photos, keyed by house+LINE/COLLECTION where known — most
+// fragrances within a line share one bottle design, so one image covers
+// every fragrance listed in "match" for that line. Filenames come directly
+// from your uploaded set (images/bottles/<filename>), reconciled against
+// the tracker sheet. "houseMatch"/"match" checks are case-insensitive
+// substrings, so this stays robust even if a fragrance's house/name in the
+// app doesn't exactly match the tracker's spelling.
+const FRAGRANCE_LINE_MAP=[
+  {houseMatch:['tom ford'],lines:[
+    {file:'tom-ford-medterranean-citrus.jpg',match:['neroli portofino','taormina orange','azure lime','mandarino di amalfi']},
+    {file:'tom-ford-audacious-fruits.jpg',match:['bitter peach','electric cherry','lost cherry','cherry smoke','figue erotique']},
+    {file:'tom-ford-artistic-florals.jpg',match:['rose prick','rose exposed','jasmin rouge','noir de noir']},
+    {file:'tom-ford-sensual-leather.jpg',match:['white suede','fucking fabulous','tuscan leather']},
+    {file:'tom-ford-soleil-escapism.jpg',match:['soleil blanc','soleil de feu']},
+    {file:'tom-ford-other.jpg',match:['oud voyager','oud wood','tobacco vanille','ombre leather','black orchid oud minerale','vanille fatale','ebene fume','myrrhe mystere','costa azzurra','grey vetiver','amber intrigue','vanilla sex','black lacquer','noir de noir','bois marocain','café rose','velvet orchid','santal brush','fougere d\'argent']},
+  ]},
+  {houseMatch:['yves saint laurent','ysl'],lines:[
+    {file:'yves-saint-laurent-myself.jpg',match:['edt intense','edp','le parfum','absolu']},
+    {file:'yves-saint-laurent-libre.jpg',match:['edp','edp intense','berry crush','le parfum','flowers & flames','l\'eau nue parfum de peau']},
+    {file:'yves-saint-laurent-y.jpg',match:['edp','le parfumm','iced cologne','y elixir','edp intense','edt']},
+    {file:'yves-saint-laurent-le-vestiaire.jpg',match:['babycat','tuxedo','muse','gold','velours','37 rue de bellechasse','saharienne','caban','cuir','capeline','jumpsuit','lavalliere','blouse','trench','6 place saint sulpice','24 rue de l\'universite']},
+    {file:'yves-saint-laurent-opium.jpg',match:['black opium edp','opium','black opium le parfum','black opium edp over red']},
+    {file:'yves-saint-laurent-mon-paris.jpg',match:['edp','edp intensement','lumiere edt']},
+    {file:'yves-saint-laurent-lhome.jpg',match:['edt','le parfum','edp']},
+  ]},
+  {houseMatch:['amouage'],lines:[
+    {file:'amouage-the-secret-garden.jpg',match:['love hibiscus','love delight','lilac love','blossom love']},
+    {file:'amouage-the-essences.jpg',match:['outlands','line 618','elsewhere','remain','sequence','lustre','reasons']},
+    {file:'amouage-the-odyssey-collection.jpg',match:['decision','existence','guidance','purpose','lineage','meander','ashore','enclave','crimson rocks','material','purpose']},
+    {file:'amouage-the-main-collection.jpg',match:['reflection','dia','epic','gold','honour','interlude','overturememoir','jubilation xxv','imitation','journey','lyric']},
+    {file:'amouage-the-library-colllection.jpg',match:['opus xvi timber','opus xv king blue','opus xiv royal tobacco','opus v woody symphony','opus vii reckless leather','opus xiii silver oud']},
+    {file:'amouage-the-exceptional-extraits.jpg',match:['purpose 50','guidance 46','jubilation 40 man','dia 40 woman','interlude 53 man','epic 56 woman','reflection 45 man','interlude 53 man','honour 43 woman']},
+    {file:'amouage-the-attars.jpg',match:['tonka misfah','suede ibri','luban al akhdar','leather sadah','oud ulya','vanilla barka','rose aqor','santal sohar']},
+  ]},
+  {houseMatch:['azzaro'],lines:[
+    {file:'azzaro-forever-wanted.jpg',match:['forever wanted']},
+    {file:'azzaro-most-wanted.jpg',match:['most wanted']},
+    {file:'azzaro-wanted.jpg',match:['wanted']},
+    {file:'azzaro-chrome.jpg',match:['chrome']},
+    {file:'azzaro-pour-homme.jpg',match:['pour homme']},
+  ]},
+  {houseMatch:['maison margiela','replica'],lines:[
+    {file:'maison-margiela-edt-replica.jpg',match:['beach walk','sailing day','never-ending summer','jazz club','lazy sunday morning','by the fireplace','when the rain stops','under the lemon trees','chasing sunsets','afternoon delight','bubble bath','springtime in a park','up at dawn','on a date','from the garden','coffee break','under the stars','autumn vibes']},
+    {file:'maison-margiela-edp-replica.jpg',match:['celestial whispers','ideal one','soul of the forest','flying','dancing on the moon']},
+    {file:'maison-margiela-scentsorium.jpg',match:['fit of folly','blaze of stillness','delight in despair','anguish and awe','silent fury','tender defiance']},
+  ]},
+  {houseMatch:['kilian'],lines:[
+    {file:'kilian-the-liquors.jpg',match:['angels\' share on the rocks','angels\' share','old fashioned','apple brandy on the rocks','fievre verte','roses on ice']},
+    {file:'kilian-the-narcotics.jpg',match:['good girl gone bad','princess','can\'t stop loving you','love don’t be shy extreme','goold girl gone bad extreme','love don’t be shy eau fraiche','good girl gone bad eau fraiche','woman in gold','rolling in love','voulez-vous coucher avec moi','liaisons dangereuses typical me','forbidden games','rose oud','a kiss from a rose','her majesty','sunkissed goddess','love don\'t be shy']},
+    {file:'kilian-the-cellars.jpg',match:['sacred wood','straight to heaven white cristal','black phantom-"memento mori"','intoxicated','playing with the devil']},
+    {file:'kilian-the-fresh.jpg',match:['bamboo harmony','flower of immortality','imperial tea','vodka on the rocks','moonlight in heaven','kologne shield of protection']},
+    {file:'kilian-the-smokes.jpg',match:['smoking hot','dark lord-"ex tenebris lux"','back to back aphrodisiac','musk oud','pearl oud']},
+  ]},
+  {houseMatch:['stephane humbert lucas'],lines:[
+    {file:'stephane-humbert-lucas-777-777.jpg',match:['soleil de jeddah mango kiss','isra & miraj','soleil de jeddah l\'original','taklamakan','soleil de jeddah afterglow','black gemstone','2022 generation black','khol de bahrein','panthea','panthea iris','rose de petra','une nuit a doha','o hira','oumma wish come true','lufu']},
+    {file:'stephane-humbert-lucas-777-exclusive.jpg',match:['ruby naga','harrods h mamba']},
+    {file:'stephane-humbert-lucas-777-serpent.jpg',match:['the queen and the viper','le 8','god of fire','sea my love','venom incarnat','sand dance','mortal skin','pink boa','lady white snake','ruby naga','harrods h mamba','crying of evil']},
+  ]},
+  {houseMatch:['xerjoff'],lines:[
+    {file:'xerjoff-1861.jpg',match:['naxos','renaissance','decas','zefiro']},
+    {file:'xerjoff-join-the-club.jpg',match:['torino 21','40 knots','torino 25','torino 22','more than words','torino 24','k-bridge club','400','comandante!','don','ivory route','shunkoin','torino 23','fatal charme','ascot moon','birdie']},
+    {file:'xerjoff-oud-stars.jpg',match:['alexandria ii','alexandria iii','alexandria orientale','al-khatt','ceylon','gao','fars','luxor','malesia','mamluk','zafar']},
+    {file:'xerjoff-shooting-stars.jpg',match:['gibeon','uden','apollonia','aridal','cruz del sur i','cruz del sur ii','uden overdose','nio','lua','red hoba','kobe','oesel','allende','blue hope','modoc','emery']},
+    {file:'xerjoff-vibe.jpg',match:['erba pura','erba gold','coro','accento','soprano','accento overdose','purple accento','overture','opera','wardasina','muse','laylati','amabile']},
+    {file:'xerjoff-1717.jpg',match:['richwood','damarose','pikovaya dama','irisss','symphonium homme','homme anniversary','elle','elle anniversary','xxy']},
+    {file:'xerjoff-blends.jpg',match:['fierezza','avanguadia','perseveranza','tony iommi monkey special','louis xv 1722 rose','duran duran black moonlight','tony iomi deified','louis xv 1722','groove xcape']},
+    {file:'xerjoff-nitto-atp-finals.jpg',match:['torino 21','torino 22','torino 23','torino 24','torino 25']},
+  ]},
+  {houseMatch:['initio'],lines:[
+    {file:'initio-parfums-prives-supercharged.jpg',match:['wild rush','sugar blast']},
+    {file:'initio-parfums-prives-carnal-blends.jpg',match:['side effect','narcotic delight','can\'t get enough','atomic rose','psychedelic love','high frequency','side effect']},
+    {file:'initio-parfums-prives-hedonist.jpg',match:['lift me up','musk therapy','power self','rehab','paragon']},
+    {file:'initio-parfums-prives-black-gold-project.jpg',match:['oud for greatness','oud for greatness neo','oud for happiness']},
+    {file:'initio-parfums-prives-absolutes.jpg',match:['absolute aphrodisiac','blessed baraka','mystic experience','addictive vibration']},
+  ]},
+  {houseMatch:['roja'],lines:[
+    {file:'roja-parfums-art-collection.jpg',match:['serenity blend','nuwa','a midsummer dream','manhattan','burlington 1819']},
+    {file:'roja-parfums-aoud-collection.jpg',match:['espresso aoud','qatar','uae','sultanate of oman','aoud extraordinaire','amber aoud','aoud','sweetie aoud','enigma aoud','taif aoud','amber aoud crystal','aoud crystal']},
+    {file:'roja-parfums-elysium-collection.jpg',match:['elysium pour homme','roja parfums elysium','elysium pour femme','elysium noir','elysium eau intense']},
+    {file:'roja-parfums-isola-collection.jpg',match:['isola sol','isola verde','isola blu','oceania','snow']},
+    {file:'roja-parfums-prestige-collection.jpg',match:['lost in paris','parfum de la nuit','diaghilev','roja','a goodnight kiss','great britain','chypre extraordinaire']},
+  ]},
+  {houseMatch:['mind games'],lines:[
+    {file:'mind-games-soulmate-collection.jpg',match:['playmate','check please','queening','french defense','vieri','en prise','sans voir','sissa','lionora','ruy lopez','the forward','gambit']},
+    {file:'mind-games-artisan-collection.jpg',match:['opera mate','counterplay','grand master','checkmate','gardez','caissa','scholar\'s mate','as-suli\'s diamond','double attack','blockade','j\'adoube','castling']},
+    {file:'mind-games-perfumer-extraordinaire.jpg',match:['kingside','queenside','mentor','prodigy']},
+  ]},
+  {houseMatch:['acqua di parma'],lines:[
+    {file:'acqua-di-parma-colonia.jpg',match:['colonia ii profumo millesimato','colonia ii profumo','colonia','colonia c.l.u.b','colonia essenza','colonia intensa','colonia pura','colonia splash']},
+    {file:'acqua-di-parma-buongiorno.jpg',match:['buongiorno dolce far niente','buongiorno bounanotte','buongiorno gioco del destino','buongiorno al bacio','buongiorno  amore mio','buongiorno']},
+    {file:'acqua-di-parma-signatures-of-the-sun.jpg',match:['gelsomino a freddo','gelsomino a freddo ambrosia','zafferano','zafferano ambrosia','oud','oud & spice','quercia','sandalo','luce di rosa','magnolia infinita','yuzu','osmanthus','magnolia infinita','lily of the valley','ambra','crystal incense','luce di rosa']},
+    {file:'acqua-di-parma-blu-mediterraneo.jpg',match:['bergamotto la spugnatura','fico di amalfi','fico di amalfi la riserva','arancia di capri la riserva','mirto di panarea la riserva','mandarino di sicilia']},
+    {file:'acqua-di-parma-note-di-colonia.jpg',match:['note di colonia i','note di colonia ii','note di colonia iii','note di colonia iv','note di colonia v']},
+    {file:'acqua-di-parma-le-nobili.jpg',match:['peonia nobile','rosa nobile','magnolia nobile']},
+  ]},
+  {houseMatch:['bdk'],lines:[
+    {file:'bdk-parfums-studio.jpg',match:['stellar silk','oud paradisio','silver ceremony']},
+    {file:'bdk-parfums-parisienne.jpg',match:['impadia','gris charnel','gris charnel extrait','rouge smoking','rouge smoking extrait','pas ce soir','pas ce soir extrait','bouquet de hongrie','312 saint-honore']},
+    {file:'bdk-parfums-matieres.jpg',match:['velvet tonka extrait','vanille caviar','vanille leather','velvet tonka','crème de cuir','tuberuse imperiale','tabac rose']},
+    {file:'bdk-parfums-azur.jpg',match:['villa neroli','citrus riviera','sel d\'argent']},
+  ]},
+  {houseMatch:['boadicea'],lines:[
+    {file:'boadicea-the-victorious-misc.jpg',match:['opulence','1907','almas','amber sapphire','angelic','aqua sapphire','ardent','azrak','blue sapphire','blue sapphire supercharged','bodacious','bravery','carbon sapphire supercharged','complex','complex 2020','consort','dasman','decadence','defender','dragon','elaborate','empire','energizer','enthrone','envious','glorious','green sapphire','hanuman','harmonious','hasu','heroine','imperial','jubilee','knight of love','lannosea','lavish','majestic','monarch','nebulous','nemer','opal','oud sapphire','rebellious','respendent','rose sapphire','tobacco sapphire','valiant','vetiver imperiale','violet sapphire supercharged']},
+  ]},
+  {houseMatch:['bond no','bond no. 9','bond no9'],lines:[
+    {file:'bond-no-9-uptown.jpg',match:['beekman place','riverside drive','sutton place','new haarlem','madison avenue','park avenue','west side','off-broadway','madison soiree','fashion avenue']},
+    {file:'bond-no-9-downtown.jpg',match:['bond no 1','greenwhich village','chelsea nights','lafayette street','nomad','tribeca','nolita','gold street','bleecker street','astor place','fidi','gold coast','wall street','chelsea flowers','nuits de noho','chez bond','new bond st','brooklyn','park avenue south','chinatown','nouveau bowery','soho']},
+    {file:'bond-no-9-ny-parks.jpg',match:['tuxedo park','central park south','central park west','secret gardens','new york gardenia','high line','madison square park','new york flowers']},
+    {file:'bond-no-9-ny-city-scents.jpg',match:['my oud','super oud','new york nights','manhattan','oud supreme','good oud','signature scent','greenpoint','new york forever','the scent of peace','so new york','queens','my new york','new york fling','new york spring fling','eau de new york','new york patchouli','new york amber','new york musk','new york oud','perfumista avenue']},
+    {file:'bond-no-9-ny-beaches.jpg',match:['hamptons','bond no.9\'s island','governors island','jones beach','sag harbor','coney island','shelter island','liberty island','montauk']},
+  ]},
+  {houseMatch:['burberry'],lines:[
+    {file:'burberry-for-men.jpg',match:['burberry hero edt','burberry hero edp','burberry hero parfum','burberry hero parfum intense','mr. burberry edt','mr. burberry edp','mr. burberry indigo edt','burberry brit for men edt','burberry brit rhythm for men edt','burberry brit rhythm intense edt','burberry london for men edt','burberry touch for men edt','burberry weekend for men edt','burberry classic for men edt','burberry signatures amber heath','burberry signatures garden roses','burberry signatures hawthorn bloom','burberry signatures high tea','burberry signatures midnight journey','burberry signatures oud storm','burberry signatures snow blossom','burberry signatures tudor rose','burberry signatures extreme botanicals golden haze','burberry signatures extreme botanicals rose ember','burberry signatures extreme botanicals oak absolute','burberry signatures extreme botanicals oud storm']},
+    {file:'burberry-for-women.jpg',match:['burberry goddess edp','burberry goddess intense edp','burberry her edp','burberry her elixir de parfum','burberry her eau de parfum intense','burberry her blossom edt','burberry her london dream edp','burberry her petals edp','my burberry edp','my burberry blush edp','my burberry black parfum','my burberry edt','burberry brit for her edt','burberry brit sheer edt','burberry brit rhythm for women edt','burberry body edp','burberry body tender edt','burberry london for women edp','burberry touch for women edp','burberry weekend for women edp','burberry classic for women edp','burberry signatures amber heath','burberry signatures garden roses','burberry signatures hawthorn bloom','burberry signatures high tea','burberry signatures midnight journey','burberry signatures oud storm','burberry signatures snow blossom','burberry signatures tudor rose','burberry signatures extreme botanicals golden haze','burberry signatures extreme botanicals rose ember','burberry signatures extreme botanicals oak absolute','burberry signatures extreme botanicals oud storm']},
+  ]},
+  {houseMatch:['bvlgari','bulgari'],lines:[
+    {file:'bvlgari-for-men.jpg',match:['bvlgari pour homme edt','bvlgari pour homme edp','bvlgari pour homme extreme','bvlgari man','bvlgari man extreme','bvlgari man in black edp','bvlgari man in black parfum','bvlgari man black cologne','bvlgari man wood essence edp','bvlgari man wood essence parfum','bvlgari man wood neroli','bvlgari man glacial essence','bvlgari man rain essence','aqva pour homme','aqva pour homme marine','aqva atlantiqve','aqva amara','eau parfumée au thé vert','eau parfumée au thé blanc','eau parfumée au thé bleu','eau parfumée au thé noir','eau parfumée thé impérial','le gemme tygar','le gemme gyan','le gemme falkar','le gemme kobraa','le gemme orom','le gemme azaran','le gemme sahare']},
+    {file:'bvlgari-for-women.jpg',match:['omnia crystalline','omnia crystalline edp','omnia amethyste','omnia coral','omnia paraiba','omnia pink sapphire','omnia golden citrine','omnia indian garnet','omnia mary katrantzou','goldea the roman night','goldea the roman night absolute','goldea the roman night absolute sensuelle','rose goldea','rose goldea blossom delight','goldea','splendida iris d\'or','splendida rose rose','splendida jasmin noir','jasmin noir','mon jasmin noir','allegra fiori d\'amore','allegra magnifying musk','allegra magnifying vanilla','allegra magnifying bergamot','allegra magnifying patchouli','allegra magnifying rose','allegra dolce estasi','allegra fantasia veneta','allegra rock\'n\'rome','allegra riva solare','allegra spettacolore','allegra baciami','allegra chill & sole','allegra insieme','le gemme calaluna','le gemme empyr','le gemme rubinia','le gemme ashlemah','le gemme yasep']},
+  ]},
+  {houseMatch:['byredo'],lines:[
+    {file:'byredo-misc.jpg',match:['alto astral','animalique','bal d\'afrique','bal d\'afrique absolu','bibliothèque','black saffron','black saffron absolu','blanche','blanche absolu','bois obscur','casablanca lily','cuir obscur','cuir sellier','de los santos','desert dawn','eleventh hour','eyes closed','flowerhead','gypsy water','gypsy water absolu','inflorescence','la tulipe','lil fleur','mojave ghost','mojave ghost absolu','mixed emotions','mumbai noise','night veils accord oud','oud immortel','open sky','palermo','pulp','reine de nuit','rose noir','rose of no man\'s land','rose of no man\'s land absolu','sellier','sister dreamer','slow dance','sundazed','super cedar','tobacco mandarin','tree house','vanille antique','velvet haze','young rose']},
+  ]},
+  {houseMatch:['calvin klein',' ck '],lines:[
+    {file:'ck-calvin-klein-ck-collection.jpg',match:['ck one','ck one essence parfum intense','ck be','ck all','ck everyone edt','ck everyone edp','ck one shock for him','ck one shock for her','ck in2u for him','ck in2u for her']},
+    {file:'ck-calvin-klein-eternity-men-collection.jpg',match:['eternity for men edt','eternity for men edp','eternity parfum for men','eternity aqua for men','eternity air for men','eternity flame for men','eternity summer daze for men']},
+    {file:'ck-calvin-klein-eternity-women-collection.jpg',match:['eternity edp','eternity intense','eternity aqua for women','eternity air for women','eternity flame for women','eternity summer daze for women']},
+    {file:'ck-calvin-klein-euphoria-men-collection.jpg',match:['euphoria men edt','euphoria men intense','euphoria men amber gold']},
+    {file:'ck-calvin-klein-euphoria-women-collection.jpg',match:['euphoria edp','euphoria blossom','euphoria forbidden','euphoria endless','deep euphoria','euphoria amber gold','euphoria magnetic elixir','euphoria bold elixir','euphoria solar elixir']},
+    {file:'ck-calvin-klein-obsession-collection.jpg',match:['obsession for women','obsession for men edt','obsession night for men','secret obsession']},
+    {file:'ck-calvin-klein-defy-collection.jpg',match:['defy edt','defy edp','defy parfum']},
+    {file:'ck-calvin-klein-mens-fragrances.jpg',match:['escape for men','contradiction for men','truth for men','crave','reveal men','calvin edt']},
+    {file:'ck-calvin-klein-womens-fragrances.jpg',match:['escape for women','contradiction for women','truth for women','reveal women','sheer beauty','beauty','downtown','calvin edp']},
+  ]},
+  {houseMatch:['carolina herrera'],lines:[
+    {file:'carolina-herrera-bad-boy-collection.jpg',match:['bad boy edt','bad boy le parfum','bad boy cobalt edp','bad boy cobalt elixir','bad boy extreme','bad boy gold fantasy','bad boy superstars collector edition']},
+    {file:'carolina-herrera-212-men-collection.jpg',match:['212 men edt','212 sexy men','212 vip men','212 vip black','212 vip black elixir','212 heroes edt','212 heroes forever young','212 vip men wins','212 vip men nyc','212 vip men party fever']},
+    {file:'carolina-herrera-ch-men-collection.jpg',match:['ch men edt','ch men prive','ch men sport','ch men grand tour','ch kings']},
+    {file:'carolina-herrera-herrera-confidential-collection.jpg',match:['amber desire','burning rose','confidential gold incense','iris empire','mystery tobacco','nightfall patchouli','oud couture','saffron lazuli','sandal ruby','virgin mint']},
+    {file:'carolina-herrera-good-girl-collection.jpg',match:['good girl edp','good girl supreme','good girl suprême elixir','good girl blush edp','good girl blush elixir','good girl légère','very good girl edp','very good girl glam','good girl dazzling garden','good girl midnight','good girl gold fantasy']},
+    {file:'carolina-herrera-212-women-collection.jpg',match:['212 nyc edt','212 sexy','212 vip rosé','212 vip rosé elixir','212 vip wins','212 heroes for her','212 splash','212 vip party fever']},
+    {file:'carolina-herrera-ch-women-collection.jpg',match:['ch edt','ch sublime','ch l\'eau','ch sport','ch eau de parfum sublime']},
+  ]},
+  {houseMatch:['creed'],lines:[
+    {file:'creed-aventus.jpg',match:['aventus','aventus cologne','absolu aventus','aventus for her']},
+    {file:'creed-classic.jpg',match:['green irish tweed','silver mountain water','millésime impérial','virgin island water','original vetiver','original santal','royal oud','royal water','himalaya','bois du portugal','erolfa','viking','viking cologne','neroli sauvage','tabarome millésime','aberdeen lavender']},
+    {file:'creed-womens.jpg',match:['love in white','love in black','love in white for summer','acqua fiorentina','spring flower','spring flower edp','royal princess oud','wind flowers','carmina','queen of silk','eladaria']},
+    {file:'creed-les-royales-exclusive.jpg',match:['spice and wood','pure white cologne','white amber','white flowers','jardin d\'amalfi','sublime vanille']},
+    {file:'creed-acqua-originale.jpg',match:['aberdeen lavander','asian green tea','cedre blanc','iris tubéreuse','vetiver géranium']},
+    {file:'creed-amber-universe.jpg',match:['fragaria','delphinus','centaurus']},
+  ]},
+  {houseMatch:['clive christian'],lines:[
+    {file:'clive-christian-original.jpg',match:['1872 masculine','1872 feminine','no.1 masculine','no.1 feminine','x masculine','x feminine']},
+    {file:'clive-christian-noble.jpg',match:['cosmos flower','immortelle','magnolia','amberwood','blonde amber','rock rose']},
+    {file:'clive-christian-addictive-arts.jpg',match:['jump up and kiss me hedonistic','jump up and kiss me ecstatic','strange heavens out of the blue']},
+    {file:'clive-christian-private.jpg',match:['c woody leather','i woody floral','v amber fougère','l red tea vetiver','e cashmere musk']},
+    {file:'clive-christian-crown.jpg',match:['matsukita','crab apple blossom','town & country']},
+    {file:'clive-christian-limited-edition-anniversary.jpg',match:['iconic masculine','iconic feminine']},
+  ]},
+  {houseMatch:['dior'],lines:[
+    {file:'dior-sauvage.jpg',match:['sauvage edt','sauvage edp','sauvage parfum','sauvage elixir','sauvage eau forte','sauvage extrait','eau sauvage edt','eau sauvage extreme','eau sauvage parfum','eau sauvage cologne']},
+    {file:'dior-homme.jpg',match:['dior homme cologne','dior homme edt','dior homme original','dior homme intense','dior homme parfum','dior homme sport']},
+    {file:'dior-fahrenheit.jpg',match:['fahrenheit edt','fahrenheit le parfum','fahrenheit parfum','fahrenheit cologne','fahrenheit aqua','fahrenheit absolute','fahrenheit 32']},
+    {file:'dior-miss.jpg',match:['miss dior originale','miss dior edt','miss dior edp','miss dior parfum','miss dior blooming bouquet','miss dior rose n\'roses','miss dior absolutely blooming','miss dior cherie (discontinued)']},
+    {file:'dior-jadore.jpg',match:['j\'adore edp','j\'adore parfum d\'eau','j\'adore l\'or','j\'adore infinissime','j\'adore edt','j\'adore absolu','j\'adore voile de parfum']},
+    {file:'dior-poison.jpg',match:['poison edt','tendre poison','hypnotic poison edt','hypnotic poison edp','hypnotic poison parfum','pure poison','midnight poison','poison girl edp','poison girl edt','poison girl unexpected']},
+    {file:'dior-dior-addict.jpg',match:['dior addict edp','dior addict edt','dior addict eau fraîche','dior addict shine','dior addict 2']},
+    {file:'dior-joy.jpg',match:['joy by dior edp','joy by dior intense','joy by dior edt']},
+    {file:'dior-dune.jpg',match:['dune edt','dune pour homme']},
+    {file:'dior-dolce-vita.jpg',match:['dolce vita edt']},
+  ]},
+  {houseMatch:['diptyque'],lines:[
+    {file:'diptyque-les-essences-de-diptyque.jpg',match:['rose roche','corail oscuro','lunamaris','lazulio','bois corsé','lilyphéa']},
+    {file:'diptyque-eaux-de-parfum.jpg',match:['34 boulevard saint germain edp','benjoin bohème','do son edp','eau capitale','eau duelle edp','eau mage','eau nabati','eau rihla','eau rose edp','fleur de peau','l\'eau papier','l\'ombre dans l\'eau edp','orphéon edp','oud palao','philosykos edp','tam dao edp','tempo','volutes edp']},
+    {file:'diptyque-eaux-de-toilette.jpg',match:['34 boulevard saint germain edt','do son edt','eau de lierre','eau de minthé','eau des sens','eau duelle edt','eau lente','eau moheli','eau rose edt','l\'eau des hespérides','l\'eau de néroli','l\'eau de tarocco','l\'ombre dans l\'eau edt','olène','orphéon edt','oyédo','philosykos edt','tam dao edt','vetyverio edt','volutes edt']},
+    {file:'diptyque-limited-and-special-editions.jpg',match:['ilio edt','eau de minthe limited editions','kyoto','opsis','eau des sens summer limited editions']},
+  ]},
+  {houseMatch:['dolce'],lines:[
+    {file:'dolce-gabbana-light-blue-women.jpg',match:['light blue edt','light blue edp','light blue eau intense','light blue forever','light blue italian love','light blue summer vibes','light blue capri in love edp','light blue dreaming in portofino','light blue escape to panarea','light blue love is love','light blue sun','light blue living stromboli']},
+    {file:'dolce-gabbana-light-blue-men.jpg',match:['light blue pour homme edt','light blue pour homme edp','light blue eau intense pour homme','light blue forever pour homme','light blue italian love pour homme','light blue summer vibes pour homme','light blue capri in love pour homme edp','light blue discover vulcano','light blue beauty of capri','light blue love is love pour homme','light blue sun pour homme','light blue living stromboli pour homme']},
+    {file:'dolce-gabbana-the-one-women.jpg',match:['the one edp','the one edt','the one essence','the one eau de parfum intense','the one gold eau de parfum intense','the one desire','the one lace edition','rose the one']},
+    {file:'dolce-gabbana-the-one-men.jpg',match:['the one for men edt','the one for men edp','the one for men parfum','the one for men gold edp intense','the one for men royal night','the one for men grey','the one for men mysterious night','the one for men luminous night','the one gentleman','the one sport']},
+    {file:'dolce-gabbana-devotion.jpg',match:['devotion edp','devotion edp intense','my devotion edp intense','your devotion edp intense','devotion for men edp','devotion for men parfum']},
+    {file:'dolce-gabbana-k-and-q.jpg',match:['k by dolce&gabbana edt','k by dolce&gabbana edp','k by dolce&gabbana parfum','k by dolce&gabbana intense edp','q by dolce&gabbana edp','q by dolce&gabbana edp intense','q by dolce&gabbana parfum','q by dolce&gabbana elixir']},
+    {file:'dolce-gabbana-dolce.jpg',match:['dolce edp','dolce floral drops edt','dolce rosa excelsa edp','dolce garden edp','dolce peony edp','dolce shine edp','dolce rose edt','dolce lily edt','dolce violet edt','dolce blue jasmine edp','dolce magnolia edp']},
+    {file:'dolce-gabbana-velvet-collection.jpg',match:['velvet amber skin','velvet amber sun','velvet bergamot','velvet black patchouli','velvet blue musk','velvet cypress','velvet desert oud','velvet desire','velvet exotic leather','velvet ginestra','velvet honey santal','velvet incenso','velvet infusion','velvet love','velvet mimosa bloom','velvet mughetto','velvet oriental musk','velvet passion oud','velvet pure','velvet rose','velvet sicily','velvet sublime','velvet tender oud','velvet vetiver','velvet wood','velvet zafferano','velvet crystal smoke']},
+    {file:'dolce-gabbana-other-and-legacy.jpg',match:['dolce&gabbana pour femme','pour femme intense','dolce&gabbana pour homme','pour homme intenso','classic pour femme','classic pour homme','sicily','sicily edp','sicily for men','d&g feminine','d&g masculine','by woman','by man','anthology l\'imperatrice 3','anthology la lune 18','anthology le bateleur 1','anthology l\'amoureux 6','anthology la roue de la fortune 10','anthology la force 11','anthology le fou 21','anthology l\'empereur 4','the only one edp','the only one 2','the only one edp intense']},
+  ]},
+  {houseMatch:['ex nihilo'],lines:[
+    {file:'ex-nihilo-initiale.jpg',match:['fleur narcotique','santal calling','gold immortals','venenum kiss','iris porcelana','cologne 352','oud vendome','bois d\'hiver','vetiver moloko','musc infini','jasmin fauve','rose hubris']},
+    {file:'ex-nihilo-interdite.jpg',match:['lust in paradise','spiky muse','explicite','devil tender','honoré delights','vesper glitz','viper green','my sweetest morphine','love shot']},
+    {file:'ex-nihilo-iconoclaste.jpg',match:['demon dancer','the hedonist','speed legends','citizen x','outcast blue','french affair']},
+    {file:'ex-nihilo-visionnaire.jpg',match:['blue talisman','generation(s)','cuir celeste']},
+    {file:'ex-nihilo-babylone.jpg',match:['atlas fever','chandigarh express','amber sky','midnight special']},
+    {file:'ex-nihilo-quintessence.jpg',match:['blue talisman extrait','fleur narcotique extrait','the hedonist extrait','outcast blue extrait','gold immortals extrait','lust in paradise extrait']},
+  ]},
+  {houseMatch:['giorgio armani','armani'],lines:[
+    {file:'giorgio-armani-acqua-di-gio.jpg',match:['acqua di giò edt','acqua di giò edp','acqua di giò parfum','acqua di giò profondo edp','acqua di giò profondo parfum','acqua di giò profondo lights','acqua di giò profumo','acqua di giò absolu','acqua di giò absolu instinct','acqua di giò essenza','acqua di giò blue edition']},
+    {file:'giorgio-armani-armani-code.jpg',match:['armani code edt','armani code edp','armani code parfum','armani code elixir','armani code profumo','armani code absolu','armani code absolu gold','armani code colonia','armani code ice','armani code sport','armani code summer','armani code ultimate','armani code for women edp','armani code for women edt','armani code satin','armani code cashmere','armani code luna','armani code couture']},
+    {file:'giorgio-armani-stronger-with-you.jpg',match:['stronger with you edt','stronger with you intensely edp','stronger with you absolutely parfum','stronger with you powerfully edp','stronger with you only','stronger with you freeze','stronger with you leather','stronger with you oud','stronger with you amber','stronger with you tobacco']},
+    {file:'giorgio-armani-my-way.jpg',match:['my way edp','my way intense edp','my way floral edp','my way parfum','my way nectar edp','my way ylang edp','my way sunny vanilla edp']},
+    {file:'giorgio-armani-si.jpg',match:['sì edp','sì edt','sì intense edp','sì passione edp','sì passione intense edp','sì passione éclat edp','sì fiori edp','sì le parfum','sì rose signature','sì nacre sparkling limited edition','sì golden bow']},
+    {file:'giorgio-armani-acqua-di-gioia.jpg',match:['acqua di gioia edp','acqua di gioia intense edp','air di gioia','light di gioia','sky di gioia','sun di gioia','ocean di gioia','terra di gioia']},
+    {file:'giorgio-armani-emporio-armani.jpg',match:['emporio armani she','emporio armani he','because it\'s you','in love with you','in love with you freeze','diamonds for women','diamonds intense','diamonds rose','diamonds violet','diamonds club','diamonds for men','diamonds black carat','remix for her','remix for him','city glam for her','city glam for him','white for her','white for him','power of you edp']},
+    {file:'giorgio-armani-armani-prive-les-eaux.jpg',match:['thé yulong','thé yulong soie de nacre','thé yulong le parfum','orangerie venise','gardénia antigua','jasmin kusamono','rose milano','iris bleu','vétiver d\'hiver','pivoine suzhou','figuier eden','cyprès pantelleria','magenta tanzanite','rouge malachite']},
+    {file:'giorgio-armani-armani-prive-la-collection.jpg',match:['bois d\'encens','bois d\'encens haute couture','cuir améthyste','ambre soie','pierre de lune','eau de jade','rose alexandrie','éclat de jasmin','cèdre olympe','myrrhe impériale','vert malachite','bleu turquoise','sable nuit','musc shamal','indigo tanzanite','blanc kogane']},
+    {file:'giorgio-armani-armani-prive-oriental-collections.jpg',match:['oud royal','rose d\'arabie','ambre eccentrico','cuir noir','encens satin','musc shamal','santal dān shā','rouge malachite','vert malachite','bleu turquoise','magenta tanzanite','indigo tanzanite']},
+  ]},
+  {houseMatch:['givenchy'],lines:[
+    {file:'givenchy-gentleman.jpg',match:['gentleman givenchy edt','gentleman givenchy edp','gentleman givenchy edp boisée','gentleman givenchy réserve privée edp','gentleman givenchy society edp','gentleman givenchy society extrême edp','gentleman givenchy society ambrée edp','gentleman givenchy society sport edt','gentleman only edt','gentleman only intense','gentleman only absolute','gentleman only casual chic','gentleman cologne','givenchy gentleman originale edt','givenchy gentleman originale edp']},
+    {file:'givenchy-linterdit.jpg',match:['l\'interdit edp','l\'interdit edt','l\'interdit parfum','l\'interdit edp intense','l\'interdit rouge edp','l\'interdit rouge ultime edp','l\'interdit rouge edition millésime','l\'interdit nocturnal jasmine edp','l\'interdit tubéreuse noire edp','l\'interdit absolu intense edp','l\'interdit angélique rouge edp','l\'interdit burning neroli edt','l\'interdit édition couture','l\'interdit eau de parfum rouge ultime']},
+    {file:'givenchy-irresistible.jpg',match:['irresistible edp','irresistible edt','irresistible edp very floral','irresistible rose velvet edp','irresistible nude velvet edp','irresistible fraiche edt','irresistible blossom crush edt','irresistible givenchy live rosy crush edp','irresistible givenchy eau de parfum intense']},
+    {file:'givenchy-la-collection-particuliere.jpg',match:['accord particulier','ambre tigré','désinvolte','enflammé','équivoque','faux semblant','garçon manqué','gentleman society','immortelle tribal','indompté','inséparables','mmw','noctambule','oud flamboyant','oiseau rare','sans artifice','trouble-fête','unda maris']},
+    {file:'givenchy-ange-ou-demon.jpg',match:['ange ou démon edp','ange ou démon le secret edp','ange ou démon le secret edt','ange ou démon le secret elixir','ange ou démon le secret edition riviera','ange ou démon le secret feather edition','ange ou démon tender','ange ou démon tendre jasmin','ange ou démon poesie d\'un parfum d\'hiver','ange ou démon parfum et accord illicite']},
+    {file:'givenchy-very-irresistible.jpg',match:['very irrésistible givenchy edt','very irrésistible givenchy edp','very irrésistible givenchy sensual edp','very irrésistible givenchy l\'intense edp','very irrésistible givenchy electric rose edt','very irrésistible givenchy summer sorbet','very irrésistible givenchy fresh attitude','very irrésistible givenchy for men']},
+    {file:'givenchy-pi-and-givenchy-pour-homme.jpg',match:['pi edt','pi fraîche','pi neo','pi air','pi extreme','givenchy pour homme edt','givenchy pour homme blue label edt','givenchy pour homme adventure','givenchy pour homme silver edition','givenchy pour homme red edition','givenchy pour homme white edition']},
+    {file:'givenchy-amarige-and-organza.jpg',match:['amarige edt','amarige mariage edp','amarige mimosa de grasse','amarige d\'amour','organza edp','organza indécence edp','organza first light','organza eau d\'été']},
+    {file:'givenchy-dahlia.jpg',match:['dahlia noir edp','dahlia noir edt','dahlia noir l\'eau','dahlia divin edp','dahlia divin edt','dahlia divin le nectar de parfum','dahlia divin eau initiale']},
+    {file:'givenchy-other-and-legacy.jpg',match:['ysatis edt','ysatis iris','hot couture edp','hot couture edt','hot couture collection no. 1','live irrésistible edp','live irrésistible délicieuse edp','live irrésistible blossom crush edt','play for her edp','play for her intense edp','play edt','play intense','xeryus edt','xeryus rouge edt','insensé','insensé ultramarine','grigi','iii','le de givenchy','eau de givenchy','eau de givenchy rosée','eau de givenchy boisée','eau de givenchy florale','eaudemoiselle de givenchy','eaudemoiselle de givenchy absolu d\'oranger','eaudemoiselle de givenchy essence des palais','eaudemoiselle de givenchy rose à la folie']},
+  ]},
+  {houseMatch:['goldfield'],lines:[
+    {file:'goldfield-banks-the-native-collection.jpg',match:['ingenious ginger','pacific rock flower','mystic bliss','sunset hour','pacific rock moss','bohemian lime','southern bloom','wood infusion','desert rosewood','white sandalwood','blue cypress','velvet splendour']},
+    {file:'goldfield-banks-the-botanical-series.jpg',match:['rose magnitude','tales of amber','silky woods','silky woods elixir','purple suede','island lush']},
+  ]},
+  {houseMatch:['guerlain'],lines:[
+    {file:'guerlain-les-extraits.jpg',match:['vanille planifolia extrait 21','rose centifolia extrait 1','iris pallida extrait 6']},
+    {file:'guerlain-aqua-allegoria.jpg',match:['aqua allegoria bergamote calabria','bosca vanilla','flora cherrysia','flora salvaggia','florabloom','granada salvia','mandarine basilic','nettare di sole','orange soleia','pamplelune','pera granita','rosa rossa','nerolia vetiver','bergamote calabria harvest','mandarine basilic harvest','nerolia vetiver harvest']},
+    {file:'guerlain-aqua-allegoria-forte-and-absolus-allegoria.jpg',match:['aqua allegoria forte bosca vanilla','aqua allegoria forte florabloom','aqua allegoria forte mandarine basilic','aqua allegoria forte nerolia vetiver','aqua allegoria forte oud yuzu','aqua allegoria forte rosa palissandro','aqua allegoria forte rosa rossa','absolus allegoria ambre samar','absolus allegoria cuir intense','absolus allegoria oud essentiel','absolus allegoria patchouli ardent','absolus allegoria rose amira','absolus allegoria santal royal','absolus allegoria épices exquises']},
+    {file:'guerlain-les-legendaires.jpg',match:['après l\'ondée edt','champs-élysées edp','chant d\'arômes edt','chamade edp','chamade edt','l\'heure bleue edp','l\'heure bleue edt','l\'instant de guerlain edp','l\'instant de guerlain edt','liu edp','mitsouko edp','mitsouko edt','nahema edp','samsara edp','samsara edt','vol de nuit edp','vol de nuit edt']},
+    {file:'guerlain-shalimar.jpg',match:['shalimar edp','shalimar edt','shalimar parfum','shalimar eau de cologne','shalimar millésime iris','shalimar millésime jasmin','shalimar millésime tonka','shalimar souffle de parfum','shalimar souffle intense','shalimar philtre de parfum','shalimar parfum initial','shalimar ode à la vanille','shalimar ode à la vanille sur la route du mexique','shalimar ode à la vanille sur la route de madagascar']},
+    {file:'guerlain-mon-guerlain.jpg',match:['mon guerlain edp','mon guerlain edt','mon guerlain intense edp','mon guerlain bloom of rose edt','mon guerlain bloom of rose edp','mon guerlain sparkling bouquet edp','mon guerlain florale edp','mon guerlain sensuelle edp','mon guerlain eau de parfum collector']},
+    {file:'guerlain-la-petite-robe-noire.jpg',match:['la petite robe noire edp','la petite robe noire edt','la petite robe noire parfum','la petite robe noire eau de parfum intense','la petite robe noire black perfecto edp florale','la petite robe noire black perfecto edt florale','la petite robe noire ma robe hippie-chic','la petite robe noire ma robe cocktail','la petite robe noire ma robe sous le vent','la petite robe noire eau fraîche','la petite robe noire velours','la petite robe noire rose cherry']},
+    {file:'guerlain-lhomme-ideal.jpg',match:['l\'homme idéal edt','l\'homme idéal edp','l\'homme idéal parfum','l\'homme idéal extrême edp','l\'homme idéal l\'intense edp','l\'homme idéal cologne','l\'homme idéal cologne forte edp','l\'homme idéal cool','l\'homme idéal sport']},
+    {file:'guerlain-mens-icons-and-legacy.jpg',match:['habit rouge edt','habit rouge edp','habit rouge parfum','habit rouge l\'instinct edt','habit rouge l\'instinct edp','habit rouge privé','habit rouge rouge privé','habit rouge spirit','vétiver edt','vétiver parfum','vétiver extrême','guerlain homme edt','guerlain homme edp','guerlain homme l\'eau boisée','héritage edt','héritage edp','l\'instant de guerlain pour homme edt','l\'instant de guerlain pour homme edp','l\'instant de guerlain pour homme extrême','homme idéal platine privé','derby','mouchoir de monsieur','eau de cologne impériale','eau de cologne du coq']},
+    {file:'guerlain-lart-and-la-matiere.jpg',match:['angélique noire','bois d\'arménie','cuir béluga','cruel gardénia','eau de tulle','épices volées','fève gourmande','herbes troublantes','jasmin bonheur','joyeuse tubéreuse','musc outreblanc','néroli outrenoir','néroli plein sud','oud khôl','oud nude','patchouli ardent','patchouli paris','pêche mirage','rose barbare','rose chérie','santal pao rosa','spiritueuse double vanille','tobacco honey','tonka impériale']},
+  ]},
+  {houseMatch:['hermes','hermès'],lines:[
+    {file:'hermes-terre-dhermes.jpg',match:['terre d\'hermès edt','terre d\'hermès parfum','terre d\'hermès eau givrée edp','terre d\'hermès eau intense vétiver edp','terre d\'hermès eau très fraîche edt','terre d\'hermès eau de parfum intense']},
+    {file:'hermes-h24.jpg',match:['h24 edt','h24 edp','h24 herbes vives edp']},
+    {file:'hermes-twilly-dhermes.jpg',match:['twilly d\'hermès edp','twilly d\'hermès eau poivrée edp','twilly d\'hermès eau ginger edp','tutti twilly d\'hermès edp']},
+    {file:'hermes-barenia.jpg',match:['barénia edp','barénia edp intense']},
+    {file:'hermes-les-jardins.jpg',match:['un jardin en méditerranée edt','un jardin sur le nil edt','un jardin après la mousson edt','un jardin sur le toit edt','le jardin de monsieur li edt','un jardin sur la lagune edt','un jardin à cythère edt','un jardin sous la mer edt']},
+    {file:'hermes-colognes.jpg',match:['eau d\'orange verte eau de cologne','eau de citron noir eau de cologne','eau de basilic pourpre eau de cologne','eau de rhubarbe écarlate eau de cologne','eau de néroli doré eau de cologne','eau de mandarine ambrée eau de cologne','eau de pamplemousse rose eau de cologne','concentré de pamplemousse rose edt','eau de gentiane blanche eau de cologne']},
+    {file:'hermes-hermessence.jpg',match:['agar ébène edt','ambre narguilé edt','brin de réglisse edt','cardamusc essence de parfum','cèdre sambac edt','cuir d\'ange edt','épice marine edt','iris ukiyoé edt','musc pallida edp','musc pallida essence de parfum','myrrhe églantine edt','osmanthe yunnan edt','oud alezan edp','paprika brasil edt','poivre samarcande edt','rose ikebana edt','santal massoïa edt','vanille galante edt','vétiver tonka edt','violette volynka edt']},
+    {file:'hermes-womens-classics.jpg',match:['24 faubourg edp','24 faubourg edt','24 faubourg eau délicate','calèche edt','calèche soie de parfum','kelly calèche edt','kelly calèche edp','jour d\'hermès edp','jour d\'hermès absolu edp','jour d\'hermès gardenia edp','galop d\'hermès parfum','hiris edt','amazone edt','eau des merveilles edt','elixir des merveilles edp','eau des merveilles bleue edt','l\'ambre des merveilles edp','eau claire des merveilles edt','eau des merveilles parfum des merveilles']},
+    {file:'hermes-mens-classics.jpg',match:['bel ami edt','bel ami vetiver edt','equipage edt','equipage géranium edt','rocabar edt','voyage d\'hermès edt','voyage d\'hermès parfum','eau d\'hermès edt','concentré d\'orange verte edt']},
+    {file:'hermes-legacy-and-other.jpg',match:['doblis','parfum d\'hermès','rouge hermès edp','rouge hermès edt','rouge hermès parfum','eau de cologne hermès','eau de cologne d\'hermès','eau de cologne eau de narcisse bleu','eau de cologne eau de lavande','eau de cologne eau de néroli doré','eau de cologne eau de gentiane blanche','eau de cologne eau de pamplemousse rose','eau de cologne eau de mandarine ambrée','eau de cologne eau de rhubarbe écarlate']},
+  ]},
+  {houseMatch:['hugo boss'],lines:[
+    {file:'hugo-boss-boss-bottled.jpg',match:['boss bottled edt','boss bottled edp','boss bottled parfum','boss bottled elixir','boss bottled absolu','boss bottled beyond edp','boss bottled beyond edt intense','boss bottled infinite edp','boss bottled night edt','boss bottled tonic edt','boss bottled united edt','boss bottled pacific edt','boss bottled triumph elixir','boss bottled marine edt','boss bottled oud edp','boss bottled oud aromatic','boss bottled oud saffron','boss bottled intense edt','boss bottled intense edp','boss bottled absolute edp','boss bottled collector\'s editions']},
+    {file:'hugo-boss-boss-the-scent-for-him.jpg',match:['boss the scent edt','boss the scent edp intense','boss the scent parfum','boss the scent elixir for him','boss the scent magnetic for him','boss the scent private accord for him','boss the scent absolute for him','boss the scent pure accord for him','boss the scent le parfum for him']},
+    {file:'hugo-boss-boss-the-scent-for-her.jpg',match:['boss the scent for her edp','boss the scent for her edp intense','boss the scent for her parfum','boss the scent elixir for her','boss the scent magnetic for her','boss the scent private accord for her','boss the scent absolute for her','boss the scent pure accord for her','boss the scent le parfum for her']},
+    {file:'hugo-boss-boss-alive.jpg',match:['boss alive edp','boss alive edt','boss alive intense edp','boss alive parfum','boss alive elixir edp intense','boss alive sparkling lavender edp']},
+    {file:'hugo-boss-hugo-men.jpg',match:['hugo man edt','hugo man edp','hugo just different edt','hugo reversed edt','hugo extreme edp','hugo iced edt','hugo now edt','hugo energise edt','hugo red edt','hugo dark blue edt','hugo xy edt','hugo urban journey edt','hugo element edt','hugo green edt']},
+    {file:'hugo-boss-hugo-women.jpg',match:['hugo woman edp','hugo woman edt','hugo woman extreme edp','hugo woman eau de parfum intense','hugo deep red edp','hugo xx edt','hugo pure purple edp','hugo boss woman edp']},
+    {file:'hugo-boss-boss-the-collection.jpg',match:['noble wood edp','wild violet edp','daring saffiano edp','confident oud edp','energetic fougere edp','magnetic musk edp','vigorous cologne edp','courageous rose edp','elegant vetiver edp','unapologetic bergamot edp']},
+    {file:'hugo-boss-boss-orange-and-femme.jpg',match:['boss orange woman edt','boss orange sunset edt','boss orange sunset celebration','boss orange feel good summer','boss orange man edt','boss orange made for summer edt','boss orange man feel good summer','boss femme edp','boss femme l\'eau fraîche','boss femme intense edp']},
+    {file:'hugo-boss-boss-ma-vie-and-nuit.jpg',match:['boss ma vie pour femme edp','boss ma vie pour femme intense edp','boss ma vie pour femme l\'eau edt','boss ma vie florale edp','boss nuit pour femme edp','boss nuit pour femme intense edp','boss nuit pour femme runway edition','boss jour pour femme edp','boss jour pour femme lumineuse edp']},
+    {file:'hugo-boss-other-and-legacy.jpg',match:['boss number one edt','boss selection edt','boss soul edt','boss pure edt','boss in motion edt','boss in motion black','boss in motion blue','boss in motion green','boss in motion orange made for summer','boss in motion white edition','boss sport edt','boss elements edt','boss spirit edt','boss intense edp','boss intense shimmer edition','boss woman edp','boss woman edt','boss woman summer','boss woman purse spray','boss woman light']},
+  ]},
+  {houseMatch:['jean paul gaultier','jpg'],lines:[
+    {file:'jpg-jean-paul-gaultier-le-male.jpg',match:['le male edt','le male le parfum edp intense','le male elixir parfum','le male elixir absolu parfum intense','le male lover edt','le male on board edt','le male in the navy edt','ultra male edt intense','le male essence de parfum','le male terrible edt','le male popeye eau fraîche','le male superman eau fraîche','le male airlines edt','le male pride edition','le male collector editions']},
+    {file:'jpg-jean-paul-gaultier-le-beau.jpg',match:['le beau edt','le beau le parfum edp intense','le beau paradise garden edp','le beau flower edition edp','le beau male edt','le beau male essence de parfum','le beau male capitaine collector','le beau male summer edt']},
+    {file:'jpg-jean-paul-gaultier-scandal-pour-homme.jpg',match:['scandal pour homme edt','scandal pour homme le parfum','scandal pour homme absolu parfum concentré','scandal pour homme intense edp','scandal pour homme gold edt intense']},
+    {file:'jpg-jean-paul-gaultier-classique.jpg',match:['classique edt','classique edp','classique essence de parfum','classique intense edp','classique cabaret edp','classique pin up edp','classique eau fraîche','classique x edt','classique x collection edp','classique summer editions','classique collector editions','classique pride edition']},
+    {file:'jpg-jean-paul-gaultier-la-belle.jpg',match:['la belle edp','la belle le parfum edp intense','la belle paradise garden edp','la belle flower edition edp','la belle fleur terrible edp','la belle paradise garden collector edition']},
+    {file:'jpg-jean-paul-gaultier-scandal-women.jpg',match:['scandal edp','scandal le parfum edp intense','scandal absolu parfum concentré','scandal intense edp','scandal by night edp intense','so scandal! edp','scandal à paris edt','scandal gold edp','scandal new collector editions']},
+    {file:'jpg-jean-paul-gaultier-gaultier-divine.jpg',match:['gaultier divine edp','gaultier divine le parfum','gaultier divine elixir parfum','gaultier divine collector editions']},
+    {file:'jpg-jean-paul-gaultier-other-and-legacy.jpg',match:['gaultier² edp','gaultier² eau d\'amour','gaultier² pride edition','kokorico edt','kokorico by night edt','fleur du mâle eau de cologne','fleur du mâle la cologne','ma dame edp','ma dame edt','ma dame rose \'n roll edt','ma dame eau fraîche','fragile edp','fragile edt','fragile eau de parfum l\'or','madame edp','monsieur edt']},
+  ]},
+  {houseMatch:['le labo'],lines:[
+    {file:'le-labo-classic-collection.jpg',match:['santal 33','another 13','thé matcha 26','thé noir 29','rose 31','bergamote 22','lavande 31','eucalyptus 20','violette 30','baie 19','lys 41','jasmin 17','fleur d\'oranger 27','tonka 25','neroli 36','vetiver 46','patchouli 24','ambrette 9','ylang 49','labdanum 18']},
+    {file:'le-labo-city-exclusive-collection.jpg',match:['shiu 25','gaiac 10','osmanthus 19','vanille 44','cedrat 37','tabac 28','musc 25','myrrhe 55','coriandre 39','citron 28','mousse de chene 30','bigarade 18','tubereuse 40','poivre 23','cuir 28','limette 37','baie rose 26','aldehyde 44','benjoin 19']},
+    {file:'le-labo-legacy-and-discontinued.jpg',match:['iris 39','oud 27']},
+  ]},
+  {houseMatch:['louis vuitton'],lines:[
+    {file:'lv-louis-vuitton-masculine-perfumes.jpg',match:['l\'immensité','nouveau monde','orage','sur la route','au hasard','imagination','météore','lv lovers']},
+    {file:'lv-louis-vuitton-feminine-perfumes.jpg',match:['rose des vents','turbulences','dans la peau','apogée','contre moi','matière noire','mille feux','le jour se lève','attrape-rêves','cœur battant','heures d\'absence','spell on you','elves louis vuitton']},
+    {file:'lv-louis-vuitton-cologne-perfumes.jpg',match:['sun song','cactus garden','afternoon swim','california dream','on the beach','city of stars','pacific chill']},
+    {file:'lv-louis-vuitton-oud-perfumes.jpg',match:['ombre nomade','les sables roses','nuit de feu','fleur du désert','pur oud','ambre levant']},
+    {file:'lv-louis-vuitton-les-extraits-collection.jpg',match:['cosmic cloud','dancing blossom','rhapsody','symphony','stellar times','myriad','fantasmagory']},
+    {file:'lv-louis-vuitton-travel-and-special-editions.jpg',match:['attrape-rêves travel spray','imagination travel spray','l\'immensité travel spray','ombre nomade travel spray','spell on you travel spray','rose des vents travel spray','afternoon swim travel spray','miniature set']},
+    {file:'lv-louis-vuitton-legacy-fragrances.jpg',match:['eau de voyage','je tu il','reminiscences','heures d\'absence (1927)','eau de cologne louis vuitton','sur la route (1925)']},
+  ]},
+  {houseMatch:['maison francis kurkdjian','mfk'],lines:[
+    {file:'mfk-maison-francis-kurkdjian-baccarat-rouge-540.jpg',match:['baccarat rouge 540 eau de parfum','baccarat rouge 540 extrait de parfum']},
+    {file:'mfk-maison-francis-kurkdjian-aqua-collection.jpg',match:['aqua universalis edt','aqua universalis forte edp','aqua universalis cologne forte edp','aqua vitae edt','aqua vitae forte edp','aqua vitae cologne forte edp','aqua celestia edt','aqua celestia forte edp','aqua celestia cologne forte edp','aqua media cologne forte edp']},
+    {file:'mfk-maison-francis-kurkdjian-oud-collection.jpg',match:['oud edp','oud extrait de parfum','oud satin mood edp','oud satin mood extrait de parfum','oud silk mood edp','oud silk mood extrait de parfum','oud cashmere mood edp','oud velvet mood edp']},
+    {file:'mfk-maison-francis-kurkdjian-a-la-rose-collection.jpg',match:['à la rose edp','l\'eau à la rose edt','l\'homme à la rose edp']},
+    {file:'mfk-maison-francis-kurkdjian-amyris-collection.jpg',match:['amyris femme edp','amyris femme extrait de parfum','amyris homme edt','amyris homme extrait de parfum']},
+    {file:'mfk-maison-francis-kurkdjian-gentle-fluidity.jpg',match:['gentle fluidity gold edp','gentle fluidity silver edp']},
+    {file:'mfk-maison-francis-kurkdjian-apom-collection.jpg',match:['apom pour femme edp','apom pour homme edt','apom edp']},
+    {file:'mfk-maison-francis-kurkdjian-signature-fragrances.jpg',match:['724 edp','grand soir edp','petit matin edp','masculin pluriel edt','féminin pluriel edp']},
+    {file:'mfk-maison-francis-kurkdjian-my-very-intimate-perfumes.jpg',match:['absolue pour le soir edp','cologne pour le soir edp','le beau parfum edp','reflets d\'ambre edp','lumière noire pour femme edp','lumière noire pour homme edt']},
+    {file:'mfk-maison-francis-kurkdjian-legacy-and-discontinued.jpg',match:['aqua universalis forte','aqua vitae forte','aqua celestia forte','ciel de gum','cologne pour le matin','cologne pour le soir','absolue pour le matin','aqua vitae edt limited editions']},
+  ]},
+  {houseMatch:['nishane'],lines:[
+    {file:'nishane-early-collections.jpg',match:['nanshe','duftblüten','rosa turca','tuberoza','vjola','afrika olifant','musiqa oud','pachuli kozha','suede et safran']},
+    {file:'nishane-miniature-art.jpg',match:['ambra calabria','boszporusz','munegu','pasion choco','santalove','spice bazaar','sultan vetiver','wulóng chá']},
+    {file:'nishane-no-boundaries.jpg',match:['ani','ege / αιγαιο','florane','muskane']},
+    {file:'nishane-prestige-collection.jpg',match:['hacivat oud','mana','nefs','shem']},
+    {file:'nishane-rumi.jpg',match:['fan your flames','hundred silent ways','thorns become roses']},
+    {file:'nishane-shadow-play-collection.jpg',match:['hacivat','karagoz','zenne']},
+    {file:'nishane-time-capsule-collection.jpg',match:['deziro','kredo','papilefiko','tempfluo','tero']},
+    {file:'nishane-x-collection.jpg',match:['ani x','fan your flames x','hacivat x','hundred silent ways x','tuberóza x','wulong cha x']},
+    {file:'nishane-imaginative-and-extrait-de-cologne.jpg',match:['b-612','vain & naïve','colognise','hespéridé colognisé','safran colognise']},
+    {file:'nishane-experimental-exclusives-and-standalone.jpg',match:['shinanay','unutamam','a date with oud','favonius','oudous lux solis','oudous cerasus','meant to be seen','meltemia']},
+  ]},
+  {houseMatch:['parfums de marly','pdm'],lines:[
+    {file:'pdm-parfums-de-marly-for-her---les-signatures.jpg',match:['delina','delina la rosée','valaya','palatine','oriana']},
+    {file:'pdm-parfums-de-marly-for-her---les-premiers.jpg',match:['safanad','cassili','meliora','athalia','darcy']},
+    {file:'pdm-parfums-de-marly-for-her---les-exclusifs.jpg',match:['delina exclusif','valaya exclusif']},
+    {file:'pdm-parfums-de-marly-for-him---les-signatures.jpg',match:['layton','althaïr','herod','carlisle','pegasus','oajan','kalan']},
+    {file:'pdm-parfums-de-marly-for-him---les-eaux-intenses.jpg',match:['percival','greenley','sedley','perseus']},
+    {file:'pdm-parfums-de-marly-for-him---les-exclusifs.jpg',match:['haltane','layton exclusif','pegasus exclusif']},
+    {file:'pdm-parfums-de-marly-for-him---les-premiers.jpg',match:['godolphin','habdan','galloway','darley','byerley','hamdani','akaster','nisean','shagya']},
+    {file:'pdm-parfums-de-marly-legacy-and-discontinued.jpg',match:['ispazon','lippizan','royal essence','kuhuyan']},
+    {file:'pdm-parfums-de-marly-standalone-and-special-editions.jpg',match:['delina limited editions','layton limited editions','pegasus limited editions']},
+  ]},
+  {houseMatch:['prada'],lines:[
+    {file:'prada-luna-rossa.jpg',match:['luna rossa','luna rossa carbon','luna rossa ocean','luna rossa sport','luna rossa black']},
+    {file:'prada-paradoxe.jpg',match:['paradoxe','paradoxe intense','paradoxe virtual flower','paradoxe radical essence','paradoxe sweet chemistry']},
+    {file:'prada-infusion.jpg',match:['infusion d\'iris','infusion d\'homme','infusion d\'amande','infusion de rhubarbe','infusion de santal chai']},
+    {file:'prada-candy.jpg',match:['prada candy','candy l\'eau','candy florale','candy night']},
+    {file:'prada-lhomme-and-la-femme.jpg',match:['l\'homme','l\'homme intense','l\'homme l\'eau','la femme','la femme l\'eau']},
+    {file:'prada-amber.jpg',match:['amber pour homme','prada man (amber)','amber']},
+    {file:'prada-paradigme.jpg',match:['paradigme','paradigme le parfum']},
+  ]},
+  {houseMatch:['rabanne','paco rabanne'],lines:[
+    {file:'rabanne-1-million.jpg',match:['1 million','1 million elixir','1 million parfum','1 million lucky','1 million royal','1 million privé']},
+    {file:'rabanne-lady-million-and-million-gold.jpg',match:['lady million','million gold','million gold elixir','million gold for her']},
+    {file:'rabanne-invictus.jpg',match:['invictus','invictus victory','invictus victory absolu','invictus platinum','invictus aqua']},
+    {file:'rabanne-olympea.jpg',match:['olympea','olympea solar','olympea absolu','olympea blossom']},
+    {file:'rabanne-phantom.jpg',match:['phantom','phantom intense','phantom parfum','phantom in red']},
+    {file:'rabanne-fame.jpg',match:['fame','fame parfum','fame in love']},
+    {file:'rabanne-black-xs.jpg',match:['black xs','black xs l\'exces']},
+    {file:'rabanne-pure-xs.jpg',match:['pure xs','pure xs for her']},
+    {file:'rabanne-paco-rabanne-pour-homme.jpg',match:['paco rabanne pour homme','calandre']},
+  ]},
+  {houseMatch:['sospiro'],lines:[
+    {file:'sospiro-classica-collection.jpg',match:['erba pura','opera','accento','laylati','muse','diva','soprano']},
+    {file:'sospiro-erba-collection.jpg',match:['erba pura','erba pura magica','erba oud','erba gold']},
+    {file:'sospiro-nero-collection.jpg',match:['afgano puro','basso','bosco']},
+    {file:'sospiro-red-collection.jpg',match:['red collection scents']},
+    {file:'sospiro-accento-line.jpg',match:['accento','accento viola','accento overdose','purple accento']},
+  ]},
+  {houseMatch:['valentino'],lines:[
+    {file:'valentino-born-in-roma-donna.jpg',match:['donna born in roma','born in roma ivory','born in roma intense']},
+    {file:'valentino-born-in-roma-uomo.jpg',match:['uomo born in roma','uomo born in roma intense','uomo born in roma purple melancholia']},
+    {file:'valentino-voce-viva.jpg',match:['voce viva','voce viva intensa','voce viva golden essence']},
+    {file:'valentino-valentino-donna-and-uomo.jpg',match:['valentino donna','valentino uomo','valentino noir absolu']},
+    {file:'valentino-very-valentino.jpg',match:['very valentino']},
+    {file:'valentino-valentina.jpg',match:['valentina','valentina assoluto','valentina acqua floreale']},
+  ]},
+  {houseMatch:['versace'],lines:[
+    {file:'versace-eros.jpg',match:['eros','eros flame','eros energy','eros pour femme']},
+    {file:'versace-dylan-blue.jpg',match:['dylan blue','dylan blue pour femme','dylan purple']},
+    {file:'versace-bright-crystal.jpg',match:['bright crystal','bright crystal absolu']},
+    {file:'versace-crystal-noir.jpg',match:['crystal noir']},
+    {file:'versace-yellow-diamond.jpg',match:['yellow diamond','yellow diamond intense']},
+    {file:'versace-pour-homme.jpg',match:['versace pour homme','versace pour homme dylan blue','man eau fraiche']},
+  ]},
+  {houseMatch:['viktor'],lines:[
+    {file:'viktor-rolf-flowerbomb-and-spicebomb.jpg',match:['flowerbomb','flowerbomb extreme','flowerbomb tiger lily','spicebomb','spicebomb extreme','antidote','good fortune','bonbon']},
+  ]},
+];
+function findBottleImageFile(house,name){
+  const houseLower=(house||"").toLowerCase();
+  const nameLower=(name||"").toLowerCase();
+  const houseEntry=FRAGRANCE_LINE_MAP.find(h=>h.houseMatch.some(m=>houseLower.includes(m)));
+  if(!houseEntry)return null;
+  const line=houseEntry.lines.find(l=>l.match.some(k=>nameLower.includes(k)));
+  return line?line.file:null;
+}
 function bottleImgSlug(house,name){
   return ((house||"")+"-"+(name||"")).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
 }
+// Ordered list of image URLs to try for a given fragrance — a known line
+// photo first, then per-fragrance .png/.jpg guesses as a fallback for
+// anything not yet in FRAGRANCE_LINE_MAP, before giving up to the SVG.
+function bottleImgCandidates(house,name){
+  const mapped=findBottleImageFile(house,name);
+  if(mapped)return ["images/bottles/"+mapped];
+  const slug=bottleImgSlug(house,name);
+  return ["images/bottles/"+slug+".png","images/bottles/"+slug+".jpg"];
+}
+function bottleImgFallback(img){
+  let candidates;
+  try{candidates=JSON.parse(img.dataset.candidates);}catch(e){img.remove();return;}
+  const idx=parseInt(img.dataset.idx,10)+1;
+  if(idx<candidates.length){
+    img.dataset.idx=idx;
+    img.src=candidates[idx];
+  }else{
+    img.remove();
+  }
+}
+
+let CLOSET_HOUSES=[];
+let CLOSET_BY_HOUSE={};
+let CLOSET_HOUSE_INDEX=0;
+
+function bottleCardHtml(e){
+  const liquid=deriveLiquidColor(e.notes);
+  const pyr=deriveNotePyramid(e.notes);
+  const svg=bottleSvg(e.id,liquid,e.house);
+  const candidates=bottleImgCandidates(e.house,e.name);
+  const candidatesAttr=JSON.stringify(candidates).replace(/"/g,"&quot;");
+  return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
+    +'<div class="closet-bottle-imgwrap">'
+      +svg
+      +'<img src="'+candidates[0]+'" data-candidates="'+candidatesAttr+'" data-idx="0" alt="" loading="lazy" onerror="bottleImgFallback(this)">'
+    +'</div>'
+    +(e.locked?'<div class="closet-lock">🔒</div>':"")
+    +'<div class="closet-tooltip">'
+      +'<div class="closet-tooltip-name">'+e.name+'</div>'
+      +'<div class="closet-tooltip-house">'+e.house+'</div>'
+      +'<div class="closet-tooltip-notes">'
+        +'<div><b>Top:</b> '+pyr.top+'</div>'
+        +'<div><b>Heart:</b> '+pyr.heart+'</div>'
+        +'<div><b>Base:</b> '+pyr.base+'</div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+// Bottles for one house, split into shelf rows so a house with many
+// fragrances gets multiple shelves instead of one overcrowded row.
+function renderWardrobeShelf(){
+  const labelEl=document.getElementById("wardrobe-house-label");
+  const shelvesEl=document.getElementById("wardrobe-shelves");
+  if(!labelEl||!shelvesEl||CLOSET_HOUSES.length===0)return;
+  const house=CLOSET_HOUSES[CLOSET_HOUSE_INDEX];
+  const items=CLOSET_BY_HOUSE[house]||[];
+  labelEl.textContent=house+" ("+(CLOSET_HOUSE_INDEX+1)+"/"+CLOSET_HOUSES.length+")";
+  const perShelf=4;
+  let shelvesHtml="";
+  for(let i=0;i<items.length;i+=perShelf){
+    const chunk=items.slice(i,i+perShelf);
+    shelvesHtml+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
+  }
+  shelvesEl.innerHTML=shelvesHtml;
+}
+
+function closetPrevHouse(){
+  if(CLOSET_HOUSES.length===0)return;
+  CLOSET_HOUSE_INDEX=(CLOSET_HOUSE_INDEX-1+CLOSET_HOUSES.length)%CLOSET_HOUSES.length;
+  renderWardrobeShelf();
+}
+function closetNextHouse(){
+  if(CLOSET_HOUSES.length===0)return;
+  CLOSET_HOUSE_INDEX=(CLOSET_HOUSE_INDEX+1)%CLOSET_HOUSES.length;
+  renderWardrobeShelf();
+}
+document.addEventListener("keydown",(e)=>{
+  const closetPage=document.getElementById("closet");
+  if(!closetPage||closetPage.classList.contains("hidden"))return;
+  if(e.key==="ArrowLeft")closetPrevHouse();
+  if(e.key==="ArrowRight")closetNextHouse();
+});
 
 function renderCloset(){
   const body=document.getElementById("closet-body");
+  const wrap=document.querySelector("#closet .wardrobe-wrap");
+  const legend=document.querySelector("#closet .closet-legend");
+  const hint=document.querySelector("#closet .wardrobe-hint");
   const entries=closetEntries();
   if(entries.length===0){
-    body.innerHTML='<div class="closet-empty">Nothing on the shelf yet — add a fragrance or wishlist one to see it here.</div>';
+    if(wrap)wrap.style.display="none";
+    if(legend)legend.style.display="none";
+    if(hint)hint.style.display="none";
+    let empty=document.getElementById("closet-empty-msg");
+    if(!empty){
+      empty=document.createElement("div");
+      empty.id="closet-empty-msg";
+      empty.className="closet-empty";
+      empty.textContent="Nothing on the shelf yet — add a fragrance or wishlist one to see it here.";
+      body.appendChild(empty);
+    }
     return;
   }
-  const byHouse={};
-  entries.forEach(e=>{(byHouse[e.house]=byHouse[e.house]||[]).push(e);});
-  const houses=Object.keys(byHouse).sort((a,b)=>a.localeCompare(b));
+  const existingEmpty=document.getElementById("closet-empty-msg");
+  if(existingEmpty)existingEmpty.remove();
+  if(wrap)wrap.style.display="";
+  if(legend)legend.style.display="";
+  if(hint)hint.style.display="";
 
-  const legend='<div class="closet-legend">'
-    +'<span><span class="closet-legend-swatch" style="background:#B8860B"></span>In your collection</span>'
-    +'<span><span class="closet-legend-swatch" style="background:#5a5a5a;filter:grayscale(1)"></span>🔒 On your wishlist</span>'
-  +'</div>';
-
-  const shelves=houses.map(house=>{
-    const bottles=byHouse[house].map(e=>{
-      const liquid=deriveLiquidColor(e.notes);
-      const pyr=deriveNotePyramid(e.notes);
-      const svg=bottleSvg(e.id,liquid,e.house);
-      const slug=bottleImgSlug(e.house,e.name);
-      return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
-        +'<div class="closet-bottle-imgwrap">'
-          +svg
-          +'<img src="images/bottles/'+slug+'.png" alt="" loading="lazy" onerror="this.remove()">'
-        +'</div>'
-        +(e.locked?'<div class="closet-lock">🔒</div>':"")
-        +'<div class="closet-tooltip">'
-          +'<div class="closet-tooltip-name">'+e.name+'</div>'
-          +'<div class="closet-tooltip-house">'+e.house+'</div>'
-          +'<div class="closet-tooltip-notes">'
-            +'<div><b>Top:</b> '+pyr.top+'</div>'
-            +'<div><b>Heart:</b> '+pyr.heart+'</div>'
-            +'<div><b>Base:</b> '+pyr.base+'</div>'
-          +'</div>'
-        +'</div>'
-      +'</div>';
-    }).join("");
-    return '<div class="closet-house">'
-      +'<div class="closet-house-label">'+house+'</div>'
-      +'<div class="closet-shelf">'+bottles+'</div>'
-    +'</div>';
-  }).join("");
-
-  body.innerHTML=legend+shelves;
+  CLOSET_BY_HOUSE={};
+  entries.forEach(e=>{(CLOSET_BY_HOUSE[e.house]=CLOSET_BY_HOUSE[e.house]||[]).push(e);});
+  CLOSET_HOUSES=Object.keys(CLOSET_BY_HOUSE).sort((a,b)=>a.localeCompare(b));
+  if(CLOSET_HOUSE_INDEX>=CLOSET_HOUSES.length)CLOSET_HOUSE_INDEX=0;
+  renderWardrobeShelf();
 }
 
 // ── ADD FRAGRANCE ──
