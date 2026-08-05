@@ -170,10 +170,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-legend span{display:flex;align-items:center;gap:6px}
 .closet-legend-swatch{width:9px;height:9px;border-radius:2px}
 .wardrobe-wrap{display:flex;align-items:center;justify-content:center;gap:8px;max-width:520px;margin:0 auto}
-.wardrobe-frame{position:relative;flex:1;max-width:420px;min-height:460px;border:2px solid #4A3C2C;border-radius:50% 50% 10px 10px/22% 22% 3px 3px;background:linear-gradient(180deg,rgba(212,176,122,.05),rgba(0,0,0,0) 40%);padding:58px 18px 22px;box-sizing:border-box;overflow:hidden}
-.wardrobe-house-label{position:absolute;top:24px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#C4AE84;background:rgba(42,35,29,.75);border:1px solid var(--border);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
-.wardrobe-shelves{display:flex;flex-direction:column;gap:14px;margin-top:14px;height:100%;overflow-y:auto}
-.wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:2px solid #4A3C2C;min-height:70px}
+.wardrobe-frame{position:relative;flex:1;max-width:420px;min-height:460px;border:10px solid #D9C7A3;border-radius:50% 50% 10px 10px/22% 22% 3px 3px;background:#081426;padding:58px 18px 22px;box-sizing:border-box;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.wardrobe-frame::before{content:"";position:absolute;top:-40px;left:8%;right:8%;height:180px;background:radial-gradient(ellipse at center,rgba(110,198,224,.55),rgba(110,198,224,0) 72%);pointer-events:none;z-index:0;animation:wardrobeGlowPulse 3.2s ease-in-out infinite}
+@keyframes wardrobeGlowPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:.95;transform:scale(1.06)}}
+.wardrobe-house-label{position:relative;z-index:1;display:block;width:fit-content;margin:0 auto;top:0;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#DCEEF5;background:rgba(14,30,51,.8);border:1px solid rgba(110,198,224,.4);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
+.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;margin-top:14px;height:100%;overflow-y:auto}
+.wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:2px solid rgba(110,198,224,.25);min-height:70px}
+.wardrobe-house-group{margin-bottom:6px}
+.wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8FC4DC;padding:2px 2px 6px}
 .wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
@@ -659,14 +663,11 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
       <span><span class="closet-legend-swatch" style="background:#5a5a5a;filter:grayscale(1)"></span>🔒 On your wishlist</span>
     </div>
     <div class="wardrobe-wrap">
-      <button class="wardrobe-nav-btn prev" onclick="closetPrevHouse()" aria-label="Previous house">‹</button>
       <div class="wardrobe-frame">
-        <div class="wardrobe-house-label" id="wardrobe-house-label">House Name</div>
+        <div class="wardrobe-house-label">Your Collection</div>
         <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
       </div>
-      <button class="wardrobe-nav-btn next" onclick="closetNextHouse()" aria-label="Next house">›</button>
     </div>
-    <div class="wardrobe-hint">‹ &nbsp;&amp;&nbsp; › to move between houses</div>
   </div>
 </div>
 
@@ -2869,7 +2870,6 @@ function bottleImgLoaded(img){
 
 let CLOSET_HOUSES=[];
 let CLOSET_BY_HOUSE={};
-let CLOSET_HOUSE_INDEX=0;
 
 function bottleCardHtml(e){
   const liquid=deriveLiquidColor(e.notes);
@@ -2892,51 +2892,35 @@ function bottleCardHtml(e){
   +'</div>';
 }
 
-// Bottles for one house, split into shelf rows so a house with many
-// fragrances gets multiple shelves instead of one overcrowded row.
+// Every fragrance in the collection, grouped by house, all rendered at once
+// inside the cabinet — each house gets its own label and shelf row(s), split
+// into chunks so a house with many fragrances doesn't overcrowd one row.
 function renderWardrobeShelf(){
-  const labelEl=document.getElementById("wardrobe-house-label");
   const shelvesEl=document.getElementById("wardrobe-shelves");
-  if(!labelEl||!shelvesEl||CLOSET_HOUSES.length===0)return;
-  const house=CLOSET_HOUSES[CLOSET_HOUSE_INDEX];
-  const items=CLOSET_BY_HOUSE[house]||[];
-  labelEl.textContent=house+" ("+(CLOSET_HOUSE_INDEX+1)+"/"+CLOSET_HOUSES.length+")";
+  if(!shelvesEl||CLOSET_HOUSES.length===0)return;
   const perShelf=4;
-  let shelvesHtml="";
-  for(let i=0;i<items.length;i+=perShelf){
-    const chunk=items.slice(i,i+perShelf);
-    shelvesHtml+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
-  }
-  shelvesEl.innerHTML=shelvesHtml;
+  let html="";
+  CLOSET_HOUSES.forEach(house=>{
+    const items=CLOSET_BY_HOUSE[house]||[];
+    html+='<div class="wardrobe-house-group">'
+      +'<div class="wardrobe-house-sublabel">'+house+' ('+items.length+')</div>';
+    for(let i=0;i<items.length;i+=perShelf){
+      const chunk=items.slice(i,i+perShelf);
+      html+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
+    }
+    html+='</div>';
+  });
+  shelvesEl.innerHTML=html;
 }
-
-function closetPrevHouse(){
-  if(CLOSET_HOUSES.length===0)return;
-  CLOSET_HOUSE_INDEX=(CLOSET_HOUSE_INDEX-1+CLOSET_HOUSES.length)%CLOSET_HOUSES.length;
-  renderWardrobeShelf();
-}
-function closetNextHouse(){
-  if(CLOSET_HOUSES.length===0)return;
-  CLOSET_HOUSE_INDEX=(CLOSET_HOUSE_INDEX+1)%CLOSET_HOUSES.length;
-  renderWardrobeShelf();
-}
-document.addEventListener("keydown",(e)=>{
-  const closetPage=document.getElementById("closet");
-  if(!closetPage||closetPage.classList.contains("hidden"))return;
-  if(e.key==="ArrowLeft")closetPrevHouse();
-  if(e.key==="ArrowRight")closetNextHouse();
-});
 
 function renderCloset(){
   const body=document.getElementById("closet-body");
   const wrap=document.querySelector("#closet .wardrobe-wrap");
   const legend=document.querySelector("#closet .closet-legend");
-  const hint=document.querySelector("#closet .wardrobe-hint");
   const entries=closetEntries();
   if(entries.length===0){
     if(wrap)wrap.style.display="none";
     if(legend)legend.style.display="none";
-    if(hint)hint.style.display="none";
     let empty=document.getElementById("closet-empty-msg");
     if(!empty){
       empty=document.createElement("div");
@@ -2951,12 +2935,10 @@ function renderCloset(){
   if(existingEmpty)existingEmpty.remove();
   if(wrap)wrap.style.display="";
   if(legend)legend.style.display="";
-  if(hint)hint.style.display="";
 
   CLOSET_BY_HOUSE={};
   entries.forEach(e=>{(CLOSET_BY_HOUSE[e.house]=CLOSET_BY_HOUSE[e.house]||[]).push(e);});
   CLOSET_HOUSES=Object.keys(CLOSET_BY_HOUSE).sort((a,b)=>a.localeCompare(b));
-  if(CLOSET_HOUSE_INDEX>=CLOSET_HOUSES.length)CLOSET_HOUSE_INDEX=0;
   renderWardrobeShelf();
 }
 
