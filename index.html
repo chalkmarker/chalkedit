@@ -200,19 +200,22 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
 .wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px;background-color:#2A1C11}
+/* Floor planks laid on the same 45° isometric axis the cabinets project on:
+   long seams run up-right (matching the cabinets' depth direction), short
+   end-seams run perpendicular, and the whole plane fades toward the back. */
 .wardrobe-gallery::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
   background-image:
-    repeating-linear-gradient(180deg,rgba(0,0,0,.45) 0 2px,transparent 2px 34px),
-    repeating-linear-gradient(180deg,rgba(255,220,180,.045) 2px 4px,transparent 4px 34px),
-    repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 2px,transparent 2px 120px),
-    repeating-linear-gradient(180deg,rgba(255,255,255,.02) 0 1px,transparent 1px 6px),
-    radial-gradient(ellipse at 50% 0%,rgba(255,220,180,.10),transparent 65%);
-  background-size:auto,auto,120px 68px,auto,auto;
-  background-position:0 0,0 0,0 0,0 0,0 0;
+    repeating-linear-gradient(45deg,rgba(0,0,0,.5) 0 2px,transparent 2px 38px),
+    repeating-linear-gradient(45deg,rgba(255,220,180,.05) 2px 5px,transparent 5px 38px),
+    repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 1px,transparent 1px 7px),
+    repeating-linear-gradient(-45deg,rgba(0,0,0,.32) 0 2px,transparent 2px 150px);
 }
+/* Staggered end-seams: same perpendicular lines, offset half a plank */
 .wardrobe-gallery::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 2px,transparent 2px 120px);
-  background-size:120px 68px;background-position:60px 34px;
+  background-image:
+    repeating-linear-gradient(-45deg,rgba(0,0,0,.32) 0 2px,transparent 2px 150px),
+    linear-gradient(215deg,rgba(10,6,3,.85) 0%,rgba(10,6,3,.35) 28%,transparent 62%);
+  background-position:75px 0,0 0;
 }
 .cabinet-cluster{position:relative;width:100%;max-width:340px;height:440px;flex-shrink:0;z-index:1}
 .cluster-slot{position:absolute;width:96px}
