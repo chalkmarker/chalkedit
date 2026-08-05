@@ -155,13 +155,13 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.closet-body{padding:24px 56px 72px}}
 .closet-bottle{position:relative;width:64px;flex-shrink:0;cursor:pointer}
 .closet-bottle-imgwrap{position:relative;aspect-ratio:60/118}
-.potion-imgwrap{aspect-ratio:16/26;image-rendering:pixelated;image-rendering:crisp-edges}
+.potion-imgwrap{aspect-ratio:1/1;image-rendering:pixelated;image-rendering:crisp-edges}
 .closet-bottle svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-bottle img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-bottle.locked svg,.closet-bottle.locked img{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-lock{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:15px;opacity:.85;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
-.closet-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(4px);min-width:150px;max-width:200px;background:rgba(26,20,16,.92);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:20;backdrop-filter:blur(2px)}
-.closet-bottle:hover .closet-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
+.closet-tooltip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.94);min-width:150px;max-width:200px;background:rgba(26,20,16,.95);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:20;backdrop-filter:blur(2px)}
+.closet-bottle:hover .closet-tooltip{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .closet-tooltip-name{font-size:12px;color:var(--t1);font-weight:500}
 .closet-tooltip-house{font-size:10px;color:#C4AE84;margin-top:1px}
 .closet-tooltip-notes{margin-top:6px;font-size:10px;color:var(--t3);line-height:1.6}
@@ -209,13 +209,11 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .pixel-cabinet.luxury .pc-label{color:#D7DBE0;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .pixel-cabinet.dupe .pc-label{color:#E8C043;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .pc-iso{position:relative;width:100%;height:118px;transition:filter .2s}
-.pixel-cabinet:hover .pc-iso{animation:cabinetFloatSpin .55s ease-out forwards;filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
+.pixel-cabinet:hover .pc-iso{animation:cabinetFloatSpin .4s ease-out forwards;filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
 @keyframes cabinetFloatSpin{
   0%{transform:rotate(0deg) translateY(0)}
-  25%{transform:rotate(-8deg) translateY(-6px)}
-  50%{transform:rotate(7deg) translateY(-11px)}
-  75%{transform:rotate(-3deg) translateY(-8px)}
-  100%{transform:rotate(0deg) translateY(-9px)}
+  60%{transform:rotate(360deg) translateY(-10px)}
+  100%{transform:rotate(360deg) translateY(-9px)}
 }
 .pc-svg{width:100%;height:auto;display:block}
 .sec{margin-bottom:0}
@@ -2926,31 +2924,79 @@ let CLOSET_BY_HOUSE={};
 let CLOSET_VIEW="gallery"; // "gallery" | "detail"
 let CLOSET_DETAIL_HOUSE=null;
 
-// Fragrances on the expanded shelf render as chunky pixel-art "potion"
-// bottles (evoking the classic Potion/Super Potion/Hyper Potion/Max Potion
-// look — original design, not a trace of any game's actual sprite art).
-// Color is derived from the fragrance's own notes (same logic used
-// elsewhere), so bottles are visually distinct by scent profile rather than
-// an arbitrary fixed tier.
-function darkenRgb(rgbStr,factor){
+// Fragrances on the expanded shelf render as pixel-art potion bottles —
+// conical flask body with a sprayer top, drawn on a 32x32 pixel grid with
+// proper light/mid/shadow banding and highlights. Original artwork, not a
+// trace of any game's sprite. Liquid color comes from the fragrance's own
+// notes, so each one is visually distinct by scent profile.
+function shiftRgb(rgbStr,factor){
   const m=rgbStr.match(/\d+/g);
   if(!m)return rgbStr;
-  const [r,g,b]=m.map(n=>Math.round(+n*factor));
+  const [r,g,b]=m.map(n=>Math.max(0,Math.min(255,Math.round(+n*factor))));
   return "rgb("+r+","+g+","+b+")";
 }
 function potionSpriteSvg(id,notes){
-  const body=deriveLiquidColor(notes);
-  const dark=darkenRgb(body,0.62);
-  const vbW=16,vbH=26;
-  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
-    +'<rect x="3" y="24" width="10" height="2" fill="rgba(0,0,0,.35)"/>'
-    +'<rect x="6" y="0" width="4" height="4" fill="#C89B5C"/>'
-    +'<rect x="6" y="4" width="4" height="2" fill="'+dark+'"/>'
-    +'<rect x="2" y="6" width="12" height="16" fill="'+body+'"/>'
-    +'<rect x="2" y="6" width="12" height="3" fill="rgba(255,255,255,.25)"/>'
-    +'<rect x="2" y="13" width="12" height="6" fill="#F2ECDD"/>'
-    +'<rect x="7" y="15" width="2" height="4" fill="'+dark+'"/>'
-    +'<rect x="5" y="17" width="6" height="2" fill="'+dark+'"/>'
+  const mid=deriveLiquidColor(notes);
+  const light=shiftRgb(mid,1.45);
+  const dark=shiftRgb(mid,0.6);
+  const outline="#2B2B33";
+  const glassL="#E8F2F5",glassM="#BFD4DC",glassD="#8FA8B4";
+  const P=[]; // pixel rects on a 32x32 grid
+  const px=(x,y,w,h,f)=>P.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+f+'"/>');
+
+  // ── Sprayer head (top) ──
+  px(11,1,9,1,outline);
+  px(10,2,1,4,outline); px(20,2,1,4,outline);
+  px(11,2,9,4,glassM);
+  px(11,2,7,1,glassL);           // top highlight
+  px(12,3,4,2,glassL);
+  px(8,3,2,1,outline);           // nozzle spout
+  px(8,4,2,2,glassM);
+  px(7,4,1,2,outline);
+  px(8,6,2,1,outline);
+  px(11,6,9,1,outline);
+
+  // ── Neck ──
+  px(12,7,1,3,outline); px(19,7,1,3,outline);
+  px(13,7,6,3,glassD);
+  px(13,7,2,3,glassM);
+
+  // ── Shoulder / collar ──
+  px(11,10,10,1,outline);
+  px(12,11,8,1,glassM);
+
+  // ── Conical flask body: widens toward the base ──
+  const rows=[
+    {y:12,x0:12,x1:20},{y:13,x0:11,x1:21},{y:14,x0:11,x1:21},
+    {y:15,x0:10,x1:22},{y:16,x0:10,x1:22},{y:17,x0:9,x1:23},
+    {y:18,x0:9,x1:23},{y:19,x0:8,x1:24},{y:20,x0:8,x1:24},
+    {y:21,x0:7,x1:25},{y:22,x0:7,x1:25},{y:23,x0:6,x1:26},
+    {y:24,x0:6,x1:26},{y:25,x0:6,x1:26},{y:26,x0:6,x1:26},
+  ];
+  rows.forEach(r=>{
+    const w=r.x1-r.x0+1;
+    px(r.x0-1,r.y,1,1,outline);          // left outline
+    px(r.x1+1,r.y,1,1,outline);          // right outline
+    px(r.x0,r.y,w,1,mid);                // liquid body
+    px(r.x0,r.y,Math.max(1,Math.round(w*0.22)),1,light);   // left light band
+    px(r.x1-Math.max(0,Math.round(w*0.18)),r.y,Math.max(1,Math.round(w*0.18))+1,1,dark); // right shadow band
+  });
+
+  // ── Base ──
+  px(6,27,21,1,outline);
+  px(7,27,19,1,dark);
+
+  // ── Glass highlights over the liquid ──
+  px(10,15,1,5,"rgba(255,255,255,.55)");
+  px(11,20,1,4,"rgba(255,255,255,.35)");
+  // ── Sparkle specks ──
+  px(17,17,1,1,"rgba(255,255,255,.8)");
+  px(20,21,1,1,"rgba(255,255,255,.65)");
+  px(14,23,1,1,"rgba(255,255,255,.5)");
+
+  return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    +'<ellipse cx="16" cy="29" rx="11" ry="1.6" fill="rgba(0,0,0,.35)"/>'
+    +P.join("")
   +'</svg>';
 }
 
