@@ -208,12 +208,12 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .pc-label{margin-bottom:8px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.04em;line-height:1.3;white-space:normal}
 .pixel-cabinet.luxury .pc-label{color:#D7DBE0;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .pixel-cabinet.dupe .pc-label{color:#E8C043;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-.pc-iso{position:relative;width:100%;height:118px;transition:filter .2s}
+.pc-iso{position:relative;width:100%;height:118px;transition:filter .2s;perspective:400px;transform-style:preserve-3d}
 .pixel-cabinet:hover .pc-iso{animation:cabinetFloatSpin .4s ease-out forwards;filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
 @keyframes cabinetFloatSpin{
-  0%{transform:rotate(0deg) translateY(0)}
-  60%{transform:rotate(360deg) translateY(-10px)}
-  100%{transform:rotate(360deg) translateY(-9px)}
+  0%{transform:perspective(400px) rotateY(0deg) translateY(0)}
+  60%{transform:perspective(400px) rotateY(360deg) translateY(-10px)}
+  100%{transform:perspective(400px) rotateY(360deg) translateY(-9px)}
 }
 .pc-svg{width:100%;height:auto;display:block}
 .sec{margin-bottom:0}
@@ -2935,67 +2935,93 @@ function shiftRgb(rgbStr,factor){
   const [r,g,b]=m.map(n=>Math.max(0,Math.min(255,Math.round(+n*factor))));
   return "rgb("+r+","+g+","+b+")";
 }
+function saturateRgb(rgbStr,amount){
+  const m=rgbStr.match(/\d+/g);
+  if(!m)return rgbStr;
+  let [r,g,b]=m.map(Number);
+  const avg=(r+g+b)/3;
+  r=Math.max(0,Math.min(255,Math.round(avg+(r-avg)*amount)));
+  g=Math.max(0,Math.min(255,Math.round(avg+(g-avg)*amount)));
+  b=Math.max(0,Math.min(255,Math.round(avg+(b-avg)*amount)));
+  return "rgb("+r+","+g+","+b+")";
+}
 function potionSpriteSvg(id,notes){
-  const mid=deriveLiquidColor(notes);
-  const light=shiftRgb(mid,1.45);
-  const dark=shiftRgb(mid,0.6);
-  const outline="#2B2B33";
-  const glassL="#E8F2F5",glassM="#BFD4DC",glassD="#8FA8B4";
-  const P=[]; // pixel rects on a 32x32 grid
+  const base=saturateRgb(deriveLiquidColor(notes),1.9);
+  const mid=base;
+  const light=shiftRgb(base,1.45);
+  const lighter=shiftRgb(base,1.8);
+  const dark=shiftRgb(base,0.6);
+  const outline="#3A3A3A";
+  // Pale mint/white glass tones for the upper half
+  const gLight="#FAFEFE",gMid="#D6EDE8",gShade="#A8CFC4",gDeep="#7FB3A6";
+  const P=[];
   const px=(x,y,w,h,f)=>P.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+f+'"/>');
 
-  // ── Sprayer head (top) ──
-  px(11,1,9,1,outline);
-  px(10,2,1,4,outline); px(20,2,1,4,outline);
-  px(11,2,9,4,glassM);
-  px(11,2,7,1,glassL);           // top highlight
-  px(12,3,4,2,glassL);
-  px(8,3,2,1,outline);           // nozzle spout
-  px(8,4,2,2,glassM);
-  px(7,4,1,2,outline);
-  px(8,6,2,1,outline);
-  px(11,6,9,1,outline);
+  // ── GLASS UPPER BODY (rounded, tapering) ──
+  // outline cap
+  px(13,2,6,1,outline);
+  px(11,3,2,1,outline); px(19,3,2,1,outline);
+  px(10,4,1,2,outline); px(21,4,1,3,outline);
+  px(9,6,1,4,outline);  px(22,7,1,4,outline);
 
-  // ── Neck ──
-  px(12,7,1,3,outline); px(19,7,1,3,outline);
-  px(13,7,6,3,glassD);
-  px(13,7,2,3,glassM);
+  // glass fill rows
+  px(13,3,6,1,gLight);
+  px(11,4,10,1,gLight);
+  px(11,5,3,1,gLight); px(14,5,7,1,gMid);
+  px(10,6,4,1,gLight); px(14,6,8,1,gMid);
+  px(10,7,4,1,gLight); px(14,7,8,1,gShade);
+  px(10,8,4,1,gLight); px(14,8,8,1,gShade);
+  px(10,9,4,1,gMid);   px(14,9,8,1,gDeep);
+  px(10,10,4,1,gMid);  px(14,10,7,1,gDeep);
+  px(10,11,4,1,gLight);px(14,11,6,1,gShade);
+  px(10,12,4,1,gLight);px(14,12,5,1,gShade);
+  px(10,13,4,1,gMid);  px(14,13,4,1,gDeep);
+  px(10,14,4,1,gMid);  px(14,14,4,1,gDeep);
+  px(11,15,3,1,gLight);px(14,15,4,1,gShade);
+  px(11,16,3,1,gLight);px(14,16,4,1,gShade);
+  px(11,17,4,1,gMid);  px(15,17,3,1,gDeep);
+  px(12,18,4,1,gMid);  px(16,18,2,1,gDeep);
 
-  // ── Shoulder / collar ──
-  px(11,10,10,1,outline);
-  px(12,11,8,1,glassM);
+  // ── SIDE SPOUT / nub on the left ──
+  px(6,8,1,4,outline);
+  px(7,7,3,1,outline);
+  px(7,8,3,1,light);
+  px(7,9,3,1,mid);
+  px(7,10,3,1,mid);
+  px(7,11,3,1,dark);
+  px(7,12,3,1,outline);
 
-  // ── Conical flask body: widens toward the base ──
+  // ── LIQUID LOWER BODY (bulbous, wider to the right) ──
   const rows=[
-    {y:12,x0:12,x1:20},{y:13,x0:11,x1:21},{y:14,x0:11,x1:21},
-    {y:15,x0:10,x1:22},{y:16,x0:10,x1:22},{y:17,x0:9,x1:23},
-    {y:18,x0:9,x1:23},{y:19,x0:8,x1:24},{y:20,x0:8,x1:24},
-    {y:21,x0:7,x1:25},{y:22,x0:7,x1:25},{y:23,x0:6,x1:26},
-    {y:24,x0:6,x1:26},{y:25,x0:6,x1:26},{y:26,x0:6,x1:26},
+    {y:13,x0:17,x1:21},{y:14,x0:17,x1:22},{y:15,x0:17,x1:23},
+    {y:16,x0:17,x1:24},{y:17,x0:17,x1:24},{y:18,x0:17,x1:25},
+    {y:19,x0:15,x1:25},{y:20,x0:14,x1:25},{y:21,x0:13,x1:25},
+    {y:22,x0:12,x1:25},{y:23,x0:11,x1:25},{y:24,x0:11,x1:24},
+    {y:25,x0:11,x1:24},{y:26,x0:12,x1:23},{y:27,x0:13,x1:22},
   ];
   rows.forEach(r=>{
     const w=r.x1-r.x0+1;
-    px(r.x0-1,r.y,1,1,outline);          // left outline
-    px(r.x1+1,r.y,1,1,outline);          // right outline
-    px(r.x0,r.y,w,1,mid);                // liquid body
-    px(r.x0,r.y,Math.max(1,Math.round(w*0.22)),1,light);   // left light band
-    px(r.x1-Math.max(0,Math.round(w*0.18)),r.y,Math.max(1,Math.round(w*0.18))+1,1,dark); // right shadow band
+    px(r.x0-1,r.y,1,1,outline);
+    px(r.x1+1,r.y,1,1,outline);
+    px(r.x0,r.y,w,1,mid);
+    px(r.x0,r.y,Math.max(1,Math.round(w*0.24)),1,light);
+    px(r.x1-Math.max(1,Math.round(w*0.18))+1,r.y,Math.max(1,Math.round(w*0.18)),1,dark);
   });
 
-  // ── Base ──
-  px(6,27,21,1,outline);
-  px(7,27,19,1,dark);
+  // ── Bright glossy blob on the liquid (like the reference) ──
+  px(19,21,3,1,lighter);
+  px(18,22,5,1,lighter);
+  px(19,23,3,1,lighter);
 
-  // ── Glass highlights over the liquid ──
-  px(10,15,1,5,"rgba(255,255,255,.55)");
-  px(11,20,1,4,"rgba(255,255,255,.35)");
-  // ── Sparkle specks ──
-  px(17,17,1,1,"rgba(255,255,255,.8)");
-  px(20,21,1,1,"rgba(255,255,255,.65)");
-  px(14,23,1,1,"rgba(255,255,255,.5)");
+  // ── Base / foot ──
+  px(13,28,10,1,outline);
+
+  // ── Glass highlight streaks ──
+  px(11,6,1,6,"rgba(255,255,255,.75)");
+  px(12,14,1,3,"rgba(255,255,255,.5)");
 
   return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
-    +'<ellipse cx="16" cy="29" rx="11" ry="1.6" fill="rgba(0,0,0,.35)"/>'
+    +'<ellipse cx="17" cy="30" rx="9" ry="1.4" fill="rgba(0,0,0,.35)"/>'
     +P.join("")
   +'</svg>';
 }
