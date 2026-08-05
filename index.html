@@ -3058,30 +3058,71 @@ function isDupeHouse(house){
 // Built as one SVG with shared vertices (not stacked CSS divs) so the
 // top/side/front faces line up exactly instead of leaving gaps at the seams.
 function pixelCabinetSvg(dupe){
-  const c=dupe?{top:"#6B4A32",topB:"#41301F",side:"#4A3320",sideB:"#2E2013",front:"#5C3E28",frontB:"#41301F",base:"#4A3320",base2:"#5C3E28"}
-              :{top:"#E4D6B8",topB:"#B89F72",side:"#B89F72",sideB:"#8A7550",front:"#D9C7A3",frontB:"#B89F72",base:"#CBB68F",base2:"#DECBA4"};
-  let baseFluting="";
-  for(let i=0;i<11;i++){
-    baseFluting+='<rect x="'+(6+i*6)+'" y="92" width="3" height="20" fill="'+(i%2===0?c.base:c.base2)+'"/>';
+  // True pixel-art isometric cabinet on a 48x56 grid: the top and side faces
+  // step in 2px increments (staircase edges) rather than smooth diagonals,
+  // and each face gets its own flat shade so it reads as chunky 3D.
+  const c=dupe
+    ?{topL:"#8A6242",top:"#6B4A32",side:"#3E2A1A",sideD:"#33220F",front:"#5C3E28",frontL:"#7A5539",line:"#2A1B0E",
+      base:"#4A3320",base2:"#5C3E28"}
+    :{topL:"#F2E7CE",top:"#E4D6B8",side:"#9C8459",sideD:"#8A7550",front:"#D9C7A3",frontL:"#EADCC0",line:"#7A6844",
+      base:"#CBB68F",base2:"#DECBA4"};
+  const P=[];
+  const px=(x,y,w,h,f)=>P.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+f+'"/>');
+
+  // ── TOP FACE: stepped parallelogram (staircase edge) ──
+  for(let i=0;i<7;i++){
+    const y=i*2;
+    const x0=14-i*2;
+    px(x0,y,32,2,i<2?c.topL:c.top);
+    px(x0,y,2,2,c.line);              // left edge pixel
+    px(x0+32,y,2,2,c.line);           // right edge pixel
   }
-  return '<svg viewBox="0 0 96 118" xmlns="http://www.w3.org/2000/svg" class="pc-svg">'
-    +'<defs><linearGradient id="pcGlowGrad" x1="0" y1="0" x2="1" y2="0">'
-      +'<stop offset="0" stop-color="rgba(90,180,220,.85)"/><stop offset="1" stop-color="rgba(90,180,220,0)"/>'
-    +'</linearGradient></defs>'
-    +'<ellipse cx="44" cy="115" rx="34" ry="5" fill="rgba(0,0,0,.4)"/>'
-    +'<polygon points="0,26 16,0 96,0 80,26" fill="'+c.top+'" stroke="'+c.topB+'" stroke-width="2" stroke-linejoin="round"/>'
-    +'<polygon points="80,26 96,0 96,92 80,118" fill="'+c.side+'" stroke="'+c.sideB+'" stroke-width="2" stroke-linejoin="round"/>'
-    +'<rect x="0" y="26" width="80" height="92" fill="'+c.front+'" stroke="'+c.frontB+'" stroke-width="2"/>'
-    +'<rect x="6" y="32" width="68" height="56" fill="#081426" stroke="'+c.frontB+'" stroke-width="2"/>'
-    +'<rect x="6" y="32" width="10" height="56" fill="url(#pcGlowGrad)"/>'
-    +'<line x1="8" y1="50" x2="72" y2="50" stroke="rgba(180,220,235,.4)" stroke-width="1"/>'
-    +'<line x1="8" y1="68" x2="72" y2="68" stroke="rgba(180,220,235,.4)" stroke-width="1"/>'
-    +'<clipPath id="pcBaseClip"><rect x="6" y="92" width="68" height="20"/></clipPath>'
-    +'<g clip-path="url(#pcBaseClip)">'+baseFluting+'</g>'
-    +'<rect x="6" y="92" width="68" height="20" fill="none" stroke="'+c.frontB+'" stroke-width="2"/>'
-    +'<rect x="38" y="98" width="4" height="10" fill="#C9A227"/>'
+  px(2,14,44,2,c.line);               // front-top rim
+
+  // ── RIGHT SIDE FACE: stepped down the right edge ──
+  for(let i=0;i<7;i++){
+    const y=14+i*2;
+    const x=32+(6-i)*2;
+    px(x,y,2,2,c.line);
+  }
+  // side face fill: full height, right edge steps down toward the front
+  for(let i=0;i<21;i++){
+    const y=16+i*2;
+    const rowRight=44-Math.max(0,Math.floor((y-42)/2))*2;
+    if(rowRight<=34)break;
+    px(34,y,rowRight-34,2,i<1?c.sideD:c.side);
+    px(rowRight,y,2,2,c.line);
+  }
+
+  // ── FRONT FACE ──
+  px(2,14,32,2,c.line);
+  px(2,16,2,40,c.line);               // left border
+  px(32,16,2,40,c.line);              // right border
+  px(4,16,28,40,c.front);
+  px(4,16,28,2,c.frontL);             // top light edge
+  px(2,54,32,2,c.line);               // bottom border
+
+  // ── GLASS WINDOW (dark navy w/ side glow + shelves) ──
+  px(6,20,24,22,c.line);
+  px(8,22,20,18,"#081426");
+  px(8,22,3,18,"#2E6E8E");            // left glow band
+  px(8,22,2,18,"#4FA3C4");            // brighter inner glow
+  px(8,28,20,1,"#7FB8CE");            // shelf line
+  px(8,34,20,1,"#7FB8CE");            // shelf line
+
+  // ── FLUTED LOWER DOORS ──
+  px(6,44,24,8,c.line);
+  for(let i=0;i<11;i++){
+    px(8+i*2,46,2,4,i%2===0?c.base:c.base2);
+  }
+  px(17,46,2,4,"#C9A227");            // gold handle
+
+  return '<svg viewBox="0 0 48 60" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" class="pc-svg">'
+    +'<ellipse cx="23" cy="59" rx="19" ry="1.5" fill="rgba(0,0,0,.4)"/>'
+    +P.join("")
   +'</svg>';
 }
+
 function pixelCabinetHtml(house){
   const items=CLOSET_BY_HOUSE[house]||[];
   const dupe=isDupeHouse(house);
