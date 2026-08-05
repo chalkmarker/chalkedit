@@ -1781,19 +1781,21 @@ function houseShapeFor(house){
 // cap style, proportions) inspired by its typical packaging language, with
 // per-fragrance seeded variation within that archetype. Purely decorative;
 // no brand logos, wordmarks, or exact packaging designs are reproduced.
-function bottleSvg(id,liquidColor,house){
+function bottleSvg(id,liquidColor,house,photoUrl){
   const rnd=closetRand(closetSeed(id));
   const shape=houseShapeFor(house);
   const vbW=60,vbH=118;
   const uid=id.replace(/[^a-z0-9]/gi,"");
   const shadow='<ellipse cx="30" cy="114" rx="20" ry="4" fill="rgba(0,0,0,.3)"/>';
-  let defs="",body="";
+  let defs="",body="",clipShapeSvg="",clipBBox=null;
 
   if(shape==="flatcap-ridged"){
     // Tom Ford-style: short, wide, glossy bottle, cap flush with the full
     // body width (not narrower), large gold label spanning most of the front
     const bw=40,bh=48,bx=(vbW-bw)/2,by=vbH-bh-8;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.95" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.95" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.18)+'" rx="2" fill="rgba(255,255,255,.18)"/>';
     body+='<rect x="'+(bx+3)+'" y="'+(by+bh*0.4)+'" width="'+(bw-6)+'" height="'+(bh*0.28)+'" fill="#C9A227" fill-opacity=".85"/>';
     const capH=13;
@@ -1804,7 +1806,9 @@ function bottleSvg(id,liquidColor,house){
     // Azzaro-style: squat rounded cylinder, ribbed lower band, hexagonal faceted cap
     const bw=36+Math.floor(rnd()*4),bh=50+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
     const capR=13,capCx=vbW/2,capCy=by-14;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="10" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="10"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="10" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
     for(let i=0;i<5;i++){
       const ly=by+bh*0.55+i*4;
       body+='<line x1="'+(bx+3)+'" y1="'+ly+'" x2="'+(bx+bw-3)+'" y2="'+ly+'" stroke="rgba(0,0,0,.18)" stroke-width="1.3"/>';
@@ -1816,7 +1820,9 @@ function bottleSvg(id,liquidColor,house){
   else if(shape==="apothecary"){
     // Maison Margiela Replica-style: rect apothecary bottle, large paper label, angled pump nozzle
     const bw=30+Math.floor(rnd()*4),bh=60+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.5" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.5" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+(bx+2)+'" y="'+(by+bh*0.18)+'" width="'+(bw-4)+'" height="'+(bh*0.62)+'" fill="rgba(245,242,235,.94)" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>';
     for(let i=0;i<6;i++){
       body+='<line x1="'+(bx+5)+'" y1="'+(by+bh*0.23+i*4.5)+'" x2="'+(bx+bw-6)+'" y2="'+(by+bh*0.23+i*4.5)+'" stroke="rgba(30,25,20,.35)" stroke-width="1"/>';
@@ -1829,8 +1835,10 @@ function bottleSvg(id,liquidColor,house){
     // Kilian-style: short wide faceted jar, hobnail diamond-cut texture,
     // wide flat faceted cap, round base coaster
     const bw=44,bh=42,bx=(vbW-bw)/2,by=vbH-bh-16;
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="6"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
     body='<ellipse cx="'+(vbW/2)+'" cy="'+(by+bh+6)+'" rx="'+(bw*0.6)+'" ry="5" fill="#B8B4A8" fill-opacity=".5"/>';
-    body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="6" fill="'+liquidColor+'" fill-opacity="0.8" stroke="rgba(255,255,255,.4)"/>';
+    body+=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="6" fill="'+liquidColor+'" fill-opacity="0.8" stroke="rgba(255,255,255,.4)"/>';
     for(let r=0;r<4;r++){for(let c=0;c<5;c++){
       const dx=bx+6+c*8,dy=by+6+r*9;
       const shade=((r+c)%2===0)?"rgba(255,255,255,.28)":"rgba(0,0,0,.12)";
@@ -1846,7 +1854,9 @@ function bottleSvg(id,liquidColor,house){
     // Stephane Humbert Lucas 777-style: tall flat rect body with honeycomb
     // texture, dramatic oversized hex-textured dome/crown cap wider than the body
     const bw=32,bh=44,bx=(vbW-bw)/2,by=vbH-bh-8;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.92" stroke="rgba(255,255,255,.25)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.92" stroke="rgba(255,255,255,.25)"/>';
     for(let r=0;r<4;r++){for(let c=0;c<3;c++){
       const hx=bx+7+c*9+(r%2?4.5:0),hy=by+8+r*8;
       if(hx>bx+bw-5)continue;
@@ -1865,10 +1875,13 @@ function bottleSvg(id,liquidColor,house){
   else if(shape==="teardrop"){
     // Xerjoff-style: rounded bulb body tapering to a neck, ornate ball-finial gold cap
     const w=34+Math.floor(rnd()*4),topY=vbH-70,botY=vbH-8,cx=vbW/2;
-    body='<path d="M'+(cx-w*0.3)+' '+topY+' '
+    const teardropPath='M'+(cx-w*0.3)+' '+topY+' '
       +'C '+(cx-w/2)+' '+(topY+10)+', '+(cx-w/2)+' '+(botY-18)+', '+(cx-w/2)+' '+(botY-14)+' '
       +'C '+(cx-w/2)+' '+botY+', '+(cx+w/2)+' '+botY+', '+(cx+w/2)+' '+(botY-14)+' '
-      +'C '+(cx+w/2)+' '+(botY-18)+', '+(cx+w/2)+' '+(topY+10)+', '+(cx+w*0.3)+' '+topY+' Z" '
+      +'C '+(cx+w/2)+' '+(botY-18)+', '+(cx+w/2)+' '+(topY+10)+', '+(cx+w*0.3)+' '+topY+' Z';
+    clipShapeSvg='<path d="'+teardropPath+'"/>';
+    clipBBox={x:cx-w/2,y:topY,w:w,h:botY-topY};
+    body=photoUrl?'':'<path d="'+teardropPath+'" '
       +'fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+(cx-6)+'" y="'+(topY-8)+'" width="12" height="8" fill="#DCD3C4"/>';
     body+='<ellipse cx="'+cx+'" cy="'+(topY-13)+'" rx="9" ry="7" fill="#C9A227"/>';
@@ -1878,7 +1891,9 @@ function bottleSvg(id,liquidColor,house){
     // Initio-style: taller slim body, small centered diamond medallion, and
     // a distinctive wide slab cap that overhangs the body on both sides
     const bw=30,bh=62,bx=(vbW-bw)/2,by=vbH-bh-6;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.92" stroke="rgba(255,255,255,.25)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="1" fill="'+liquidColor+'" fill-opacity="0.92" stroke="rgba(255,255,255,.25)"/>';
     body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.14)+'" fill="rgba(255,255,255,.12)"/>';
     body+='<rect x="'+(vbW/2-6)+'" y="'+(by+bh*0.42)+'" width="12" height="12" fill="#C9A227" fill-opacity=".85" transform="rotate(45 '+(vbW/2)+' '+(by+bh*0.48)+')"/>';
     const riserW=bw*0.5,riserH=6,riserX=(vbW-riserW)/2,riserY=by-riserH;
@@ -1891,7 +1906,9 @@ function bottleSvg(id,liquidColor,house){
     // French Avenue-style: tapered hourglass body, diagonal cord wrap, dome cap
     const topW=38+Math.floor(rnd()*4),botW=28+Math.floor(rnd()*4),bh=52+Math.floor(rnd()*8),by=vbH-bh-8;
     const pts=[[vbW/2-topW/2,by],[vbW/2+topW/2,by],[vbW/2+botW/2,by+bh],[vbW/2-botW/2,by+bh]];
-    body='<polygon points="'+closetPolyPts(pts)+'" fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<polygon points="'+closetPolyPts(pts)+'"/>';
+    clipBBox={x:vbW/2-Math.max(topW,botW)/2,y:by,w:Math.max(topW,botW),h:bh};
+    body=photoUrl?'':'<polygon points="'+closetPolyPts(pts)+'" fill="'+liquidColor+'" fill-opacity="0.85" stroke="rgba(255,255,255,.3)"/>';
     body+='<polygon points="'+closetPolyPts([[vbW/2-topW/2-2,by+bh*0.32],[vbW/2+topW/2+2,by+bh*0.16],[vbW/2+topW/2+2,by+bh*0.26],[vbW/2-topW/2-2,by+bh*0.42]])+'" fill="#C9A227"/>';
     body+='<polygon points="'+closetPolyPts([[vbW/2-topW/2-2,by+bh*0.5],[vbW/2+topW/2+2,by+bh*0.34],[vbW/2+topW/2+2,by+bh*0.44],[vbW/2-topW/2-2,by+bh*0.6]])+'" fill="#8a6a1a"/>';
     body+='<ellipse cx="'+(vbW/2)+'" cy="'+(by-8)+'" rx="9" ry="8" fill="#C9A227"/>';
@@ -1899,7 +1916,9 @@ function bottleSvg(id,liquidColor,house){
   else if(shape==="ornateband"){
     // Roja-style: tall elegant rect, thin gold trim lines, colored band, dome cap
     const bw=32+Math.floor(rnd()*4),bh=58+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+bx+'" y="'+(by+2)+'" width="'+bw+'" height="1.5" fill="#C9A227"/>';
     body+='<rect x="'+bx+'" y="'+(by+bh*0.62)+'" width="'+bw+'" height="6" fill="#8C1C1C"/>';
     body+='<rect x="'+bx+'" y="'+(by+bh-2)+'" width="'+bw+'" height="1.5" fill="#C9A227"/>';
@@ -1908,7 +1927,9 @@ function bottleSvg(id,liquidColor,house){
   else if(shape==="torch"){
     // Mind Games-style: slim tall cylinder, wide flared twisted conical metallic cap
     const bw=18+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-8;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="9" fill="'+liquidColor+'" fill-opacity="0.55" stroke="rgba(255,255,255,.35)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="9"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="9" fill="'+liquidColor+'" fill-opacity="0.55" stroke="rgba(255,255,255,.35)"/>';
     body+='<polygon points="'+closetPolyPts([[vbW/2-16,by],[vbW/2+16,by],[vbW/2+6,by-22],[vbW/2-6,by-22]])+'" fill="#8A8A8E"/>';
     body+='<polygon points="'+closetPolyPts([[vbW/2-11,by-6],[vbW/2+11,by-6],[vbW/2+4,by-20],[vbW/2-4,by-20]])+'" fill="#6B6B6F"/>';
     body+='<polygon points="'+closetPolyPts([[vbW/2-6,by-22],[vbW/2+6,by-22],[vbW/2+3,by-30],[vbW/2-3,by-30]])+'" fill="#DADADC"/>';
@@ -1919,12 +1940,16 @@ function bottleSvg(id,liquidColor,house){
     if(rnd()<0.5){
       defs='<linearGradient id="g'+uid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fae8a"/><stop offset="1" stop-color="#2a6f9e"/></linearGradient>';
       const bw=32+Math.floor(rnd()*4),bh=56+Math.floor(rnd()*8),bx=(vbW-bw)/2,by=vbH-bh-6;
-      body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="url(#g'+uid+')" stroke="rgba(255,255,255,.3)"/>';
+      clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2"/>';
+      clipBBox={x:bx,y:by,w:bw,h:bh};
+      body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="url(#g'+uid+')" stroke="rgba(255,255,255,.3)"/>';
       body+='<rect x="'+(vbW/2-9)+'" y="'+(by+bh*0.35)+'" width="18" height="14" fill="#C9A227" fill-opacity=".85"/>';
       body+='<rect x="'+(vbW/2-6)+'" y="'+(by-10)+'" width="12" height="10" fill="#C9A227"/>';
     }else{
       const bw=34,bh=54,bx=(vbW-bw)/2,by=vbH-bh-8;
-      body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="#D9D9DC" stroke="rgba(255,255,255,.4)"/>';
+      clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2"/>';
+      clipBBox={x:bx,y:by,w:bw,h:bh};
+      body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="#D9D9DC" stroke="rgba(255,255,255,.4)"/>';
       for(let r=0;r<6;r++){for(let c=0;c<4;c++){
         const mx=bx+4+c*7,my=by+4+r*8;
         body+='<rect x="'+mx+'" y="'+my+'" width="5" height="6" fill="'+(((r+c)%2===0)?"#3fae8a":"#B8C4C8")+'" fill-opacity=".8"/>';
@@ -1935,7 +1960,9 @@ function bottleSvg(id,liquidColor,house){
   else if(shape==="crossband"){
     // Lattafa-style: squat rounded-shoulder, gold X-cross band, gold ring, dome cap
     const bw=34+Math.floor(rnd()*4),bh=46+Math.floor(rnd()*6),bx=(vbW-bw)/2,by=vbH-bh-8;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="14" fill="'+liquidColor+'" fill-opacity="0.9" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="14"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="14" fill="'+liquidColor+'" fill-opacity="0.9" stroke="rgba(255,255,255,.3)"/>';
     body+='<line x1="'+bx+'" y1="'+(by+bh*0.35)+'" x2="'+(bx+bw)+'" y2="'+(by+bh*0.7)+'" stroke="#C9A227" stroke-width="4"/>';
     body+='<line x1="'+bx+'" y1="'+(by+bh*0.7)+'" x2="'+(bx+bw)+'" y2="'+(by+bh*0.35)+'" stroke="#C9A227" stroke-width="4"/>';
     body+='<circle cx="'+(vbW/2)+'" cy="'+(by+bh*0.52)+'" r="5" fill="#F0E6C0"/>';
@@ -1945,12 +1972,21 @@ function bottleSvg(id,liquidColor,house){
   else{
     // Default/flatcap: tall matte rect, thin gold accent band, flat square cap
     const bw=32+Math.floor(rnd()*8),bh=58+Math.floor(rnd()*10),bx=(vbW-bw)/2,by=vbH-bh-6;
-    body='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
+    clipShapeSvg='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2"/>';
+    clipBBox={x:bx,y:by,w:bw,h:bh};
+    body=photoUrl?'':'<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2" fill="'+liquidColor+'" fill-opacity="0.88" stroke="rgba(255,255,255,.3)"/>';
     body+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+(bh*0.2)+'" rx="2" fill="rgba(255,255,255,.15)"/>';
     body+='<rect x="'+(bx+4)+'" y="'+(by+bh*0.45)+'" width="'+(bw-8)+'" height="9" fill="#C9A227" fill-opacity=".8"/>';
     body+='<rect x="'+(vbW/2-8)+'" y="'+(by-10)+'" width="16" height="10" fill="#1A1714"/>';
   }
-  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">'+(defs?'<defs>'+defs+'</defs>':"")+shadow+body+'</svg>';
+  let photoLayer="";
+  if(photoUrl&&clipShapeSvg&&clipBBox){
+    defs+='<clipPath id="pc'+uid+'">'+clipShapeSvg+'</clipPath>';
+    photoLayer='<g clip-path="url(#pc'+uid+')">'
+      +'<image href="'+photoUrl+'" xlink:href="'+photoUrl+'" x="'+clipBBox.x+'" y="'+clipBBox.y+'" width="'+clipBBox.w+'" height="'+clipBBox.h+'" preserveAspectRatio="xMidYMid slice"/>'
+    +'</g>';
+  }
+  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">'+(defs?'<defs>'+defs+'</defs>':"")+shadow+photoLayer+body+'</svg>';
 }
 
 function closetEntries(){
@@ -2373,13 +2409,25 @@ let CLOSET_HOUSE_INDEX=0;
 function bottleCardHtml(e){
   const liquid=deriveLiquidColor(e.notes);
   const pyr=deriveNotePyramid(e.notes);
-  const svg=bottleSvg(e.id,liquid,e.house);
-  const candidates=bottleImgCandidates(e.house,e.name);
-  const candidatesAttr=JSON.stringify(candidates).replace(/"/g,"&quot;");
+  const mappedFile=findBottleImageFile(e.house,e.name);
+  let imgOverlay="";
+  let svg;
+  if(mappedFile){
+    // Confidently known to exist (verified against your uploaded set) —
+    // clip it directly into the bottle silhouette, no separate overlay needed.
+    svg=bottleSvg(e.id,liquid,e.house,"images/bottles/"+mappedFile);
+  }else{
+    // No known line match — fall back to a plain bottle plus a best-guess
+    // per-fragrance image overlay that gracefully removes itself if missing.
+    svg=bottleSvg(e.id,liquid,e.house);
+    const candidates=bottleImgCandidates(e.house,e.name);
+    const candidatesAttr=JSON.stringify(candidates).replace(/"/g,"&quot;");
+    imgOverlay='<img src="'+candidates[0]+'" data-candidates="'+candidatesAttr+'" data-idx="0" alt="" loading="lazy" onload="bottleImgLoaded(this)" onerror="bottleImgFallback(this)">';
+  }
   return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
     +'<div class="closet-bottle-imgwrap">'
       +svg
-      +'<img src="'+candidates[0]+'" data-candidates="'+candidatesAttr+'" data-idx="0" alt="" loading="lazy" onload="bottleImgLoaded(this)" onerror="bottleImgFallback(this)">'
+      +imgOverlay
     +'</div>'
     +(e.locked?'<div class="closet-lock">🔒</div>':"")
     +'<div class="closet-tooltip">'
