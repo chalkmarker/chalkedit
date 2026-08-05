@@ -217,26 +217,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   75%{transform:rotate(-3deg) translateY(-8px)}
   100%{transform:rotate(0deg) translateY(-9px)}
 }
-.pc-top{position:absolute;top:0;left:10px;width:60px;height:26px;transform:skewX(-28deg);border:2px solid;border-left:none}
-.pc-side{position:absolute;top:10px;right:0;width:16px;height:100px;border:2px solid;border-left:none}
-.pc-front{position:absolute;top:16px;left:0;width:76px;height:100px;border:2px solid;transition:box-shadow .2s}
-.pixel-cabinet:hover .pc-front{box-shadow:0 0 0 2px #FFFFFF,0 0 10px 2px rgba(255,255,255,.6)}
-.pc-window{position:absolute;top:6px;left:6px;right:6px;height:58px;background:#081426;border:2px solid #8A7550;overflow:hidden}
-.pc-glow{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(90deg,rgba(90,180,220,.85),rgba(90,180,220,0));animation:wardrobeGlowPulse 3s ease-in-out infinite}
-.pc-shelf-line{position:absolute;left:2px;right:2px;height:1px;background:rgba(180,220,235,.4)}
-.pc-shelf-line:nth-child(2){top:33%}
-.pc-shelf-line:nth-child(3){top:66%}
-.pc-base{position:absolute;bottom:6px;left:6px;right:6px;height:26px;border:2px solid}
-.pc-base::after{content:"";position:absolute;top:50%;left:50%;width:3px;height:12px;background:#C9A227;transform:translate(-50%,-50%)}
-.pc-shadow{position:absolute;bottom:-8px;left:8px;right:8px;height:8px;background:rgba(0,0,0,.4);border-radius:50%;filter:blur(2px)}
-.pixel-cabinet.luxury .pc-top{background:#E4D6B8;border-color:#B89F72}
-.pixel-cabinet.luxury .pc-side{background:#B89F72;border-color:#8A7550}
-.pixel-cabinet.luxury .pc-front{background:#D9C7A3;border-color:#B89F72}
-.pixel-cabinet.luxury .pc-base{background:repeating-linear-gradient(90deg,#CBB68F 0 3px,#DECBA4 3px 6px);border-color:#B89F72}
-.pixel-cabinet.dupe .pc-top{background:#6B4A32;border-color:#41301F}
-.pixel-cabinet.dupe .pc-side{background:#4A3320;border-color:#2E2013}
-.pixel-cabinet.dupe .pc-front{background:#5C3E28;border-color:#41301F}
-.pixel-cabinet.dupe .pc-base{background:repeating-linear-gradient(90deg,#4A3320 0 3px,#5C3E28 3px 6px);border-color:#41301F}
+.pc-svg{width:100%;height:auto;display:block}
 .sec{margin-bottom:0}
 @media(min-width:768px){.sec{margin-bottom:48px}}
 .sec.hidden{display:none}
@@ -3002,24 +2983,39 @@ function isDupeHouse(house){
   return DUPE_HOUSE_MATCH.some(m=>h.includes(m));
 }
 
+// Built as one SVG with shared vertices (not stacked CSS divs) so the
+// top/side/front faces line up exactly instead of leaving gaps at the seams.
+function pixelCabinetSvg(dupe){
+  const c=dupe?{top:"#6B4A32",topB:"#41301F",side:"#4A3320",sideB:"#2E2013",front:"#5C3E28",frontB:"#41301F",base:"#4A3320",base2:"#5C3E28"}
+              :{top:"#E4D6B8",topB:"#B89F72",side:"#B89F72",sideB:"#8A7550",front:"#D9C7A3",frontB:"#B89F72",base:"#CBB68F",base2:"#DECBA4"};
+  let baseFluting="";
+  for(let i=0;i<11;i++){
+    baseFluting+='<rect x="'+(6+i*6)+'" y="92" width="3" height="20" fill="'+(i%2===0?c.base:c.base2)+'"/>';
+  }
+  return '<svg viewBox="0 0 96 118" xmlns="http://www.w3.org/2000/svg" class="pc-svg">'
+    +'<defs><linearGradient id="pcGlowGrad" x1="0" y1="0" x2="1" y2="0">'
+      +'<stop offset="0" stop-color="rgba(90,180,220,.85)"/><stop offset="1" stop-color="rgba(90,180,220,0)"/>'
+    +'</linearGradient></defs>'
+    +'<ellipse cx="44" cy="115" rx="34" ry="5" fill="rgba(0,0,0,.4)"/>'
+    +'<polygon points="0,26 16,0 96,0 80,26" fill="'+c.top+'" stroke="'+c.topB+'" stroke-width="2" stroke-linejoin="round"/>'
+    +'<polygon points="80,26 96,0 96,92 80,118" fill="'+c.side+'" stroke="'+c.sideB+'" stroke-width="2" stroke-linejoin="round"/>'
+    +'<rect x="0" y="26" width="80" height="92" fill="'+c.front+'" stroke="'+c.frontB+'" stroke-width="2"/>'
+    +'<rect x="6" y="32" width="68" height="56" fill="#081426" stroke="'+c.frontB+'" stroke-width="2"/>'
+    +'<rect x="6" y="32" width="10" height="56" fill="url(#pcGlowGrad)"/>'
+    +'<line x1="8" y1="50" x2="72" y2="50" stroke="rgba(180,220,235,.4)" stroke-width="1"/>'
+    +'<line x1="8" y1="68" x2="72" y2="68" stroke="rgba(180,220,235,.4)" stroke-width="1"/>'
+    +'<clipPath id="pcBaseClip"><rect x="6" y="92" width="68" height="20"/></clipPath>'
+    +'<g clip-path="url(#pcBaseClip)">'+baseFluting+'</g>'
+    +'<rect x="6" y="92" width="68" height="20" fill="none" stroke="'+c.frontB+'" stroke-width="2"/>'
+    +'<rect x="38" y="98" width="4" height="10" fill="#C9A227"/>'
+  +'</svg>';
+}
 function pixelCabinetHtml(house){
   const items=CLOSET_BY_HOUSE[house]||[];
   const dupe=isDupeHouse(house);
   return '<div class="pixel-cabinet'+(dupe?" dupe":" luxury")+'" onclick="openHouseCabinet(\''+house.replace(/'/g,"\\'")+'\')">'
     +'<div class="pc-label">'+house+'<br>('+items.length+')</div>'
-    +'<div class="pc-iso">'
-      +'<div class="pc-top"></div>'
-      +'<div class="pc-side"></div>'
-      +'<div class="pc-front">'
-        +'<div class="pc-window">'
-          +'<div class="pc-glow"></div>'
-          +'<div class="pc-shelf-line"></div>'
-          +'<div class="pc-shelf-line"></div>'
-        +'</div>'
-        +'<div class="pc-base"></div>'
-      +'</div>'
-      +'<div class="pc-shadow"></div>'
-    +'</div>'
+    +'<div class="pc-iso">'+pixelCabinetSvg(dupe)+'</div>'
   +'</div>';
 }
 
