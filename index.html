@@ -160,8 +160,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-bottle img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-bottle.locked svg,.closet-bottle.locked img{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-lock{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:15px;opacity:.85;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
-.closet-tooltip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.94);min-width:150px;max-width:200px;background:rgba(26,20,16,.95);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:20;backdrop-filter:blur(2px)}
-.closet-bottle:hover .closet-tooltip{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.closet-tooltip{position:fixed;left:0;top:0;min-width:150px;max-width:200px;background:rgba(26,20,16,.97);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:9999;backdrop-filter:blur(2px)}
+.closet-bottle:hover .closet-tooltip{opacity:1}
 .closet-tooltip-name{font-size:12px;color:var(--t1);font-weight:500}
 .closet-tooltip-house{font-size:10px;color:#C4AE84;margin-top:1px}
 .closet-tooltip-notes{margin-top:6px;font-size:10px;color:var(--t3);line-height:1.6}
@@ -199,15 +199,48 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
-.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px;background-color:#171009;background-image:repeating-linear-gradient(63.43deg,rgba(212,176,122,.10) 0 1px,transparent 1px 40px),repeating-linear-gradient(-63.43deg,rgba(212,176,122,.10) 0 1px,transparent 1px 40px),repeating-linear-gradient(63.43deg,rgba(212,176,122,.05) 0 1px,transparent 1px 20px),repeating-linear-gradient(-63.43deg,rgba(212,176,122,.05) 0 1px,transparent 1px 20px)}
-.cabinet-cluster{position:relative;width:100%;max-width:340px;height:340px;flex-shrink:0}
+.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px;background-color:#2A1C11}
+.wardrobe-gallery::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    repeating-linear-gradient(180deg,rgba(0,0,0,.45) 0 2px,transparent 2px 34px),
+    repeating-linear-gradient(180deg,rgba(255,220,180,.045) 2px 4px,transparent 4px 34px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 2px,transparent 2px 120px),
+    repeating-linear-gradient(180deg,rgba(255,255,255,.02) 0 1px,transparent 1px 6px),
+    radial-gradient(ellipse at 50% 0%,rgba(255,220,180,.10),transparent 65%);
+  background-size:auto,auto,120px 68px,auto,auto;
+  background-position:0 0,0 0,0 0,0 0,0 0;
+}
+.wardrobe-gallery::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 2px,transparent 2px 120px);
+  background-size:120px 68px;background-position:60px 34px;
+}
+.cabinet-cluster{position:relative;width:100%;max-width:340px;height:440px;flex-shrink:0;z-index:1}
 .cluster-slot{position:absolute;width:96px}
+/* Default: diamond */
 .slot-top{top:0;left:50%;transform:translateX(-50%)}
 .slot-left{top:33%;left:2%}
 .slot-right{top:33%;right:2%}
 .slot-bottom{bottom:0;left:50%;transform:translateX(-50%)}
+/* Shape B: zigzag stagger, nudged left */
+.cabinet-cluster.shape-b{transform:translateX(-16px)}
+.cabinet-cluster.shape-b .slot-top{top:0;left:4%;transform:none}
+.cabinet-cluster.shape-b .slot-left{top:27%;right:2%;left:auto}
+.cabinet-cluster.shape-b .slot-right{top:56%;left:8%;right:auto}
+.cabinet-cluster.shape-b .slot-bottom{bottom:0;right:6%;left:auto;transform:none}
+/* Shape C: loose arc, nudged right */
+.cabinet-cluster.shape-c{transform:translateX(18px)}
+.cabinet-cluster.shape-c .slot-top{top:0;right:6%;left:auto;transform:none}
+.cabinet-cluster.shape-c .slot-left{top:28%;left:0}
+.cabinet-cluster.shape-c .slot-right{top:57%;right:0;left:auto}
+.cabinet-cluster.shape-c .slot-bottom{bottom:0;left:12%;transform:none}
+/* Shape D: tilted column pair */
+.cabinet-cluster.shape-d{transform:translateX(-8px)}
+.cabinet-cluster.shape-d .slot-top{top:0;left:14%;transform:none}
+.cabinet-cluster.shape-d .slot-left{top:27%;right:2%;left:auto}
+.cabinet-cluster.shape-d .slot-right{top:56%;left:2%;right:auto}
+.cabinet-cluster.shape-d .slot-bottom{bottom:0;right:14%;left:auto;transform:none}
 @media(max-width:420px){
-  .cabinet-cluster{max-width:300px;height:320px}
+  .cabinet-cluster{max-width:300px;height:420px}
   .cluster-slot{width:84px}
 }
 .pixel-cabinet{position:relative;z-index:1;width:100%;cursor:pointer}
@@ -3161,12 +3194,15 @@ function renderWardrobeGallery(){
   // Show every known house plus any extra houses actually in the collection
   const extras=CLOSET_HOUSES.filter(h=>!ALL_LUXURY_HOUSES.some(k=>k.toLowerCase()===h.toLowerCase()));
   const houses=[...ALL_LUXURY_HOUSES,...extras].sort((a,b)=>a.localeCompare(b));
-  // Arrange into diamond clusters of 4: top / left / right / bottom
+  // Arrange into clusters of 4, cycling through several shapes so the page
+  // reads as scattered rather than a rigid repeating grid
   const slots=["top","left","right","bottom"];
+  const shapes=["","shape-b","shape-c","shape-d"];
   let html="";
   for(let i=0;i<houses.length;i+=4){
     const group=houses.slice(i,i+4);
-    html+='<div class="cabinet-cluster">'
+    const shape=shapes[(i/4)%shapes.length];
+    html+='<div class="cabinet-cluster '+shape+'">'
       +group.map((h,j)=>'<div class="cluster-slot slot-'+slots[j]+'">'+pixelCabinetHtml(h)+'</div>').join("")
     +'</div>';
   }
@@ -3175,6 +3211,33 @@ function renderWardrobeGallery(){
 
 // Bottles for one house, split into shelf rows so a house with many
 // fragrances doesn't overcrowd one row.
+// The tooltip is position:fixed so it can escape the cabinet's overflow
+// clipping — position it manually on hover, centered over the bottle and
+// clamped so it never runs off the edge of the screen.
+function positionBottleTooltip(bottleEl){
+  const tip=bottleEl.querySelector(".closet-tooltip");
+  if(!tip)return;
+  const b=bottleEl.getBoundingClientRect();
+  tip.style.visibility="hidden";
+  tip.style.opacity="0";
+  tip.style.left="0px";
+  tip.style.top="0px";
+  const t=tip.getBoundingClientRect();
+  let left=b.left+b.width/2-t.width/2;
+  let top=b.top-t.height-8;
+  if(top<8)top=b.bottom+8;                                   // flip below if no room above
+  left=Math.max(8,Math.min(left,window.innerWidth-t.width-8));
+  top=Math.max(8,Math.min(top,window.innerHeight-t.height-8));
+  tip.style.left=left+"px";
+  tip.style.top=top+"px";
+  tip.style.visibility="";
+  tip.style.opacity="";
+}
+document.addEventListener("mouseover",(e)=>{
+  const bottle=e.target.closest&&e.target.closest(".closet-bottle");
+  if(bottle)positionBottleTooltip(bottle);
+});
+
 function renderWardrobeShelf(){
   const shelvesEl=document.getElementById("wardrobe-shelves");
   const labelEl=document.getElementById("wardrobe-house-label");
