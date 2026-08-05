@@ -160,8 +160,9 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-bottle img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-bottle.locked svg,.closet-bottle.locked img{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-lock{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:15px;opacity:.85;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
-.closet-tooltip{position:fixed;left:0;top:0;min-width:150px;max-width:200px;background:rgba(26,20,16,.97);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:9999;backdrop-filter:blur(2px)}
-.closet-bottle:hover .closet-tooltip{opacity:1}
+.closet-tooltip{position:fixed;left:0;top:0;display:none;min-width:150px;max-width:220px;background:rgba(20,15,11,.98);border:1px solid var(--border);border-radius:10px;padding:10px 12px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s;z-index:99999;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+.closet-tooltip-src{margin-top:7px;padding-top:6px;border-top:1px solid var(--border);font-size:9px;letter-spacing:.04em;color:#8FC98F}
+.closet-tooltip-src.dim{color:var(--t3)}
 .closet-tooltip-name{font-size:12px;color:var(--t1);font-weight:500}
 .closet-tooltip-house{font-size:10px;color:#C4AE84;margin-top:1px}
 .closet-tooltip-notes{margin-top:6px;font-size:10px;color:var(--t3);line-height:1.6}
@@ -931,12 +932,13 @@ async function fbSet(path,data){try{await fetch(FB+path+".json",{method:"PUT",he
 
 // ── INIT ──
 (async()=>{
-  const [fd,sd,wd,cd]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags")]);
+  const [fd,sd,wd,cd,vn]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes")]);
   if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
   else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
   if(sd&&typeof sd==="object")acquired=sd;
   if(wd&&typeof wd==="object")wishlist=wd;
   if(cd&&typeof cd==="object")customFrags=cd;
+  if(vn&&typeof vn==="object")VERIFIED_NOTES=vn;
   await maybeCompileLastMonth();
   loadRemoteSuggestions();
   getWeather();
@@ -1810,6 +1812,68 @@ const NOTE_PYRAMID_BUCKETS={
     "vanilla","amber","gourmand","caramel","chocolate","coffee","tonka","benzoin",
     "woody","cedar","sandalwood","patchouli","vetiver","guaiac","oakmoss"],
 };
+// Verified note pyramids fetched from the web (Fragrantica / official sites)
+// via the lookupNotes function, cached in Firebase so each fragrance is only
+// looked up once. Falls back to the keyword heuristic below when absent.
+let VERIFIED_NOTES={};
+function verifiedNotesKey(house,name){
+  return ((house||"")+"-"+(name||"")).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+function getVerifiedNotes(house,name){
+  return VERIFIED_NOTES[verifiedNotesKey(house,name)]||null;
+}
+// Resolved pyramid: real notes if we have them, otherwise the guess.
+function resolveNotePyramid(house,name,notes){
+  const v=getVerifiedNotes(house,name);
+  if(v&&v.found){
+    return {
+      top:(v.top&&v.top.length)?v.top.slice(0,3).join(", "):"—",
+      heart:(v.heart&&v.heart.length)?v.heart.slice(0,3).join(", "):"—",
+      base:(v.base&&v.base.length)?v.base.slice(0,3).join(", "):"—",
+      verified:true,
+      source:v.source||"",
+    };
+  }
+  const p=deriveNotePyramid(notes);
+  p.verified=false;
+  return p;
+}
+// All known note words for a fragrance — verified ones take priority so the
+// derived potion color reflects the real composition.
+function effectiveNotes(house,name,notes){
+  const v=getVerifiedNotes(house,name);
+  if(v&&v.found){
+    const all=[].concat(v.accords||[],v.top||[],v.heart||[],v.base||[]);
+    if(all.length)return all;
+  }
+  return notes||[];
+}
+async function fetchVerifiedNotes(house,name){
+  const key=verifiedNotesKey(house,name);
+  if(VERIFIED_NOTES[key])return VERIFIED_NOTES[key];
+  try{
+    const res=await fetch(FUNCTIONS_BASE+"/lookupNotes?name="+encodeURIComponent(name)+"&house="+encodeURIComponent(house));
+    const data=await res.json();
+    VERIFIED_NOTES[key]=data;
+    fbSet("/verifiedNotes/"+key,data);
+    return data;
+  }catch(e){
+    return null;
+  }
+}
+// Look up anything on the current shelf that we don't have verified notes
+// for yet, then re-render once they land.
+async function ensureVerifiedNotes(entries){
+  const missing=entries.filter(e=>!VERIFIED_NOTES[verifiedNotesKey(e.house,e.name)]);
+  if(!missing.length)return;
+  let changed=false;
+  for(const e of missing){
+    const got=await fetchVerifiedNotes(e.house,e.name);
+    if(got&&got.found)changed=true;
+  }
+  if(changed&&typeof renderWardrobeShelf==="function")renderWardrobeShelf();
+}
+
 function deriveNotePyramid(notes){
   notes=(notes||[]).map(n=>n.trim()).filter(Boolean);
   const used=new Set();
@@ -3069,14 +3133,18 @@ function potionSpriteSvg(id,notes){
 }
 
 function bottleCardHtml(e){
-  const svg=potionSpriteSvg(e.id,e.notes);
-  const pyr=deriveNotePyramid(e.notes);
+  const notes=effectiveNotes(e.house,e.name,e.notes);
+  const svg=potionSpriteSvg(e.id,notes);
+  const pyr=resolveNotePyramid(e.house,e.name,e.notes);
+  const srcLabel=pyr.verified
+    ?'<div class="closet-tooltip-src">✓ '+(pyr.source==="fragrantica"?"Fragrantica":pyr.source==="official"?"Official site":"Verified")+'</div>'
+    :'<div class="closet-tooltip-src dim">estimated</div>';
   return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
     +'<div class="closet-bottle-imgwrap potion-imgwrap">'
       +svg
     +'</div>'
     +(e.locked?'<div class="closet-lock">🔒</div>':"")
-    +'<div class="closet-tooltip">'
+    +'<div class="closet-tooltip-data" style="display:none">'
       +'<div class="closet-tooltip-name">'+e.name+'</div>'
       +'<div class="closet-tooltip-house">'+e.house+'</div>'
       +'<div class="closet-tooltip-notes">'
@@ -3084,6 +3152,7 @@ function bottleCardHtml(e){
         +'<div><b>Heart:</b> '+pyr.heart+'</div>'
         +'<div><b>Base:</b> '+pyr.base+'</div>'
       +'</div>'
+      +srcLabel
     +'</div>'
   +'</div>';
 }
@@ -3217,29 +3286,51 @@ function renderWardrobeGallery(){
 // The tooltip is position:fixed so it can escape the cabinet's overflow
 // clipping — position it manually on hover, centered over the bottle and
 // clamped so it never runs off the edge of the screen.
-function positionBottleTooltip(bottleEl){
-  const tip=bottleEl.querySelector(".closet-tooltip");
-  if(!tip)return;
-  const b=bottleEl.getBoundingClientRect();
+// A single shared tooltip element parked directly on <body>, so it can never
+// be clipped or z-index-trapped by the cabinet's overflow:hidden container.
+let SHARED_TOOLTIP=null;
+function getSharedTooltip(){
+  if(!SHARED_TOOLTIP){
+    SHARED_TOOLTIP=document.createElement("div");
+    SHARED_TOOLTIP.className="closet-tooltip";
+    document.body.appendChild(SHARED_TOOLTIP);
+  }
+  return SHARED_TOOLTIP;
+}
+function showBottleTooltip(bottleEl){
+  const src=bottleEl.querySelector(".closet-tooltip-data");
+  if(!src)return;
+  const tip=getSharedTooltip();
+  tip.innerHTML=src.innerHTML;
   tip.style.visibility="hidden";
   tip.style.opacity="0";
   tip.style.left="0px";
   tip.style.top="0px";
+  tip.style.display="block";
+  const b=bottleEl.getBoundingClientRect();
   const t=tip.getBoundingClientRect();
   let left=b.left+b.width/2-t.width/2;
-  let top=b.top-t.height-8;
-  if(top<8)top=b.bottom+8;                                   // flip below if no room above
+  let top=b.top-t.height-10;
+  if(top<8)top=b.bottom+10;                                    // flip below if no room above
   left=Math.max(8,Math.min(left,window.innerWidth-t.width-8));
   top=Math.max(8,Math.min(top,window.innerHeight-t.height-8));
   tip.style.left=left+"px";
   tip.style.top=top+"px";
-  tip.style.visibility="";
-  tip.style.opacity="";
+  tip.style.visibility="visible";
+  tip.style.opacity="1";
+}
+function hideBottleTooltip(){
+  if(SHARED_TOOLTIP){SHARED_TOOLTIP.style.opacity="0";SHARED_TOOLTIP.style.visibility="hidden";}
 }
 document.addEventListener("mouseover",(e)=>{
   const bottle=e.target.closest&&e.target.closest(".closet-bottle");
-  if(bottle)positionBottleTooltip(bottle);
+  if(bottle)showBottleTooltip(bottle);
 });
+document.addEventListener("mouseout",(e)=>{
+  const bottle=e.target.closest&&e.target.closest(".closet-bottle");
+  if(bottle&&!bottle.contains(e.relatedTarget))hideBottleTooltip();
+});
+document.addEventListener("scroll",hideBottleTooltip,true);
 
 function renderWardrobeShelf(){
   const shelvesEl=document.getElementById("wardrobe-shelves");
@@ -3261,6 +3352,8 @@ function openHouseCabinet(house){
   CLOSET_VIEW="detail";
   applyClosetView();
   renderWardrobeShelf();
+  // Fetch real notes for anything in this cabinet we haven't verified yet
+  ensureVerifiedNotes(CLOSET_BY_HOUSE[house]||[]);
 }
 
 function closetBack(){
