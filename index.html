@@ -199,7 +199,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
-.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:30px;padding:30px 24px 60px}
+.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:30px;padding:30px 24px 60px;background-image:linear-gradient(rgba(212,176,122,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(212,176,122,.07) 1px,transparent 1px),linear-gradient(rgba(212,176,122,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(212,176,122,.13) 1px,transparent 1px);background-size:16px 16px,16px 16px,80px 80px,80px 80px;background-position:0 0}
 .wardrobe-gallery::before{content:"";position:absolute;top:20px;bottom:30px;left:50%;width:2px;background:repeating-linear-gradient(180deg,rgba(212,176,122,.35) 0 6px,transparent 6px 14px);transform:translateX(-1px);z-index:0}
 .pixel-cabinet{position:relative;z-index:1;flex-shrink:0;width:96px;cursor:pointer;--zx:0px;transform:translateX(var(--zx))}
 .pixel-cabinet:nth-child(odd){--zx:-38px}
@@ -3058,9 +3058,13 @@ function isDupeHouse(house){
 // Built as one SVG with shared vertices (not stacked CSS divs) so the
 // top/side/front faces line up exactly instead of leaving gaps at the seams.
 function pixelCabinetSvg(dupe){
-  // True pixel-art isometric cabinet on a 48x56 grid: the top and side faces
-  // step in 2px increments (staircase edges) rather than smooth diagonals,
-  // and each face gets its own flat shade so it reads as chunky 3D.
+  // Pixel-art isometric cabinet drawn on a strict 2px grid (24x30 "pixels"
+  // across a 48x60 viewBox). All three faces share exact corner coordinates:
+  //   front face : x 2..34, y 14..56
+  //   depth offset: +12 across, -12 up (6 steps of 2px) -> perfect 1:1 iso
+  const D=12;                 // depth offset in svg units (6 pixel-steps)
+  const FX0=2, FX1=34;        // front face left/right
+  const FY0=14, FY1=56;       // front face top/bottom
   const c=dupe
     ?{topL:"#8A6242",top:"#6B4A32",side:"#3E2A1A",sideD:"#33220F",front:"#5C3E28",frontL:"#7A5539",line:"#2A1B0E",
       base:"#4A3320",base2:"#5C3E28"}
@@ -3069,56 +3073,55 @@ function pixelCabinetSvg(dupe){
   const P=[];
   const px=(x,y,w,h,f)=>P.push('<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+f+'"/>');
 
-  // ── TOP FACE: stepped parallelogram (staircase edge) ──
-  for(let i=0;i<7;i++){
-    const y=i*2;
-    const x0=14-i*2;
-    px(x0,y,32,2,i<2?c.topL:c.top);
-    px(x0,y,2,2,c.line);              // left edge pixel
-    px(x0+32,y,2,2,c.line);           // right edge pixel
+  // ── TOP FACE ──
+  // Row i (i=0 is the far/back row) shifts right by 2 and down by 2 each step,
+  // so the back-left corner is (FX0+D, FY0-D) and it lands exactly on the
+  // front-top edge at (FX0, FY0).
+  for(let i=0;i<6;i++){
+    const y=FY0-D+i*2;
+    const x=FX0+D-i*2;
+    px(x,y,FX1-FX0,2,i<2?c.topL:c.top);
+    px(x-2,y,2,2,c.line);                 // stepped left edge
+    px(x+(FX1-FX0),y,2,2,c.line);         // stepped right edge
   }
-  px(2,14,44,2,c.line);               // front-top rim
 
-  // ── RIGHT SIDE FACE: stepped down the right edge ──
-  for(let i=0;i<7;i++){
-    const y=14+i*2;
-    const x=32+(6-i)*2;
-    px(x,y,2,2,c.line);
-  }
-  // side face fill: full height, right edge steps down toward the front
-  for(let i=0;i<21;i++){
-    const y=16+i*2;
-    const rowRight=44-Math.max(0,Math.floor((y-42)/2))*2;
-    if(rowRight<=34)break;
-    px(34,y,rowRight-34,2,i<1?c.sideD:c.side);
-    px(rowRight,y,2,2,c.line);
+  // ── RIGHT SIDE FACE ──
+  // Mirrors the same stepping: top edge descends from (FX1+D, FY0-D) to
+  // (FX1, FY0); bottom edge descends from (FX1+D, FY1-D) to (FX1, FY1).
+  for(let i=0;i<6;i++){
+    const yTop=FY0-D+i*2;
+    const yBot=FY1-D+i*2;
+    const x=FX1+D-i*2-2;
+    px(x,yTop+2,2,yBot-yTop-2,i===0?c.sideD:c.side);   // vertical strip
+    px(x,yTop,2,2,c.line);                              // top stepped edge
+    px(x,yBot,2,2,c.line);                              // bottom stepped edge
   }
 
   // ── FRONT FACE ──
-  px(2,14,32,2,c.line);
-  px(2,16,2,40,c.line);               // left border
-  px(32,16,2,40,c.line);              // right border
-  px(4,16,28,40,c.front);
-  px(4,16,28,2,c.frontL);             // top light edge
-  px(2,54,32,2,c.line);               // bottom border
+  px(FX0,FY0,FX1-FX0,2,c.line);                 // top border
+  px(FX0,FY1-2,FX1-FX0,2,c.line);               // bottom border
+  px(FX0,FY0,2,FY1-FY0,c.line);                 // left border
+  px(FX1-2,FY0,2,FY1-FY0,c.line);               // right border
+  px(FX0+2,FY0+2,FX1-FX0-4,FY1-FY0-4,c.front);
+  px(FX0+2,FY0+2,FX1-FX0-4,2,c.frontL);         // top light edge
 
-  // ── GLASS WINDOW (dark navy w/ side glow + shelves) ──
+  // ── GLASS WINDOW ──
   px(6,20,24,22,c.line);
   px(8,22,20,18,"#081426");
-  px(8,22,3,18,"#2E6E8E");            // left glow band
-  px(8,22,2,18,"#4FA3C4");            // brighter inner glow
-  px(8,28,20,1,"#7FB8CE");            // shelf line
-  px(8,34,20,1,"#7FB8CE");            // shelf line
+  px(8,22,4,18,"#2E6E8E");                      // outer glow band
+  px(8,22,2,18,"#4FA3C4");                      // inner bright glow
+  px(8,28,20,2,"#7FB8CE");                      // shelf line
+  px(8,34,20,2,"#7FB8CE");                      // shelf line
 
   // ── FLUTED LOWER DOORS ──
   px(6,44,24,8,c.line);
-  for(let i=0;i<11;i++){
+  for(let i=0;i<10;i++){
     px(8+i*2,46,2,4,i%2===0?c.base:c.base2);
   }
-  px(17,46,2,4,"#C9A227");            // gold handle
+  px(16,46,2,4,"#C9A227");                      // gold handle (on-grid)
 
   return '<svg viewBox="0 0 48 60" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" class="pc-svg">'
-    +'<ellipse cx="23" cy="59" rx="19" ry="1.5" fill="rgba(0,0,0,.4)"/>'
+    +'<ellipse cx="24" cy="58" rx="20" ry="1.5" fill="rgba(0,0,0,.4)"/>'
     +P.join("")
   +'</svg>';
 }
