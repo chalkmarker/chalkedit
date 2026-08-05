@@ -155,6 +155,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.closet-body{padding:24px 56px 72px}}
 .closet-bottle{position:relative;width:64px;flex-shrink:0;cursor:pointer}
 .closet-bottle-imgwrap{position:relative;aspect-ratio:60/118}
+.potion-imgwrap{aspect-ratio:16/26;image-rendering:pixelated;image-rendering:crisp-edges}
 .closet-bottle svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-bottle img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 .closet-bottle.locked svg,.closet-bottle.locked img{filter:grayscale(1) brightness(.42) contrast(1.05) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
@@ -170,17 +171,72 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-legend span{display:flex;align-items:center;gap:6px}
 .closet-legend-swatch{width:9px;height:9px;border-radius:2px}
 .wardrobe-wrap{display:flex;align-items:center;justify-content:center;gap:8px;max-width:520px;margin:0 auto}
-.wardrobe-frame{position:relative;flex:1;max-width:420px;min-height:460px;border:10px solid #D9C7A3;border-radius:50% 50% 10px 10px/22% 22% 3px 3px;background:#081426;padding:58px 18px 22px;box-sizing:border-box;box-shadow:0 10px 26px rgba(0,0,0,.4)}
-.wardrobe-frame::before{content:"";position:absolute;top:-40px;left:8%;right:8%;height:180px;background:radial-gradient(ellipse at center,rgba(110,198,224,.55),rgba(110,198,224,0) 72%);pointer-events:none;z-index:0;animation:wardrobeGlowPulse 3.2s ease-in-out infinite}
-@keyframes wardrobeGlowPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:.95;transform:scale(1.06)}}
-.wardrobe-house-label{position:relative;z-index:1;display:block;width:fit-content;margin:0 auto;top:0;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#DCEEF5;background:rgba(14,30,51,.8);border:1px solid rgba(110,198,224,.4);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
-.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;margin-top:14px;height:100%;overflow-y:auto}
-.wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:2px solid rgba(110,198,224,.25);min-height:70px}
+.wardrobe-frame{position:relative;display:flex;flex-direction:column;flex:1;max-width:400px;min-height:560px;border:10px solid #D9C7A3;border-radius:3px;background:#D9C7A3;padding:0;box-sizing:border-box;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.wardrobe-cornice{position:absolute;top:-6px;left:-14px;right:-14px;height:14px;background:#E4D6B8;border-radius:2px;box-shadow:0 3px 6px rgba(0,0,0,.35);z-index:3}
+.wardrobe-house-label{position:relative;z-index:3;display:block;width:fit-content;margin:14px auto 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#DCEEF5;background:rgba(8,20,38,.85);border:1px solid rgba(110,198,224,.4);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
+.wardrobe-display{position:relative;flex:1;min-height:0;background:#081426;margin:0 4px;overflow:hidden;box-shadow:inset 0 2px 10px rgba(0,0,0,.5)}
+.wardrobe-spot{position:absolute;top:6px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 70%);z-index:2}
+.wardrobe-spot-l{left:22%}
+.wardrobe-spot-r{right:22%}
+.wardrobe-glow{position:absolute;top:0;bottom:0;width:34px;pointer-events:none;z-index:1;animation:wardrobeGlowPulse 3.2s ease-in-out infinite}
+.wardrobe-glow-l{left:0;background:linear-gradient(90deg,rgba(90,180,220,.75),rgba(90,180,220,0) 100%)}
+.wardrobe-glow-r{right:0;background:linear-gradient(270deg,rgba(90,180,220,.75),rgba(90,180,220,0) 100%)}
+@keyframes wardrobeGlowPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.wardrobe-center-seam{position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(217,199,163,.5);z-index:2;transform:translateX(-1px)}
+.wardrobe-center-seam span{position:absolute;left:50%;width:5px;height:22px;background:#C9A227;border-radius:1px;transform:translateX(-50%)}
+.wardrobe-center-seam span:first-child{top:32%}
+.wardrobe-center-seam span:last-child{top:58%}
+.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;height:100%;overflow-y:auto;padding:16px 14px}
+.wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:1px solid rgba(180,220,235,.35);min-height:70px}
 .wardrobe-house-group{margin-bottom:6px}
 .wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8FC4DC;padding:2px 2px 6px}
+.wardrobe-cabinet-footer{position:relative;flex-shrink:0;height:90px;background:#D9C7A3;margin:0 4px;display:flex;gap:3px;padding:6px}
+.wardrobe-fluted-door{flex:1;border-radius:2px;background:repeating-linear-gradient(90deg,#CBB68F 0 3px,#DECBA4 3px 6px);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.wardrobe-footer-handle{position:absolute;top:50%;width:4px;height:26px;background:#C9A227;border-radius:1px;transform:translateY(-50%)}
+.wardrobe-footer-handle-l{left:calc(50% - 8px)}
+.wardrobe-footer-handle-r{left:calc(50% + 4px)}
+.wardrobe-plinth{flex-shrink:0;height:14px;background:#C7B594;margin:2px 8px 0;border-radius:0 0 2px 2px}
 .wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
+.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:30px;padding:30px 24px 60px}
+.wardrobe-gallery::before{content:"";position:absolute;top:20px;bottom:30px;left:50%;width:2px;background:repeating-linear-gradient(180deg,rgba(212,176,122,.35) 0 6px,transparent 6px 14px);transform:translateX(-1px);z-index:0}
+.pixel-cabinet{position:relative;z-index:1;flex-shrink:0;width:96px;cursor:pointer;--zx:0px;transform:translateX(var(--zx))}
+.pixel-cabinet:nth-child(odd){--zx:-38px}
+.pixel-cabinet:nth-child(even){--zx:38px}
+.wardrobe-group-gap{flex-basis:100%;height:14px}
+.pc-label{margin-bottom:8px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.04em;line-height:1.3;white-space:normal}
+.pixel-cabinet.luxury .pc-label{color:#D7DBE0;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.pixel-cabinet.dupe .pc-label{color:#E8C043;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.pc-iso{position:relative;width:100%;height:118px;transition:filter .2s}
+.pixel-cabinet:hover .pc-iso{animation:cabinetFloatSpin .55s ease-out forwards;filter:drop-shadow(0 0 6px rgba(255,255,255,.5))}
+@keyframes cabinetFloatSpin{
+  0%{transform:rotate(0deg) translateY(0)}
+  25%{transform:rotate(-8deg) translateY(-6px)}
+  50%{transform:rotate(7deg) translateY(-11px)}
+  75%{transform:rotate(-3deg) translateY(-8px)}
+  100%{transform:rotate(0deg) translateY(-9px)}
+}
+.pc-top{position:absolute;top:0;left:10px;width:60px;height:26px;transform:skewX(-28deg);border:2px solid;border-left:none}
+.pc-side{position:absolute;top:10px;right:0;width:16px;height:100px;border:2px solid;border-left:none}
+.pc-front{position:absolute;top:16px;left:0;width:76px;height:100px;border:2px solid;transition:box-shadow .2s}
+.pixel-cabinet:hover .pc-front{box-shadow:0 0 0 2px #FFFFFF,0 0 10px 2px rgba(255,255,255,.6)}
+.pc-window{position:absolute;top:6px;left:6px;right:6px;height:58px;background:#081426;border:2px solid #8A7550;overflow:hidden}
+.pc-glow{position:absolute;top:0;bottom:0;left:0;width:10px;background:linear-gradient(90deg,rgba(90,180,220,.85),rgba(90,180,220,0));animation:wardrobeGlowPulse 3s ease-in-out infinite}
+.pc-shelf-line{position:absolute;left:2px;right:2px;height:1px;background:rgba(180,220,235,.4)}
+.pc-shelf-line:nth-child(2){top:33%}
+.pc-shelf-line:nth-child(3){top:66%}
+.pc-base{position:absolute;bottom:6px;left:6px;right:6px;height:26px;border:2px solid}
+.pc-base::after{content:"";position:absolute;top:50%;left:50%;width:3px;height:12px;background:#C9A227;transform:translate(-50%,-50%)}
+.pc-shadow{position:absolute;bottom:-8px;left:8px;right:8px;height:8px;background:rgba(0,0,0,.4);border-radius:50%;filter:blur(2px)}
+.pixel-cabinet.luxury .pc-top{background:#E4D6B8;border-color:#B89F72}
+.pixel-cabinet.luxury .pc-side{background:#B89F72;border-color:#8A7550}
+.pixel-cabinet.luxury .pc-front{background:#D9C7A3;border-color:#B89F72}
+.pixel-cabinet.luxury .pc-base{background:repeating-linear-gradient(90deg,#CBB68F 0 3px,#DECBA4 3px 6px);border-color:#B89F72}
+.pixel-cabinet.dupe .pc-top{background:#6B4A32;border-color:#41301F}
+.pixel-cabinet.dupe .pc-side{background:#4A3320;border-color:#2E2013}
+.pixel-cabinet.dupe .pc-front{background:#5C3E28;border-color:#41301F}
+.pixel-cabinet.dupe .pc-base{background:repeating-linear-gradient(90deg,#4A3320 0 3px,#5C3E28 3px 6px);border-color:#41301F}
 .sec{margin-bottom:0}
 @media(min-width:768px){.sec{margin-bottom:48px}}
 .sec.hidden{display:none}
@@ -654,18 +710,34 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 <!-- CLOSET -->
 <div id="closet" class="page hidden">
   <div class="inner-header">
-    <button class="back-btn" onclick="goBack()">‹ Menu</button>
-    <div><div class="inner-title">Closet</div><div class="inner-sub">Your collection, on the shelf</div></div>
+    <button class="back-btn" onclick="closetBack()">‹ Menu</button>
+    <div><div class="inner-title">Closet</div><div class="inner-sub" id="closet-subtitle">Tap a cabinet to open it</div></div>
   </div>
   <div class="closet-body" id="closet-body">
     <div class="closet-legend">
       <span><span class="closet-legend-swatch" style="background:#B8860B"></span>In your collection</span>
       <span><span class="closet-legend-swatch" style="background:#5a5a5a;filter:grayscale(1)"></span>🔒 On your wishlist</span>
     </div>
-    <div class="wardrobe-wrap">
+    <div class="wardrobe-gallery" id="wardrobe-gallery"></div>
+    <div class="wardrobe-wrap" id="wardrobe-detail-wrap" style="display:none">
       <div class="wardrobe-frame">
-        <div class="wardrobe-house-label">Your Collection</div>
-        <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
+        <div class="wardrobe-cornice"></div>
+        <div class="wardrobe-house-label" id="wardrobe-house-label">House</div>
+        <div class="wardrobe-display">
+          <div class="wardrobe-spot wardrobe-spot-l"></div>
+          <div class="wardrobe-spot wardrobe-spot-r"></div>
+          <div class="wardrobe-glow wardrobe-glow-l"></div>
+          <div class="wardrobe-glow wardrobe-glow-r"></div>
+          <div class="wardrobe-center-seam"><span></span><span></span></div>
+          <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
+        </div>
+        <div class="wardrobe-cabinet-footer">
+          <div class="wardrobe-fluted-door"></div>
+          <div class="wardrobe-fluted-door"></div>
+          <div class="wardrobe-footer-handle wardrobe-footer-handle-l"></div>
+          <div class="wardrobe-footer-handle wardrobe-footer-handle-r"></div>
+        </div>
+        <div class="wardrobe-plinth"></div>
       </div>
     </div>
   </div>
@@ -2870,13 +2942,42 @@ function bottleImgLoaded(img){
 
 let CLOSET_HOUSES=[];
 let CLOSET_BY_HOUSE={};
+let CLOSET_VIEW="gallery"; // "gallery" | "detail"
+let CLOSET_DETAIL_HOUSE=null;
+
+// Fragrances on the expanded shelf render as chunky pixel-art "potion"
+// bottles (evoking the classic Potion/Super Potion/Hyper Potion/Max Potion
+// look — original design, not a trace of any game's actual sprite art).
+// Color is derived from the fragrance's own notes (same logic used
+// elsewhere), so bottles are visually distinct by scent profile rather than
+// an arbitrary fixed tier.
+function darkenRgb(rgbStr,factor){
+  const m=rgbStr.match(/\d+/g);
+  if(!m)return rgbStr;
+  const [r,g,b]=m.map(n=>Math.round(+n*factor));
+  return "rgb("+r+","+g+","+b+")";
+}
+function potionSpriteSvg(id,notes){
+  const body=deriveLiquidColor(notes);
+  const dark=darkenRgb(body,0.62);
+  const vbW=16,vbH=26;
+  return '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    +'<rect x="3" y="24" width="10" height="2" fill="rgba(0,0,0,.35)"/>'
+    +'<rect x="6" y="0" width="4" height="4" fill="#C89B5C"/>'
+    +'<rect x="6" y="4" width="4" height="2" fill="'+dark+'"/>'
+    +'<rect x="2" y="6" width="12" height="16" fill="'+body+'"/>'
+    +'<rect x="2" y="6" width="12" height="3" fill="rgba(255,255,255,.25)"/>'
+    +'<rect x="2" y="13" width="12" height="6" fill="#F2ECDD"/>'
+    +'<rect x="7" y="15" width="2" height="4" fill="'+dark+'"/>'
+    +'<rect x="5" y="17" width="6" height="2" fill="'+dark+'"/>'
+  +'</svg>';
+}
 
 function bottleCardHtml(e){
-  const liquid=deriveLiquidColor(e.notes);
+  const svg=potionSpriteSvg(e.id,e.notes);
   const pyr=deriveNotePyramid(e.notes);
-  const svg=bottleSvg(e.id,liquid,e.house);
   return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
-    +'<div class="closet-bottle-imgwrap">'
+    +'<div class="closet-bottle-imgwrap potion-imgwrap">'
       +svg
     +'</div>'
     +(e.locked?'<div class="closet-lock">🔒</div>':"")
@@ -2892,34 +2993,105 @@ function bottleCardHtml(e){
   +'</div>';
 }
 
-// Every fragrance in the collection, grouped by house, all rendered at once
-// inside the cabinet — each house gets its own label and shelf row(s), split
-// into chunks so a house with many fragrances doesn't overcrowd one row.
+// Same dupe-house list as the tracker — these get the dark oak cabinet
+// treatment with gold house-name text; everything else is "luxury" (beige
+// cabinet, silver house-name text).
+const DUPE_HOUSE_MATCH=["french avenue","rayhaan","lattafa","afnan","armaf"];
+function isDupeHouse(house){
+  const h=(house||"").toLowerCase();
+  return DUPE_HOUSE_MATCH.some(m=>h.includes(m));
+}
+
+function pixelCabinetHtml(house){
+  const items=CLOSET_BY_HOUSE[house]||[];
+  const dupe=isDupeHouse(house);
+  return '<div class="pixel-cabinet'+(dupe?" dupe":" luxury")+'" onclick="openHouseCabinet(\''+house.replace(/'/g,"\\'")+'\')">'
+    +'<div class="pc-label">'+house+'<br>('+items.length+')</div>'
+    +'<div class="pc-iso">'
+      +'<div class="pc-top"></div>'
+      +'<div class="pc-side"></div>'
+      +'<div class="pc-front">'
+        +'<div class="pc-window">'
+          +'<div class="pc-glow"></div>'
+          +'<div class="pc-shelf-line"></div>'
+          +'<div class="pc-shelf-line"></div>'
+        +'</div>'
+        +'<div class="pc-base"></div>'
+      +'</div>'
+      +'<div class="pc-shadow"></div>'
+    +'</div>'
+  +'</div>';
+}
+
+function renderWardrobeGallery(){
+  const gal=document.getElementById("wardrobe-gallery");
+  if(!gal)return;
+  // Cluster into visual groups of 4 with an extra gap between clusters
+  let html="";
+  CLOSET_HOUSES.forEach((house,i)=>{
+    if(i>0&&i%4===0)html+='<div class="wardrobe-group-gap"></div>';
+    html+=pixelCabinetHtml(house);
+  });
+  gal.innerHTML=html;
+}
+
+// Bottles for one house, split into shelf rows so a house with many
+// fragrances doesn't overcrowd one row.
 function renderWardrobeShelf(){
   const shelvesEl=document.getElementById("wardrobe-shelves");
-  if(!shelvesEl||CLOSET_HOUSES.length===0)return;
+  const labelEl=document.getElementById("wardrobe-house-label");
+  if(!shelvesEl||!CLOSET_DETAIL_HOUSE)return;
+  const items=CLOSET_BY_HOUSE[CLOSET_DETAIL_HOUSE]||[];
+  if(labelEl)labelEl.textContent=CLOSET_DETAIL_HOUSE+" ("+items.length+")";
   const perShelf=4;
   let html="";
-  CLOSET_HOUSES.forEach(house=>{
-    const items=CLOSET_BY_HOUSE[house]||[];
-    html+='<div class="wardrobe-house-group">'
-      +'<div class="wardrobe-house-sublabel">'+house+' ('+items.length+')</div>';
-    for(let i=0;i<items.length;i+=perShelf){
-      const chunk=items.slice(i,i+perShelf);
-      html+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
-    }
-    html+='</div>';
-  });
+  for(let i=0;i<items.length;i+=perShelf){
+    const chunk=items.slice(i,i+perShelf);
+    html+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
+  }
   shelvesEl.innerHTML=html;
+}
+
+function openHouseCabinet(house){
+  CLOSET_DETAIL_HOUSE=house;
+  CLOSET_VIEW="detail";
+  applyClosetView();
+  renderWardrobeShelf();
+}
+
+function closetBack(){
+  if(CLOSET_VIEW==="detail"){
+    CLOSET_VIEW="gallery";
+    CLOSET_DETAIL_HOUSE=null;
+    applyClosetView();
+  }else{
+    goBack();
+  }
+}
+
+function applyClosetView(){
+  const gal=document.getElementById("wardrobe-gallery");
+  const detail=document.getElementById("wardrobe-detail-wrap");
+  const subtitle=document.getElementById("closet-subtitle");
+  if(!gal||!detail)return;
+  if(CLOSET_VIEW==="detail"){
+    gal.style.display="none";
+    detail.style.display="";
+    if(subtitle)subtitle.textContent=CLOSET_DETAIL_HOUSE;
+  }else{
+    gal.style.display="";
+    detail.style.display="none";
+    if(subtitle)subtitle.textContent="Tap a cabinet to open it";
+  }
 }
 
 function renderCloset(){
   const body=document.getElementById("closet-body");
-  const wrap=document.querySelector("#closet .wardrobe-wrap");
+  const gal=document.getElementById("wardrobe-gallery");
   const legend=document.querySelector("#closet .closet-legend");
   const entries=closetEntries();
   if(entries.length===0){
-    if(wrap)wrap.style.display="none";
+    if(gal)gal.style.display="none";
     if(legend)legend.style.display="none";
     let empty=document.getElementById("closet-empty-msg");
     if(!empty){
@@ -2933,13 +3105,18 @@ function renderCloset(){
   }
   const existingEmpty=document.getElementById("closet-empty-msg");
   if(existingEmpty)existingEmpty.remove();
-  if(wrap)wrap.style.display="";
   if(legend)legend.style.display="";
 
   CLOSET_BY_HOUSE={};
   entries.forEach(e=>{(CLOSET_BY_HOUSE[e.house]=CLOSET_BY_HOUSE[e.house]||[]).push(e);});
   CLOSET_HOUSES=Object.keys(CLOSET_BY_HOUSE).sort((a,b)=>a.localeCompare(b));
-  renderWardrobeShelf();
+  if(CLOSET_DETAIL_HOUSE&&!CLOSET_BY_HOUSE[CLOSET_DETAIL_HOUSE]){
+    CLOSET_VIEW="gallery";
+    CLOSET_DETAIL_HOUSE=null;
+  }
+  applyClosetView();
+  renderWardrobeGallery();
+  if(CLOSET_VIEW==="detail")renderWardrobeShelf();
 }
 
 // ── ADD FRAGRANCE ──
