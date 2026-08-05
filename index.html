@@ -199,12 +199,18 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
-.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:30px;padding:30px 24px 60px;background-image:linear-gradient(rgba(212,176,122,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(212,176,122,.07) 1px,transparent 1px),linear-gradient(rgba(212,176,122,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(212,176,122,.13) 1px,transparent 1px);background-size:16px 16px,16px 16px,80px 80px,80px 80px;background-position:0 0}
-.wardrobe-gallery::before{content:"";position:absolute;top:20px;bottom:30px;left:50%;width:2px;background:repeating-linear-gradient(180deg,rgba(212,176,122,.35) 0 6px,transparent 6px 14px);transform:translateX(-1px);z-index:0}
-.pixel-cabinet{position:relative;z-index:1;flex-shrink:0;width:96px;cursor:pointer;--zx:0px;transform:translateX(var(--zx))}
-.pixel-cabinet:nth-child(odd){--zx:-38px}
-.pixel-cabinet:nth-child(even){--zx:38px}
-.wardrobe-group-gap{flex-basis:100%;height:14px}
+.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px;background-color:#171009;background-image:repeating-linear-gradient(63.43deg,rgba(212,176,122,.10) 0 1px,transparent 1px 40px),repeating-linear-gradient(-63.43deg,rgba(212,176,122,.10) 0 1px,transparent 1px 40px),repeating-linear-gradient(63.43deg,rgba(212,176,122,.05) 0 1px,transparent 1px 20px),repeating-linear-gradient(-63.43deg,rgba(212,176,122,.05) 0 1px,transparent 1px 20px)}
+.cabinet-cluster{position:relative;width:100%;max-width:340px;height:340px;flex-shrink:0}
+.cluster-slot{position:absolute;width:96px}
+.slot-top{top:0;left:50%;transform:translateX(-50%)}
+.slot-left{top:33%;left:2%}
+.slot-right{top:33%;right:2%}
+.slot-bottom{bottom:0;left:50%;transform:translateX(-50%)}
+@media(max-width:420px){
+  .cabinet-cluster{max-width:300px;height:320px}
+  .cluster-slot{width:84px}
+}
+.pixel-cabinet{position:relative;z-index:1;width:100%;cursor:pointer}
 .pc-label{margin-bottom:8px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.04em;line-height:1.3;white-space:normal}
 .pixel-cabinet.luxury .pc-label{color:#D7DBE0;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .pixel-cabinet.dupe .pc-label{color:#E8C043;text-shadow:0 1px 2px rgba(0,0,0,.5)}
@@ -3135,15 +3141,35 @@ function pixelCabinetHtml(house){
   +'</div>';
 }
 
+// Master list of every luxury/niche house the Closet displays, so a cabinet
+// shows up even before anything from that house is in the collection.
+const ALL_LUXURY_HOUSES=[
+  "Acqua Di Parma","Amouage","Azzaro","BDK Parfums","Boadicea The Victorious",
+  "Bond No 9","Burberry","Bvlgari","Byredo","CK (Calvin Klein)",
+  "Carolina Herrera","Clive Christian","Creed","Dior","Diptyque",
+  "Dolce & Gabbana","Ex Nihilo","Giorgio Armani","Givenchy","Goldfield & Banks",
+  "Guerlain","Hermes","Hugo Boss","Initio Parfums Prives","JPG (Jean Paul Gaultier)",
+  "Kilian","LV (Louis Vuitton)","Le Labo","MFK (Maison Francis Kurkdjian)",
+  "Maison Margiela","Mind Games","Nishane","PDM (Parfums de Marly)","Prada",
+  "Rabanne","Roja Parfums","Sospiro","Stephane Humbert Lucas 777","Tom Ford",
+  "Valentino","Versace","Viktor & Rolf","Xerjoff","Yves Saint Laurent",
+];
+
 function renderWardrobeGallery(){
   const gal=document.getElementById("wardrobe-gallery");
   if(!gal)return;
-  // Cluster into visual groups of 4 with an extra gap between clusters
+  // Show every known house plus any extra houses actually in the collection
+  const extras=CLOSET_HOUSES.filter(h=>!ALL_LUXURY_HOUSES.some(k=>k.toLowerCase()===h.toLowerCase()));
+  const houses=[...ALL_LUXURY_HOUSES,...extras].sort((a,b)=>a.localeCompare(b));
+  // Arrange into diamond clusters of 4: top / left / right / bottom
+  const slots=["top","left","right","bottom"];
   let html="";
-  CLOSET_HOUSES.forEach((house,i)=>{
-    if(i>0&&i%4===0)html+='<div class="wardrobe-group-gap"></div>';
-    html+=pixelCabinetHtml(house);
-  });
+  for(let i=0;i<houses.length;i+=4){
+    const group=houses.slice(i,i+4);
+    html+='<div class="cabinet-cluster">'
+      +group.map((h,j)=>'<div class="cluster-slot slot-'+slots[j]+'">'+pixelCabinetHtml(h)+'</div>').join("")
+    +'</div>';
+  }
   gal.innerHTML=html;
 }
 
