@@ -187,7 +187,15 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-center-seam span{position:absolute;left:50%;width:5px;height:22px;background:#C9A227;border-radius:1px;transform:translateX(-50%)}
 .wardrobe-center-seam span:first-child{top:32%}
 .wardrobe-center-seam span:last-child{top:58%}
-.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;height:100%;overflow-y:auto;padding:16px 14px}
+.wardrobe-line-nav{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 14px 0}
+.wardrobe-line-btn{flex-shrink:0;width:28px;height:28px;border-radius:50%;border:1px solid rgba(180,220,235,.3);background:rgba(8,20,38,.7);color:#DCEEF5;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.wardrobe-line-btn:hover{background:rgba(90,180,220,.25)}
+.wardrobe-line-label{flex:1;text-align:center;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8FC4DC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;height:100%;overflow-y:auto;padding:10px 14px 16px;touch-action:pan-y}
+.wardrobe-shelves.sliding-in-l{animation:shelfSlideInL .22s ease-out}
+.wardrobe-shelves.sliding-in-r{animation:shelfSlideInR .22s ease-out}
+@keyframes shelfSlideInL{from{transform:translateX(-24px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes shelfSlideInR{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
 .wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:1px solid rgba(180,220,235,.35);min-height:70px}
 .wardrobe-house-group{margin-bottom:6px}
 .wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8FC4DC;padding:2px 2px 6px}
@@ -755,6 +763,11 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <div class="wardrobe-glow wardrobe-glow-l"></div>
           <div class="wardrobe-glow wardrobe-glow-r"></div>
           <div class="wardrobe-center-seam"><span></span><span></span></div>
+          <div class="wardrobe-line-nav" id="wardrobe-line-nav">
+            <button class="wardrobe-line-btn" onclick="closetPrevLine()" aria-label="Previous collection">‹</button>
+            <div class="wardrobe-line-label" id="wardrobe-line-label">Line (1/1)</div>
+            <button class="wardrobe-line-btn" onclick="closetNextLine()" aria-label="Next collection">›</button>
+          </div>
           <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
         </div>
         <div class="wardrobe-cabinet-footer">
@@ -1980,12 +1993,24 @@ async function fetchVerifiedNotes(house,name){
 async function ensureVerifiedNotes(entries){
   const missing=entries.filter(e=>!VERIFIED_NOTES[verifiedNotesKey(e.house,e.name)]);
   if(!missing.length)return;
-  let changed=false;
-  for(const e of missing){
-    const got=await fetchVerifiedNotes(e.house,e.name);
-    if(got&&got.found)changed=true;
+  const CONCURRENCY=5;
+  let cursor=0;
+  let sinceRender=0;
+  async function worker(){
+    while(cursor<missing.length){
+      const e=missing[cursor++];
+      const got=await fetchVerifiedNotes(e.house,e.name);
+      sinceRender++;
+      // Re-render every few results so the shelf fills in progressively
+      // instead of waiting for the entire (possibly 50+ item) batch.
+      if(got&&got.found&&sinceRender>=4){
+        sinceRender=0;
+        if(typeof renderWardrobeShelf==="function")renderWardrobeShelf();
+      }
+    }
   }
-  if(changed&&typeof renderWardrobeShelf==="function")renderWardrobeShelf();
+  await Promise.all(Array.from({length:Math.min(CONCURRENCY,missing.length)},worker));
+  if(typeof renderWardrobeShelf==="function")renderWardrobeShelf();
 }
 
 function deriveNotePyramid(notes){
@@ -3362,6 +3387,369 @@ function pixelCabinetHtml(house){
 
 // Master list of every luxury/niche house the Closet displays, so a cabinet
 // shows up even before anything from that house is in the collection.
+// Full fragrance catalog per house/line, sourced from the bottle-image
+// tracker — used so the Closet can display every fragrance in a
+// collection (owned or not), not just what's actually in your Firebase
+// data. Real owned/wishlisted entries take priority where they overlap.
+const FRAGRANCE_CATALOG={
+  "Tom Ford":[
+    {line:"Medterranean Citrus",fragrances:["Neroli Portofino","Taormina Orange","Azure Lime","Mandarino Di Amalfi"]},
+    {line:"Audacious Fruits",fragrances:["Bitter Peach","Electric Cherry","Lost Cherry","Cherry Smoke","Figue Erotique"]},
+    {line:"Artistic Florals",fragrances:["Rose Prick","Rose Exposed","Jasmin Rouge","Noir De Noir"]},
+    {line:"Sensual Leather",fragrances:["White Suede","Fucking Fabulous","Tuscan Leather"]},
+    {line:"Soleil Escapism",fragrances:["Soleil Blanc","Soleil De Feu"]},
+    {line:"Other",fragrances:["Oud Voyager","Oud Wood","Tobacco Vanille","Ombre Leather","Black Orchid Oud Minerale","Vanille Fatale","Ebene Fume","Myrrhe Mystere","Costa Azzurra","Grey Vetiver","Amber Intrigue","Vanilla Sex","Black Lacquer","Noir De Noir","Bois Marocain","Café Rose","Velvet Orchid","Santal Brush","Fougere D'argent"]},
+  ],
+  "Yves Saint Laurent":[
+    {line:"Myself",fragrances:["EDT Intense","EDP","Le Parfum","Absolu"]},
+    {line:"Libre",fragrances:["EDP","EDP Intense","Berry Crush","Le Parfum","Flowers & Flames","L'eau Nue Parfum De Peau"]},
+    {line:"Y",fragrances:["Edp","Le Parfumm","Iced Cologne","Y Elixir","Edp Intense","Edt"]},
+    {line:"Le Vestiaire",fragrances:["Babycat","Tuxedo","Muse","Gold","Velours","37 Rue De Bellechasse","Saharienne","Caban","Cuir","Capeline","Jumpsuit","Lavalliere","Blouse","Trench","6 Place Saint Sulpice","24 Rue De L'universite"]},
+    {line:"Opium",fragrances:["Black Opium EDP","Opium","Black Opium Le Parfum","Black Opium EDP Over Red"]},
+    {line:"Mon Paris",fragrances:["EDP","EDP Intensement","Lumiere EDT"]},
+    {line:"L'home",fragrances:["EDT","Le Parfum","EDP"]},
+  ],
+  "Amouage":[
+    {line:"The Secret Garden",fragrances:["Love Hibiscus","Love Delight","Lilac Love","Blossom Love"]},
+    {line:"The Essences",fragrances:["Outlands","Line 618","Elsewhere","Remain","Sequence","Lustre","Reasons"]},
+    {line:"The Odyssey Collection",fragrances:["Decision","Existence","Guidance","Purpose","Lineage","Meander","Ashore","Enclave","Crimson Rocks","Material","Purpose"]},
+    {line:"The Main Collection",fragrances:["Reflection","Dia","Epic","Gold","Honour","Interlude","Overturememoir","Jubilation Xxv","Imitation","Journey","Lyric"]},
+    {line:"The Library Colllection",fragrances:["Opus Xvi Timber","Opus Xv King Blue","Opus Xiv Royal Tobacco","Opus V Woody Symphony","Opus Vii Reckless Leather","Opus Xiii Silver Oud"]},
+    {line:"The Exceptional Extraits",fragrances:["Purpose 50","Guidance 46","Jubilation 40 Man","Dia 40 Woman","Interlude 53 Man","Epic 56 Woman","Reflection 45 Man","Interlude 53 Man","Honour 43 Woman"]},
+    {line:"The Attars",fragrances:["Tonka Misfah","Suede Ibri","Luban Al Akhdar","Leather Sadah","Oud Ulya","Vanilla Barka","Rose Aqor","Santal Sohar"]},
+  ],
+  "Azzaro":[
+    {line:"Forever Wanted",fragrances:["Forever Wanted"]},
+    {line:"Most Wanted",fragrances:["Most Wanted"]},
+    {line:"Wanted",fragrances:["Wanted"]},
+    {line:"Chrome",fragrances:["Chrome"]},
+    {line:"Pour Homme",fragrances:["Pour Homme"]},
+  ],
+  "Maison Margiela":[
+    {line:"EDT Replica",fragrances:["Beach Walk","Sailing Day","Never-ending Summer","Jazz Club","Lazy Sunday Morning","By The Fireplace","When The Rain Stops","Under The Lemon Trees","Chasing Sunsets","Afternoon Delight","Bubble Bath","Springtime In A Park","Up At Dawn","On A Date","From The Garden","Coffee Break","Under The Stars","Autumn Vibes"]},
+    {line:"EDP Replica",fragrances:["Celestial Whispers","Ideal One","Soul Of The Forest","Flying","Dancing On The Moon"]},
+    {line:"Scentsorium",fragrances:["Fit Of Folly","Blaze Of Stillness","Delight In Despair","Anguish And Awe","Silent Fury","Tender Defiance"]},
+  ],
+  "Kilian":[
+    {line:"The Liquors",fragrances:["Angels' Share On The Rocks","Angels' Share","Old Fashioned","Apple Brandy On The Rocks","Fievre Verte","Roses On Ice"]},
+    {line:"The Narcotics",fragrances:["Good Girl Gone Bad","Princess","Can't Stop Loving You","Love Don’t Be Shy Extreme","Goold Girl Gone Bad Extreme","Love Don’t Be Shy Eau Fraiche","Good Girl Gone Bad Eau Fraiche","Woman In Gold","Rolling In Love","Voulez-vous Coucher Avec Moi","Liaisons Dangereuses Typical Me","Forbidden Games","Rose Oud","A Kiss From A Rose","Her Majesty","Sunkissed Goddess","Love Don't Be Shy"]},
+    {line:"The Cellars",fragrances:["Sacred Wood","Straight To Heaven White Cristal","Black Phantom-\"memento Mori\"","Intoxicated","Playing With The Devil"]},
+    {line:"The Fresh",fragrances:["Bamboo Harmony","Flower Of Immortality","Imperial Tea","Vodka On The Rocks","Moonlight In Heaven","Kologne Shield Of Protection"]},
+    {line:"The Smokes",fragrances:["Smoking Hot","Dark Lord-\"ex Tenebris Lux\"","Back To Back Aphrodisiac","Musk Oud","Pearl Oud"]},
+  ],
+  "Stephane Humbert Lucas 777":[
+    {line:"777",fragrances:["Soleil De Jeddah Mango Kiss","Isra & Miraj","Soleil De Jeddah L'original","Taklamakan","Soleil De Jeddah Afterglow","Black Gemstone","2022 Generation Black","Khol De Bahrein","Panthea","Panthea Iris","Rose De Petra","Une Nuit A Doha","O Hira","Oumma Wish Come True","Lufu"]},
+    {line:"Exclusive",fragrances:["Ruby Naga","Harrods H Mamba"]},
+    {line:"Serpent",fragrances:["The Queen And The Viper","Le 8","God Of Fire","Sea My Love","Venom Incarnat","Sand Dance","Mortal Skin","Pink Boa","Lady White Snake","Ruby Naga","Harrods H Mamba","Crying Of Evil"]},
+  ],
+  "Xerjoff":[
+    {line:"1861",fragrances:["Naxos","Renaissance","Decas","Zefiro"]},
+    {line:"Join The Club",fragrances:["Torino 21","40 Knots","Torino 25","Torino 22","More Than Words","Torino 24","K-bridge Club","400","Comandante!","Don","Ivory Route","Shunkoin","Torino 23","Fatal Charme","Ascot Moon","Birdie"]},
+    {line:"Oud Stars",fragrances:["Alexandria II","Alexandria III","Alexandria Orientale","Al-khatt","Ceylon","Gao","Fars","Luxor","Malesia","Mamluk","Zafar"]},
+    {line:"Shooting Stars",fragrances:["Gibeon","Uden","Apollonia","Aridal","Cruz Del Sur I","Cruz Del Sur Ii","Uden Overdose","Nio","Lua","Red Hoba","Kobe","Oesel","Allende","Blue Hope","Modoc","Emery"]},
+    {line:"Vibe",fragrances:["Erba Pura","Erba Gold","Coro","Accento","Soprano","Accento Overdose","Purple Accento","Overture","Opera","Wardasina","Muse","Laylati","Amabile"]},
+    {line:"17/17",fragrances:["Richwood","Damarose","Pikovaya Dama","Irisss","Symphonium Homme","Homme Anniversary","Elle","Elle Anniversary","Xxy"]},
+    {line:"Blends",fragrances:["Fierezza","Avanguadia","Perseveranza","Tony Iommi Monkey Special","Louis Xv 1722 Rose","Duran Duran Black Moonlight","Tony Iomi Deified","Louis Xv 1722","Groove Xcape"]},
+    {line:"Nitto Atp Finals",fragrances:["Torino 21","Torino 22","Torino 23","Torino 24","Torino 25"]},
+  ],
+  "Initio Parfums Prives":[
+    {line:"Supercharged",fragrances:["Wild Rush","Sugar Blast"]},
+    {line:"Carnal Blends",fragrances:["Side Effect","Narcotic Delight","Can't Get Enough","Atomic Rose","Psychedelic Love","High Frequency","Side Effect"]},
+    {line:"Hedonist",fragrances:["Lift Me Up","Musk Therapy","Power Self","Rehab","Paragon"]},
+    {line:"Black Gold Project",fragrances:["Oud For Greatness","Oud For Greatness Neo","Oud For Happiness"]},
+    {line:"Absolutes",fragrances:["Absolute Aphrodisiac","Blessed Baraka","Mystic Experience","Addictive Vibration"]},
+  ],
+  "Roja Parfums":[
+    {line:"Art Collection",fragrances:["Serenity Blend","Nuwa","A Midsummer Dream","Manhattan","Burlington 1819"]},
+    {line:"Aoud Collection",fragrances:["Espresso Aoud","Qatar","UAE","Sultanate Of Oman","Aoud Extraordinaire","Amber Aoud","Aoud","Sweetie Aoud","Enigma Aoud","Taif Aoud","Amber Aoud Crystal","Aoud Crystal"]},
+    {line:"Elysium Collection",fragrances:["Elysium Pour Homme","Roja Parfums Elysium","Elysium Pour Femme","Elysium Noir","Elysium Eau Intense"]},
+    {line:"Isola Collection",fragrances:["Isola Sol","Isola Verde","Isola Blu","Oceania","Snow"]},
+    {line:"Prestige Collection",fragrances:["Lost In Paris","Parfum De La Nuit","Diaghilev","Roja","A Goodnight Kiss","Great Britain","Chypre Extraordinaire"]},
+  ],
+  "Mind Games":[
+    {line:"Soulmate Collection",fragrances:["Playmate","Check Please","Queening","French Defense","Vieri","En Prise","Sans Voir","Sissa","Lionora","Ruy Lopez","The Forward","Gambit"]},
+    {line:"Artisan Collection",fragrances:["Opera Mate","Counterplay","Grand Master","Checkmate","Gardez","Caissa","Scholar's Mate","As-suli's Diamond","Double Attack","Blockade","J'adoube","Castling"]},
+    {line:"Perfumer Extraordinaire",fragrances:["Kingside","Queenside","Mentor","Prodigy"]},
+  ],
+  "Acqua Di Parma":[
+    {line:"Colonia",fragrances:["Colonia Ii Profumo Millesimato","Colonia Ii Profumo","Colonia","Colonia C.l.u.b","Colonia Essenza","Colonia Intensa","Colonia Pura","Colonia Splash"]},
+    {line:"Buongiorno",fragrances:["Buongiorno Dolce Far Niente","Buongiorno Bounanotte","Buongiorno Gioco Del Destino","Buongiorno Al Bacio","Buongiorno Amore Mio","Buongiorno"]},
+    {line:"Signatures Of The Sun",fragrances:["Gelsomino A Freddo","Gelsomino A Freddo Ambrosia","Zafferano","Zafferano Ambrosia","Oud","Oud & Spice","Quercia","Sandalo","Luce Di Rosa","Magnolia Infinita","Yuzu","Osmanthus","Magnolia Infinita","Lily Of The Valley","Ambra","Crystal Incense","Luce Di Rosa"]},
+    {line:"Blu Mediterraneo",fragrances:["Bergamotto La Spugnatura","Fico Di Amalfi","Fico Di Amalfi La Riserva","Arancia Di Capri La Riserva","Mirto Di Panarea La Riserva","Mandarino Di Sicilia"]},
+    {line:"Note Di Colonia",fragrances:["Note Di Colonia I","Note Di Colonia Ii","Note Di Colonia Iii","Note Di Colonia Iv","Note Di Colonia V"]},
+    {line:"Le Nobili",fragrances:["Peonia Nobile","Rosa Nobile","Magnolia Nobile"]},
+  ],
+  "BDK Parfums":[
+    {line:"Studio",fragrances:["Stellar Silk","Oud Paradisio","Silver Ceremony"]},
+    {line:"Parisienne",fragrances:["Impadia","Gris Charnel","Gris Charnel Extrait","Rouge Smoking","Rouge Smoking Extrait","Pas Ce Soir","Pas Ce Soir Extrait","Bouquet De Hongrie","312 Saint-honore"]},
+    {line:"Matieres",fragrances:["Velvet Tonka Extrait","Vanille Caviar","Vanille Leather","Velvet Tonka","Crème De Cuir","Tuberuse Imperiale","Tabac Rose"]},
+    {line:"Azur",fragrances:["Villa Neroli","Citrus Riviera","Sel D'argent"]},
+  ],
+  "Boadicea The Victorious":[
+    {line:"Misc",fragrances:["Opulence","1907","Almas","Amber Sapphire","Angelic","Aqua Sapphire","Ardent","Azrak","Blue Sapphire","Blue Sapphire Supercharged","Bodacious","Bravery","Carbon Sapphire Supercharged","Complex","Complex 2020","Consort","Dasman","Decadence","Defender","Dragon","Elaborate","Empire","Energizer","Enthrone","Envious","Glorious","Green Sapphire","Hanuman","Harmonious","Hasu","Heroine","Imperial","Jubilee","Knight Of Love","Lannosea","Lavish","Majestic","Monarch","Nebulous","Nemer","Opal","Oud Sapphire","Rebellious","Respendent","Rose Sapphire","Tobacco Sapphire","Valiant","Vetiver Imperiale","Violet Sapphire Supercharged"]},
+  ],
+  "Bond No 9":[
+    {line:"Uptown",fragrances:["Beekman Place","Riverside Drive","Sutton Place","New Haarlem","Madison Avenue","Park Avenue","West Side","Off-broadway","Madison Soiree","Fashion Avenue"]},
+    {line:"Downtown",fragrances:["Bond No 1","Greenwhich Village","Chelsea Nights","Lafayette Street","Nomad","Tribeca","Nolita","Gold Street","Bleecker Street","Astor Place","Fidi","Gold Coast","Wall Street","Chelsea Flowers","Nuits De Noho","Chez Bond","New Bond St","Brooklyn","Park Avenue South","B9","Chinatown","Nouveau Bowery","Soho"]},
+    {line:"NY Parks",fragrances:["Tuxedo Park","Central Park South","Central Park West","Secret Gardens","New York Gardenia","High Line","Madison Square Park","New York Flowers"]},
+    {line:"NY City Scents",fragrances:["My Oud","Super Oud","New York Nights","Manhattan","Oud Supreme","Good Oud","Signature Scent","Greenpoint","New York Forever","The Scent Of Peace","So New York","Queens","My New York","New York Fling","New York Spring Fling","Eau De New York","New York Patchouli","New York Amber","New York Musk","New York Oud","Perfumista Avenue"]},
+    {line:"Ny Beaches",fragrances:["Hamptons","Bond No.9's Island","Governors Island","Jones Beach","Sag Harbor","Coney Island","Shelter Island","Liberty Island","Montauk"]},
+  ],
+  "Burberry":[
+    {line:"For Men",fragrances:["Burberry Hero EDT","Burberry Hero EDP","Burberry Hero Parfum","Burberry Hero Parfum Intense","Mr. Burberry EDT","Mr. Burberry EDP","Mr. Burberry Indigo EDT","Burberry Brit For Men EDT","Burberry Brit Rhythm For Men EDT","Burberry Brit Rhythm Intense EDT","Burberry London For Men EDT","Burberry Touch For Men EDT","Burberry Weekend For Men EDT","Burberry Classic For Men EDT","Burberry Signatures Amber Heath","Burberry Signatures Garden Roses","Burberry Signatures Hawthorn Bloom","Burberry Signatures High Tea","Burberry Signatures Midnight Journey","Burberry Signatures Oud Storm","Burberry Signatures Snow Blossom","Burberry Signatures Tudor Rose","Burberry Signatures Extreme Botanicals Golden Haze","Burberry Signatures Extreme Botanicals Rose Ember","Burberry Signatures Extreme Botanicals Oak Absolute","Burberry Signatures Extreme Botanicals Oud Storm"]},
+    {line:"For Women",fragrances:["Burberry Goddess EDP","Burberry Goddess Intense EDP","Burberry Her EDP","Burberry Her Elixir De Parfum","Burberry Her Eau De Parfum Intense","Burberry Her Blossom EDT","Burberry Her London Dream EDP","Burberry Her Petals EDP","My Burberry EDP","My Burberry Blush EDP","My Burberry Black Parfum","My Burberry EDT","Burberry Brit For Her EDT","Burberry Brit Sheer EDT","Burberry Brit Rhythm For Women EDT","Burberry Body EDP","Burberry Body Tender EDT","Burberry London For Women EDP","Burberry Touch For Women EDP","Burberry Weekend For Women EDP","Burberry Classic For Women EDP","Burberry Signatures Amber Heath","Burberry Signatures Garden Roses","Burberry Signatures Hawthorn Bloom","Burberry Signatures High Tea","Burberry Signatures Midnight Journey","Burberry Signatures Oud Storm","Burberry Signatures Snow Blossom","Burberry Signatures Tudor Rose","Burberry Signatures Extreme Botanicals Golden Haze","Burberry Signatures Extreme Botanicals Rose Ember","Burberry Signatures Extreme Botanicals Oak Absolute","Burberry Signatures Extreme Botanicals Oud Storm"]},
+  ],
+  "Bvlgari":[
+    {line:"For Men",fragrances:["Bvlgari Pour Homme EDT","Bvlgari Pour Homme EDP","Bvlgari Pour Homme Extreme","Bvlgari Man","Bvlgari Man Extreme","Bvlgari Man In Black EDP","Bvlgari Man In Black Parfum","Bvlgari Man Black Cologne","Bvlgari Man Wood Essence EDP","Bvlgari Man Wood Essence Parfum","Bvlgari Man Wood Neroli","Bvlgari Man Glacial Essence","Bvlgari Man Rain Essence","Aqva Pour Homme","Aqva Pour Homme Marine","Aqva Atlantiqve","Aqva Amara","Eau Parfumée Au Thé Vert","Eau Parfumée Au Thé Blanc","Eau Parfumée Au Thé Bleu","Eau Parfumée Au Thé Noir","Eau Parfumée Thé Impérial","Le Gemme Tygar","Le Gemme Gyan","Le Gemme Falkar","Le Gemme Kobraa","Le Gemme Orom","Le Gemme Azaran","Le Gemme Sahare"]},
+    {line:"For Women",fragrances:["Omnia Crystalline","Omnia Crystalline EDP","Omnia Amethyste","Omnia Coral","Omnia Paraiba","Omnia Pink Sapphire","Omnia Golden Citrine","Omnia Indian Garnet","Omnia Mary Katrantzou","Goldea The Roman Night","Goldea The Roman Night Absolute","Goldea The Roman Night Absolute Sensuelle","Rose Goldea","Rose Goldea Blossom Delight","Goldea","Splendida Iris D'or","Splendida Rose Rose","Splendida Jasmin Noir","Jasmin Noir","Mon Jasmin Noir","Allegra Fiori D'amore","Allegra Magnifying Musk","Allegra Magnifying Vanilla","Allegra Magnifying Bergamot","Allegra Magnifying Patchouli","Allegra Magnifying Rose","Allegra Dolce Estasi","Allegra Fantasia Veneta","Allegra Rock'n'rome","Allegra Riva Solare","Allegra Spettacolore","Allegra Baciami","Allegra Chill & Sole","Allegra Insieme","Le Gemme Calaluna","Le Gemme Empyr","Le Gemme Rubinia","Le Gemme Ashlemah","Le Gemme Yasep"]},
+  ],
+  "Byredo":[
+    {line:"Misc",fragrances:["Alto Astral","Animalique","Bal D'afrique","Bal D'afrique Absolu","Bibliothèque","Black Saffron","Black Saffron Absolu","Blanche","Blanche Absolu","Bois Obscur","Casablanca Lily","Cuir Obscur","Cuir Sellier","De Los Santos","Desert Dawn","Eleventh Hour","Eyes Closed","Flowerhead","Gypsy Water","Gypsy Water Absolu","Inflorescence","La Tulipe","Lil Fleur","Mojave Ghost","Mojave Ghost Absolu","Mixed Emotions","Mumbai Noise","Night Veils Accord Oud","Oud Immortel","Open Sky","Palermo","Pulp","Reine De Nuit","Rose Noir","Rose Of No Man's Land","Rose Of No Man's Land Absolu","Sellier","Sister Dreamer","Slow Dance","Sundazed","Super Cedar","Tobacco Mandarin","Tree House","Vanille Antique","Velvet Haze","Young Rose"]},
+  ],
+  "CK (Calvin Klein)":[
+    {line:"CK Collection",fragrances:["CK One","CK One Essence Parfum Intense","CK Be","CK All","CK Everyone EDT","CK Everyone EDP","CK One Shock For Him","CK One Shock For Her","CK IN2U For Him","CK IN2U For Her"]},
+    {line:"Eternity Men Collection",fragrances:["Eternity For Men EDT","Eternity For Men EDP","Eternity Parfum For Men","Eternity Aqua For Men","Eternity Air For Men","Eternity Flame For Men","Eternity Summer Daze For Men"]},
+    {line:"Eternity Women Collection",fragrances:["Eternity EDP","Eternity Intense","Eternity Aqua For Women","Eternity Air For Women","Eternity Flame For Women","Eternity Summer Daze For Women"]},
+    {line:"Euphoria Men Collection",fragrances:["Euphoria Men EDT","Euphoria Men Intense","Euphoria Men Amber Gold"]},
+    {line:"Euphoria Women Collection",fragrances:["Euphoria EDP","Euphoria Blossom","Euphoria Forbidden","Euphoria Endless","Deep Euphoria","Euphoria Amber Gold","Euphoria Magnetic Elixir","Euphoria Bold Elixir","Euphoria Solar Elixir"]},
+    {line:"Obsession Collection",fragrances:["Obsession For Women","Obsession For Men EDT","Obsession Night For Men","Secret Obsession"]},
+    {line:"Defy Collection",fragrances:["Defy EDT","Defy EDP","Defy Parfum"]},
+    {line:"Men's Fragrances",fragrances:["Escape For Men","Contradiction For Men","Truth For Men","Crave","Reveal Men","Calvin EDT"]},
+    {line:"Women's Fragrances",fragrances:["Escape For Women","Contradiction For Women","Truth For Women","Reveal Women","Sheer Beauty","Beauty","Downtown","Calvin EDP"]},
+  ],
+  "Carolina Herrera":[
+    {line:"Bad Boy Collection",fragrances:["Bad Boy EDT","Bad Boy Le Parfum","Bad Boy Cobalt EDP","Bad Boy Cobalt Elixir","Bad Boy Extreme","Bad Boy Gold Fantasy","Bad Boy Superstars Collector Edition"]},
+    {line:"212 Men Collection",fragrances:["212 Men EDT","212 Sexy Men","212 VIP Men","212 VIP Black","212 VIP Black Elixir","212 Heroes EDT","212 Heroes Forever Young","212 VIP Men Wins","212 VIP Men NYC","212 VIP Men Party Fever"]},
+    {line:"CH Men Collection",fragrances:["CH Men EDT","CH Men Prive","CH Men Sport","CH Men Grand Tour","CH Kings"]},
+    {line:"Herrera Confidential Collection",fragrances:["Amber Desire","Burning Rose","Confidential Gold Incense","Iris Empire","Mystery Tobacco","Nightfall Patchouli","Oud Couture","Saffron Lazuli","Sandal Ruby","Virgin Mint"]},
+    {line:"Good Girl Collection",fragrances:["Good Girl EDP","Good Girl Supreme","Good Girl Suprême Elixir","Good Girl Blush EDP","Good Girl Blush Elixir","Good Girl Légère","Very Good Girl EDP","Very Good Girl Glam","Good Girl Dazzling Garden","Good Girl Midnight","Good Girl Gold Fantasy"]},
+    {line:"212 Women Collection",fragrances:["212 NYC EDT","212 Sexy","212 VIP Rosé","212 VIP Rosé Elixir","212 VIP Wins","212 Heroes For Her","212 Splash","212 VIP Party Fever"]},
+    {line:"Ch Women Collection",fragrances:["CH EDT","CH Sublime","CH L'eau","CH Sport","CH Eau De Parfum Sublime"]},
+  ],
+  "Creed":[
+    {line:"Aventus",fragrances:["Aventus","Aventus Cologne","Absolu Aventus","Aventus For Her"]},
+    {line:"Classic",fragrances:["Green Irish Tweed","Silver Mountain Water","Millésime Impérial","Virgin Island Water","Original Vetiver","Original Santal","Royal Oud","Royal Water","Himalaya","Bois Du Portugal","Erolfa","Viking","Viking Cologne","Neroli Sauvage","Tabarome Millésime","Aberdeen Lavender"]},
+    {line:"Womens",fragrances:["Love In White","Love In Black","Love In White For Summer","Acqua Fiorentina","Spring Flower","Spring Flower EDP","Royal Princess Oud","Wind Flowers","Carmina","Queen Of Silk","Eladaria"]},
+    {line:"Les Royales Exclusive",fragrances:["Spice And Wood","Pure White Cologne","White Amber","White Flowers","Jardin D'amalfi","Sublime Vanille"]},
+    {line:"Acqua Originale",fragrances:["Aberdeen Lavander","Asian Green Tea","Cedre Blanc","Iris Tubéreuse","Vetiver Géranium"]},
+    {line:"Amber Universe",fragrances:["Fragaria","Delphinus","Centaurus"]},
+  ],
+  "Clive Christian":[
+    {line:"Original",fragrances:["1872 Masculine","1872 Feminine","No.1 Masculine","No.1 Feminine","X Masculine","X Feminine"]},
+    {line:"Noble",fragrances:["Cosmos Flower","Immortelle","Magnolia","Amberwood","Blonde Amber","Rock Rose"]},
+    {line:"Addictive Arts",fragrances:["Jump Up And Kiss Me Hedonistic","Jump Up And Kiss Me Ecstatic","Strange Heavens Out Of The Blue"]},
+    {line:"Private",fragrances:["C Woody Leather","I Woody Floral","V Amber Fougère","L Red Tea Vetiver","E Cashmere Musk"]},
+    {line:"Crown",fragrances:["Matsukita","Crab Apple Blossom","Town & Country"]},
+    {line:"Limited Edition/ Anniversary",fragrances:["Iconic Masculine","Iconic Feminine"]},
+  ],
+  "Dior":[
+    {line:"Sauvage",fragrances:["Sauvage EDT","Sauvage EDP","Sauvage Parfum","Sauvage Elixir","Sauvage Eau Forte","Sauvage Extrait","Eau Sauvage EDT","Eau Sauvage Extreme","Eau Sauvage Parfum","Eau Sauvage Cologne"]},
+    {line:"Homme",fragrances:["Dior Homme Cologne","Dior Homme EDT","Dior Homme Original","Dior Homme Intense","Dior Homme Parfum","Dior Homme Sport"]},
+    {line:"Fahrenheit",fragrances:["Fahrenheit EDT","Fahrenheit Le Parfum","Fahrenheit Parfum","Fahrenheit Cologne","Fahrenheit Aqua","Fahrenheit Absolute","Fahrenheit 32"]},
+    {line:"Miss",fragrances:["Miss Dior Originale","Miss Dior EDT","Miss Dior EDP","Miss Dior Parfum","Miss Dior Blooming Bouquet","Miss Dior Rose N'roses","Miss Dior Absolutely Blooming","Miss Dior Cherie (discontinued)"]},
+    {line:"J'adore",fragrances:["J'adore EDP","J'adore Parfum D'eau","J'adore L'or","J'adore Infinissime","J'adore EDT","J'adore Absolu","J'adore Voile De Parfum"]},
+    {line:"Poison",fragrances:["Poison EDT","Tendre Poison","Hypnotic Poison EDT","Hypnotic Poison EDP","Hypnotic Poison Parfum","Pure Poison","Midnight Poison","Poison Girl EDP","Poison Girl EDT","Poison Girl Unexpected"]},
+    {line:"Dior Addict",fragrances:["Dior Addict EDP","Dior Addict EDT","Dior Addict Eau Fraîche","Dior Addict Shine","Dior Addict 2"]},
+    {line:"Joy",fragrances:["Joy By Dior EDP","Joy By Dior Intense","Joy By Dior EDT"]},
+    {line:"Dune",fragrances:["Dune EDT","Dune Pour Homme"]},
+    {line:"Dolce Vita",fragrances:["Dolce Vita EDT"]},
+  ],
+  "Diptyque":[
+    {line:"Les Essences De Diptyque",fragrances:["Rose Roche","Corail Oscuro","Lunamaris","Lazulio","Bois Corsé","Lilyphéa"]},
+    {line:"Eaux De Parfum",fragrances:["34 Boulevard Saint Germain EDP","Benjoin Bohème","Do Son EDP","Eau Capitale","Eau Duelle EDP","Eau Mage","Eau Nabati","Eau Rihla","Eau Rose EDP","Fleur De Peau","L'eau Papier","L'ombre Dans L'eau EDP","Orphéon EDP","Oud Palao","Philosykos EDP","Tam Dao EDP","Tempo","Volutes EDP"]},
+    {line:"Eaux De Toilette",fragrances:["34 Boulevard Saint Germain EDT","Do Son EDT","Eau De Lierre","Eau De Minthé","Eau Des Sens","Eau Duelle EDT","Eau Lente","Eau Moheli","Eau Rose EDT","L'eau Des Hespérides","L'eau De Néroli","L'eau De Tarocco","L'ombre Dans L'eau EDT","Olène","Orphéon EDT","Oyédo","Philosykos EDT","Tam Dao EDT","Vetyverio EDT","Volutes EDT"]},
+    {line:"Limited And Special Editions",fragrances:["Ilio EDT","Eau De Minthe Limited Editions","Kyoto","Opsis","Eau Des Sens Summer Limited Editions"]},
+  ],
+  "Dolce & Gabbana":[
+    {line:"Light Blue Women",fragrances:["Light Blue EDT","Light Blue EDP","Light Blue Eau Intense","Light Blue Forever","Light Blue Italian Love","Light Blue Summer Vibes","Light Blue Capri In Love EDP","Light Blue Dreaming In Portofino","Light Blue Escape To Panarea","Light Blue Love Is Love","Light Blue Sun","Light Blue Living Stromboli"]},
+    {line:"Light Blue Men",fragrances:["Light Blue Pour Homme EDT","Light Blue Pour Homme EDP","Light Blue Eau Intense Pour Homme","Light Blue Forever Pour Homme","Light Blue Italian Love Pour Homme","Light Blue Summer Vibes Pour Homme","Light Blue Capri In Love Pour Homme EDP","Light Blue Discover Vulcano","Light Blue Beauty Of Capri","Light Blue Love Is Love Pour Homme","Light Blue Sun Pour Homme","Light Blue Living Stromboli Pour Homme"]},
+    {line:"The One Women",fragrances:["The One EDP","The One EDT","The One Essence","The One Eau De Parfum Intense","The One Gold Eau De Parfum Intense","The One Desire","The One Lace Edition","Rose The One"]},
+    {line:"The One Men",fragrances:["The One For Men EDT","The One For Men EDP","The One For Men Parfum","The One For Men Gold EDP Intense","The One For Men Royal Night","The One For Men Grey","The One For Men Mysterious Night","The One For Men Luminous Night","The One Gentleman","The One Sport"]},
+    {line:"Devotion",fragrances:["Devotion EDP","Devotion EDP Intense","My Devotion EDP Intense","Your Devotion EDP Intense","Devotion For Men EDP","Devotion For Men Parfum"]},
+    {line:"K And Q",fragrances:["K By Dolce&gabbana EDT","K By Dolce&gabbana EDP","K By Dolce&gabbana Parfum","K By Dolce&gabbana Intense EDP","Q By Dolce&gabbana EDP","Q By Dolce&gabbana EDP Intense","Q By Dolce&gabbana Parfum","Q By Dolce&gabbana Elixir"]},
+    {line:"Dolce",fragrances:["Dolce EDP","Dolce Floral Drops EDT","Dolce Rosa Excelsa EDP","Dolce Garden EDP","Dolce Peony EDP","Dolce Shine EDP","Dolce Rose EDT","Dolce Lily EDT","Dolce Violet EDT","Dolce Blue Jasmine EDP","Dolce Magnolia EDP"]},
+    {line:"Velvet Collection",fragrances:["Velvet Amber Skin","Velvet Amber Sun","Velvet Bergamot","Velvet Black Patchouli","Velvet Blue Musk","Velvet Cypress","Velvet Desert Oud","Velvet Desire","Velvet Exotic Leather","Velvet Ginestra","Velvet Honey Santal","Velvet Incenso","Velvet Infusion","Velvet Love","Velvet Mimosa Bloom","Velvet Mughetto","Velvet Oriental Musk","Velvet Passion Oud","Velvet Pure","Velvet Rose","Velvet Sicily","Velvet Sublime","Velvet Tender Oud","Velvet Vetiver","Velvet Wood","Velvet Zafferano","Velvet Crystal Smoke"]},
+    {line:"Other And Legacy",fragrances:["Dolce&gabbana Pour Femme","Pour Femme Intense","Dolce&gabbana Pour Homme","Pour Homme Intenso","Classic Pour Femme","Classic Pour Homme","Sicily","Sicily EDP","Sicily For Men","D&G Feminine","D&G Masculine","By Woman","By Man","Anthology L'imperatrice 3","Anthology La Lune 18","Anthology Le Bateleur 1","Anthology L'amoureux 6","Anthology La Roue De La Fortune 10","Anthology La Force 11","Anthology Le Fou 21","Anthology L'empereur 4","The Only One EDP","The Only One 2","The Only One EDP Intense"]},
+  ],
+  "Ex Nihilo":[
+    {line:"Initiale",fragrances:["Fleur Narcotique","Santal Calling","Gold Immortals","Venenum Kiss","Iris Porcelana","Cologne 352","Oud Vendome","Bois D'hiver","Vetiver Moloko","Musc Infini","Jasmin Fauve","Rose Hubris"]},
+    {line:"Interdite",fragrances:["Lust In Paradise","Spiky Muse","Explicite","Devil Tender","Honoré Delights","Vesper Glitz","Viper Green","My Sweetest Morphine","Love Shot"]},
+    {line:"Iconoclaste",fragrances:["Demon Dancer","The Hedonist","Speed Legends","Citizen X","Outcast Blue","French Affair"]},
+    {line:"Visionnaire",fragrances:["Blue Talisman","Generation(s)","Cuir Celeste"]},
+    {line:"Babylone",fragrances:["Atlas Fever","Chandigarh Express","Amber Sky","Midnight Special"]},
+    {line:"Quintessence",fragrances:["Blue Talisman Extrait","Fleur Narcotique Extrait","The Hedonist Extrait","Outcast Blue Extrait","Gold Immortals Extrait","Lust In Paradise Extrait"]},
+  ],
+  "Giorgio Armani":[
+    {line:"Acqua Di Giò",fragrances:["Acqua Di Giò EDT","Acqua Di Giò EDP","Acqua Di Giò Parfum","Acqua Di Giò Profondo EDP","Acqua Di Giò Profondo Parfum","Acqua Di Giò Profondo Lights","Acqua Di Giò Profumo","Acqua Di Giò Absolu","Acqua Di Giò Absolu Instinct","Acqua Di Giò Essenza","Acqua Di Giò Blue Edition"]},
+    {line:"Armani Code",fragrances:["Armani Code EDT","Armani Code EDP","Armani Code Parfum","Armani Code Elixir","Armani Code Profumo","Armani Code Absolu","Armani Code Absolu Gold","Armani Code Colonia","Armani Code Ice","Armani Code Sport","Armani Code Summer","Armani Code Ultimate","Armani Code For Women EDP","Armani Code For Women EDT","Armani Code Satin","Armani Code Cashmere","Armani Code Luna","Armani Code Couture"]},
+    {line:"Stronger With You",fragrances:["Stronger With You EDT","Stronger With You Intensely EDP","Stronger With You Absolutely Parfum","Stronger With You Powerfully EDP","Stronger With You Only","Stronger With You Freeze","Stronger With You Leather","Stronger With You Oud","Stronger With You Amber","Stronger With You Tobacco"]},
+    {line:"My Way",fragrances:["My Way EDP","My Way Intense EDP","My Way Floral EDP","My Way Parfum","My Way Nectar EDP","My Way Ylang EDP","My Way Sunny Vanilla EDP"]},
+    {line:"Sì",fragrances:["Sì EDP","Sì EDT","Sì Intense EDP","Sì Passione EDP","Sì Passione Intense EDP","Sì Passione Éclat EDP","Sì Fiori EDP","Sì Le Parfum","Sì Rose Signature","Sì Nacre Sparkling Limited Edition","Sì Golden Bow"]},
+    {line:"Acqua Di Gioia",fragrances:["Acqua Di Gioia EDP","Acqua Di Gioia Intense EDP","Air Di Gioia","Light Di Gioia","Sky Di Gioia","Sun Di Gioia","Ocean Di Gioia","Terra Di Gioia"]},
+    {line:"Emporio Armani",fragrances:["Emporio Armani She","Emporio Armani He","Because It's You","In Love With You","In Love With You Freeze","Diamonds For Women","Diamonds Intense","Diamonds Rose","Diamonds Violet","Diamonds Club","Diamonds For Men","Diamonds Black Carat","Remix For Her","Remix For Him","City Glam For Her","City Glam For Him","White For Her","White For Him","Power Of You EDP"]},
+    {line:"Armani Privé Les Eaux",fragrances:["Thé Yulong","Thé Yulong Soie De Nacre","Thé Yulong Le Parfum","Orangerie Venise","Gardénia Antigua","Jasmin Kusamono","Rose Milano","Iris Bleu","Vétiver D'hiver","Pivoine Suzhou","Figuier Eden","Cyprès Pantelleria","Magenta Tanzanite","Rouge Malachite"]},
+    {line:"Armani Privé La Collection",fragrances:["Bois D'encens","Bois D'encens Haute Couture","Cuir Améthyste","Ambre Soie","Pierre De Lune","Eau De Jade","Rose Alexandrie","Éclat De Jasmin","Cèdre Olympe","Myrrhe Impériale","Vert Malachite","Bleu Turquoise","Sable Nuit","Musc Shamal","Indigo Tanzanite","Blanc Kogane"]},
+    {line:"Armani Privé Oriental Collections",fragrances:["Oud Royal","Rose D'arabie","Ambre Eccentrico","Cuir Noir","Encens Satin","Musc Shamal","Santal Dān Shā","Rouge Malachite","Vert Malachite","Bleu Turquoise","Magenta Tanzanite","Indigo Tanzanite"]},
+  ],
+  "Givenchy":[
+    {line:"Gentleman",fragrances:["Gentleman Givenchy EDT","Gentleman Givenchy EDP","Gentleman Givenchy EDP Boisée","Gentleman Givenchy Réserve Privée EDP","Gentleman Givenchy Society EDP","Gentleman Givenchy Society Extrême EDP","Gentleman Givenchy Society Ambrée EDP","Gentleman Givenchy Society Sport EDT","Gentleman Only EDT","Gentleman Only Intense","Gentleman Only Absolute","Gentleman Only Casual Chic","Gentleman Cologne","Givenchy Gentleman Originale EDT","Givenchy Gentleman Originale EDP"]},
+    {line:"L'interdit",fragrances:["L'interdit EDP","L'interdit EDT","L'interdit Parfum","L'interdit EDP Intense","L'interdit Rouge EDP","L'interdit Rouge Ultime EDP","L'interdit Rouge Edition Millésime","L'interdit Nocturnal Jasmine EDP","L'interdit Tubéreuse Noire EDP","L'interdit Absolu Intense EDP","L'interdit Angélique Rouge EDP","L'interdit Burning Neroli EDT","L'interdit Édition Couture","L'interdit Eau De Parfum Rouge Ultime"]},
+    {line:"Irresistible",fragrances:["Irresistible EDP","Irresistible EDT","Irresistible EDP Very Floral","Irresistible Rose Velvet EDP","Irresistible Nude Velvet EDP","Irresistible Fraiche EDT","Irresistible Blossom Crush EDT","Irresistible Givenchy Live Rosy Crush EDP","Irresistible Givenchy Eau De Parfum Intense"]},
+    {line:"La Collection Particulière",fragrances:["Accord Particulier","Ambre Tigré","Désinvolte","Enflammé","Équivoque","Faux Semblant","Garçon Manqué","Gentleman Society","Immortelle Tribal","Indompté","Inséparables","MMW","Noctambule","Oud Flamboyant","Oiseau Rare","Sans Artifice","Trouble-fête","Unda Maris"]},
+    {line:"Ange Ou Démon",fragrances:["Ange Ou Démon EDP","Ange Ou Démon Le Secret EDP","Ange Ou Démon Le Secret EDT","Ange Ou Démon Le Secret Elixir","Ange Ou Démon Le Secret Edition Riviera","Ange Ou Démon Le Secret Feather Edition","Ange Ou Démon Tender","Ange Ou Démon Tendre Jasmin","Ange Ou Démon Poesie D'un Parfum D'hiver","Ange Ou Démon Parfum Et Accord Illicite"]},
+    {line:"Very Irrésistible",fragrances:["Very Irrésistible Givenchy EDT","Very Irrésistible Givenchy EDP","Very Irrésistible Givenchy Sensual EDP","Very Irrésistible Givenchy L'intense EDP","Very Irrésistible Givenchy Electric Rose EDT","Very Irrésistible Givenchy Summer Sorbet","Very Irrésistible Givenchy Fresh Attitude","Very Irrésistible Givenchy For Men"]},
+    {line:"Pi And Givenchy Pour Homme",fragrances:["Pi EDT","Pi Fraîche","Pi Neo","Pi Air","Pi Extreme","Givenchy Pour Homme EDT","Givenchy Pour Homme Blue Label EDT","Givenchy Pour Homme Adventure","Givenchy Pour Homme Silver Edition","Givenchy Pour Homme Red Edition","Givenchy Pour Homme White Edition"]},
+    {line:"Amarige And Organza",fragrances:["Amarige EDT","Amarige Mariage EDP","Amarige Mimosa De Grasse","Amarige D'amour","Organza EDP","Organza Indécence EDP","Organza First Light","Organza Eau D'été"]},
+    {line:"Dahlia",fragrances:["Dahlia Noir EDP","Dahlia Noir EDT","Dahlia Noir L'eau","Dahlia Divin EDP","Dahlia Divin EDT","Dahlia Divin Le Nectar De Parfum","Dahlia Divin Eau Initiale"]},
+    {line:"Other And Legacy",fragrances:["Ysatis EDT","Ysatis Iris","Hot Couture EDP","Hot Couture EDT","Hot Couture Collection No. 1","Live Irrésistible EDP","Live Irrésistible Délicieuse EDP","Live Irrésistible Blossom Crush EDT","Play For Her EDP","Play For Her Intense EDP","Play EDT","Play Intense","Xeryus EDT","Xeryus Rouge EDT","Insensé","Insensé Ultramarine","Grigi","III","Le De Givenchy","Eau De Givenchy","Eau De Givenchy Rosée","Eau De Givenchy Boisée","Eau De Givenchy Florale","Eaudemoiselle De Givenchy","Eaudemoiselle De Givenchy Absolu D'oranger","Eaudemoiselle De Givenchy Essence Des Palais","Eaudemoiselle De Givenchy Rose À La Folie"]},
+  ],
+  "Goldfield & Banks":[
+    {line:"The Native Collection",fragrances:["Ingenious Ginger","Pacific Rock Flower","Mystic Bliss","Sunset Hour","Pacific Rock Moss","Bohemian Lime","Southern Bloom","Wood Infusion","Desert Rosewood","White Sandalwood","Blue Cypress","Velvet Splendour"]},
+    {line:"The Botanical Series",fragrances:["Rose Magnitude","Tales Of Amber","Silky Woods","Silky Woods Elixir","Purple Suede","Island Lush"]},
+  ],
+  "Guerlain":[
+    {line:"Les Extraits",fragrances:["Vanille Planifolia Extrait 21","Rose Centifolia Extrait 1","Iris Pallida Extrait 6"]},
+    {line:"Aqua Allegoria",fragrances:["Aqua Allegoria Bergamote Calabria","Bosca Vanilla","Flora Cherrysia","Flora Salvaggia","Florabloom","Granada Salvia","Mandarine Basilic","Nettare Di Sole","Orange Soleia","Pamplelune","Pera Granita","Rosa Rossa","Nerolia Vetiver","Bergamote Calabria Harvest","Mandarine Basilic Harvest","Nerolia Vetiver Harvest"]},
+    {line:"Aqua Allegoria Forte And Absolus Allegoria",fragrances:["Aqua Allegoria Forte Bosca Vanilla","Aqua Allegoria Forte Florabloom","Aqua Allegoria Forte Mandarine Basilic","Aqua Allegoria Forte Nerolia Vetiver","Aqua Allegoria Forte Oud Yuzu","Aqua Allegoria Forte Rosa Palissandro","Aqua Allegoria Forte Rosa Rossa","Absolus Allegoria Ambre Samar","Absolus Allegoria Cuir Intense","Absolus Allegoria Oud Essentiel","Absolus Allegoria Patchouli Ardent","Absolus Allegoria Rose Amira","Absolus Allegoria Santal Royal","Absolus Allegoria Épices Exquises"]},
+    {line:"Les Légendaires",fragrances:["Après L'ondée EDT","Champs-élysées EDP","Chant D'arômes EDT","Chamade EDP","Chamade EDT","L'heure Bleue EDP","L'heure Bleue EDT","L'instant De Guerlain EDP","L'instant De Guerlain EDT","Liu EDP","Mitsouko EDP","Mitsouko EDT","Nahema EDP","Samsara EDP","Samsara EDT","Vol De Nuit EDP","Vol De Nuit EDT"]},
+    {line:"Shalimar",fragrances:["Shalimar EDP","Shalimar EDT","Shalimar Parfum","Shalimar Eau De Cologne","Shalimar Millésime Iris","Shalimar Millésime Jasmin","Shalimar Millésime Tonka","Shalimar Souffle De Parfum","Shalimar Souffle Intense","Shalimar Philtre De Parfum","Shalimar Parfum Initial","Shalimar Ode À La Vanille","Shalimar Ode À La Vanille Sur La Route Du Mexique","Shalimar Ode À La Vanille Sur La Route De Madagascar"]},
+    {line:"Mon Guerlain",fragrances:["Mon Guerlain EDP","Mon Guerlain EDT","Mon Guerlain Intense EDP","Mon Guerlain Bloom Of Rose EDT","Mon Guerlain Bloom Of Rose EDP","Mon Guerlain Sparkling Bouquet EDP","Mon Guerlain Florale EDP","Mon Guerlain Sensuelle EDP","Mon Guerlain Eau De Parfum Collector"]},
+    {line:"La Petite Robe Noire",fragrances:["La Petite Robe Noire EDP","La Petite Robe Noire EDT","La Petite Robe Noire Parfum","La Petite Robe Noire Eau De Parfum Intense","La Petite Robe Noire Black Perfecto EDP Florale","La Petite Robe Noire Black Perfecto EDT Florale","La Petite Robe Noire Ma Robe Hippie-chic","La Petite Robe Noire Ma Robe Cocktail","La Petite Robe Noire Ma Robe Sous Le Vent","La Petite Robe Noire Eau Fraîche","La Petite Robe Noire Velours","La Petite Robe Noire Rose Cherry"]},
+    {line:"L'homme Idéal",fragrances:["L'homme Idéal EDT","L'homme Idéal EDP","L'homme Idéal Parfum","L'homme Idéal Extrême EDP","L'homme Idéal L'intense EDP","L'homme Idéal Cologne","L'homme Idéal Cologne Forte EDP","L'homme Idéal Cool","L'homme Idéal Sport"]},
+    {line:"Men's Icons And Legacy",fragrances:["Habit Rouge EDT","Habit Rouge EDP","Habit Rouge Parfum","Habit Rouge L'instinct EDT","Habit Rouge L'instinct EDP","Habit Rouge Privé","Habit Rouge Rouge Privé","Habit Rouge Spirit","Vétiver EDT","Vétiver Parfum","Vétiver Extrême","Guerlain Homme EDT","Guerlain Homme EDP","Guerlain Homme L'eau Boisée","Héritage EDT","Héritage EDP","L'instant De Guerlain Pour Homme EDT","L'instant De Guerlain Pour Homme EDP","L'instant De Guerlain Pour Homme Extrême","Homme Idéal Platine Privé","Derby","Mouchoir De Monsieur","Eau De Cologne Impériale","Eau De Cologne Du Coq"]},
+    {line:"L'art & La Matière",fragrances:["Angélique Noire","Bois D'arménie","Cuir Béluga","Cruel Gardénia","Eau De Tulle","Épices Volées","Fève Gourmande","Herbes Troublantes","Jasmin Bonheur","Joyeuse Tubéreuse","Musc Outreblanc","Néroli Outrenoir","Néroli Plein Sud","Oud Khôl","Oud Nude","Patchouli Ardent","Patchouli Paris","Pêche Mirage","Rose Barbare","Rose Chérie","Santal Pao Rosa","Spiritueuse Double Vanille","Tobacco Honey","Tonka Impériale"]},
+  ],
+  "Hermes":[
+    {line:"Terre D'hermès",fragrances:["Terre D'hermès EDT","Terre D'hermès Parfum","Terre D'hermès Eau Givrée EDP","Terre D'hermès Eau Intense Vétiver EDP","Terre D'hermès Eau Très Fraîche EDT","Terre D'hermès Eau De Parfum Intense"]},
+    {line:"H24",fragrances:["H24 EDT","H24 EDP","H24 Herbes Vives EDP"]},
+    {line:"Twilly D'hermès",fragrances:["Twilly D'hermès EDP","Twilly D'hermès Eau Poivrée EDP","Twilly D'hermès Eau Ginger EDP","Tutti Twilly D'hermès EDP"]},
+    {line:"Barénia",fragrances:["Barénia EDP","Barénia EDP Intense"]},
+    {line:"Les Jardins",fragrances:["Un Jardin En Méditerranée EDT","Un Jardin Sur Le Nil EDT","Un Jardin Après La Mousson EDT","Un Jardin Sur Le Toit EDT","Le Jardin De Monsieur Li EDT","Un Jardin Sur La Lagune EDT","Un Jardin À Cythère EDT","Un Jardin Sous La Mer EDT"]},
+    {line:"Colognes",fragrances:["Eau D'orange Verte Eau De Cologne","Eau De Citron Noir Eau De Cologne","Eau De Basilic Pourpre Eau De Cologne","Eau De Rhubarbe Écarlate Eau De Cologne","Eau De Néroli Doré Eau De Cologne","Eau De Mandarine Ambrée Eau De Cologne","Eau De Pamplemousse Rose Eau De Cologne","Concentré De Pamplemousse Rose EDT","Eau De Gentiane Blanche Eau De Cologne"]},
+    {line:"Hermessence",fragrances:["Agar Ébène EDT","Ambre Narguilé EDT","Brin De Réglisse EDT","Cardamusc Essence De Parfum","Cèdre Sambac EDT","Cuir D'ange EDT","Épice Marine EDT","Iris Ukiyoé EDT","Musc Pallida EDP","Musc Pallida Essence De Parfum","Myrrhe Églantine EDT","Osmanthe Yunnan EDT","Oud Alezan EDP","Paprika Brasil EDT","Poivre Samarcande EDT","Rose Ikebana EDT","Santal Massoïa EDT","Vanille Galante EDT","Vétiver Tonka EDT","Violette Volynka EDT"]},
+    {line:"Women's Classics",fragrances:["24 Faubourg EDP","24 Faubourg EDT","24 Faubourg Eau Délicate","Calèche EDT","Calèche Soie De Parfum","Kelly Calèche EDT","Kelly Calèche EDP","Jour D'hermès EDP","Jour D'hermès Absolu EDP","Jour D'hermès Gardenia EDP","Galop D'hermès Parfum","Hiris EDT","Amazone EDT","Eau Des Merveilles EDT","Elixir Des Merveilles EDP","Eau Des Merveilles Bleue EDT","L'ambre Des Merveilles EDP","Eau Claire Des Merveilles EDT","Eau Des Merveilles Parfum Des Merveilles"]},
+    {line:"Men's Classics",fragrances:["Bel Ami EDT","Bel Ami Vetiver EDT","Equipage EDT","Equipage Géranium EDT","Rocabar EDT","Voyage D'hermès EDT","Voyage D'hermès Parfum","Eau D'hermès EDT","Concentré D'orange Verte EDT"]},
+    {line:"Legacy And Other",fragrances:["Doblis","Parfum D'hermès","Rouge Hermès EDP","Rouge Hermès EDT","Rouge Hermès Parfum","Eau De Cologne Hermès","Eau De Cologne D'hermès","Eau De Cologne Eau De Narcisse Bleu","Eau De Cologne Eau De Lavande","Eau De Cologne Eau De Néroli Doré","Eau De Cologne Eau De Gentiane Blanche","Eau De Cologne Eau De Pamplemousse Rose","Eau De Cologne Eau De Mandarine Ambrée","Eau De Cologne Eau De Rhubarbe Écarlate"]},
+  ],
+  "Hugo Boss":[
+    {line:"Boss Bottled",fragrances:["BOSS Bottled EDT","BOSS Bottled EDP","BOSS Bottled Parfum","BOSS Bottled Elixir","BOSS Bottled Absolu","BOSS Bottled Beyond EDP","BOSS Bottled Beyond EDT Intense","BOSS Bottled Infinite EDP","BOSS Bottled Night EDT","BOSS Bottled Tonic EDT","BOSS Bottled United EDT","BOSS Bottled Pacific EDT","BOSS Bottled Triumph Elixir","BOSS Bottled Marine EDT","BOSS Bottled Oud EDP","BOSS Bottled Oud Aromatic","BOSS Bottled Oud Saffron","BOSS Bottled Intense EDT","BOSS Bottled Intense EDP","BOSS Bottled Absolute EDP","BOSS Bottled Collector's Editions"]},
+    {line:"Boss The Scent For Him",fragrances:["BOSS The Scent EDT","BOSS The Scent EDP Intense","BOSS The Scent Parfum","BOSS The Scent Elixir For Him","BOSS The Scent Magnetic For Him","BOSS The Scent Private Accord For Him","BOSS The Scent Absolute For Him","BOSS The Scent Pure Accord For Him","BOSS The Scent Le Parfum For Him"]},
+    {line:"Boss The Scent For Her",fragrances:["BOSS The Scent For Her EDP","BOSS The Scent For Her EDP Intense","BOSS The Scent For Her Parfum","BOSS The Scent Elixir For Her","BOSS The Scent Magnetic For Her","BOSS The Scent Private Accord For Her","BOSS The Scent Absolute For Her","BOSS The Scent Pure Accord For Her","BOSS The Scent Le Parfum For Her"]},
+    {line:"Boss Alive",fragrances:["BOSS Alive EDP","BOSS Alive EDT","BOSS Alive Intense EDP","BOSS Alive Parfum","BOSS Alive Elixir EDP Intense","BOSS Alive Sparkling Lavender EDP"]},
+    {line:"Hugo Men",fragrances:["HUGO Man EDT","HUGO Man EDP","HUGO Just Different EDT","HUGO Reversed EDT","HUGO Extreme EDP","HUGO Iced EDT","HUGO Now EDT","HUGO Energise EDT","HUGO Red EDT","HUGO Dark Blue EDT","HUGO XY EDT","HUGO Urban Journey EDT","HUGO Element EDT","HUGO Green EDT"]},
+    {line:"Hugo Women",fragrances:["HUGO Woman EDP","HUGO Woman EDT","HUGO Woman Extreme EDP","HUGO Woman Eau De Parfum Intense","HUGO Deep Red EDP","HUGO XX EDT","HUGO Pure Purple EDP","HUGO Boss Woman EDP"]},
+    {line:"Boss The Collection",fragrances:["Noble Wood EDP","Wild Violet EDP","Daring Saffiano EDP","Confident Oud EDP","Energetic Fougere EDP","Magnetic Musk EDP","Vigorous Cologne EDP","Courageous Rose EDP","Elegant Vetiver EDP","Unapologetic Bergamot EDP"]},
+    {line:"Boss Orange And Femme",fragrances:["BOSS Orange Woman EDT","BOSS Orange Sunset EDT","BOSS Orange Sunset Celebration","BOSS Orange Feel Good Summer","BOSS Orange Man EDT","BOSS Orange Made For Summer EDT","BOSS Orange Man Feel Good Summer","BOSS Femme EDP","BOSS Femme L'eau Fraîche","BOSS Femme Intense EDP"]},
+    {line:"Boss Ma Vie And Nuit",fragrances:["BOSS Ma Vie Pour Femme EDP","BOSS Ma Vie Pour Femme Intense EDP","BOSS Ma Vie Pour Femme L'eau EDT","BOSS Ma Vie Florale EDP","BOSS Nuit Pour Femme EDP","BOSS Nuit Pour Femme Intense EDP","BOSS Nuit Pour Femme Runway Edition","BOSS Jour Pour Femme EDP","BOSS Jour Pour Femme Lumineuse EDP"]},
+    {line:"Other And Legacy",fragrances:["BOSS Number One EDT","BOSS Selection EDT","BOSS Soul EDT","BOSS Pure EDT","BOSS In Motion EDT","BOSS In Motion Black","BOSS In Motion Blue","BOSS In Motion Green","BOSS In Motion Orange Made For Summer","BOSS In Motion White Edition","BOSS Sport EDT","BOSS Elements EDT","BOSS Spirit EDT","BOSS Intense EDP","BOSS Intense Shimmer Edition","BOSS Woman EDP","BOSS Woman EDT","BOSS Woman Summer","BOSS Woman Purse Spray","BOSS Woman Light"]},
+  ],
+  "JPG (Jean Paul Gaultier)":[
+    {line:"Le Male",fragrances:["Le Male EDT","Le Male Le Parfum EDP Intense","Le Male Elixir Parfum","Le Male Elixir Absolu Parfum Intense","Le Male Lover EDT","Le Male On Board EDT","Le Male In The Navy EDT","Ultra Male EDT Intense","Le Male Essence De Parfum","Le Male Terrible EDT","Le Male Popeye Eau Fraîche","Le Male Superman Eau Fraîche","Le Male Airlines EDT","Le Male Pride Edition","Le Male Collector Editions"]},
+    {line:"Le Beau",fragrances:["Le Beau EDT","Le Beau Le Parfum EDP Intense","Le Beau Paradise Garden EDP","Le Beau Flower Edition EDP","Le Beau Male EDT","Le Beau Male Essence De Parfum","Le Beau Male Capitaine Collector","Le Beau Male Summer EDT"]},
+    {line:"Scandal Pour Homme",fragrances:["Scandal Pour Homme EDT","Scandal Pour Homme Le Parfum","Scandal Pour Homme Absolu Parfum Concentré","Scandal Pour Homme Intense EDP","Scandal Pour Homme Gold EDT Intense"]},
+    {line:"Classique",fragrances:["Classique EDT","Classique EDP","Classique Essence De Parfum","Classique Intense EDP","Classique Cabaret EDP","Classique Pin Up EDP","Classique Eau Fraîche","Classique X EDT","Classique X Collection EDP","Classique Summer Editions","Classique Collector Editions","Classique Pride Edition"]},
+    {line:"La Belle",fragrances:["La Belle EDP","La Belle Le Parfum EDP Intense","La Belle Paradise Garden EDP","La Belle Flower Edition EDP","La Belle Fleur Terrible EDP","La Belle Paradise Garden Collector Edition"]},
+    {line:"Scandal Women",fragrances:["Scandal EDP","Scandal Le Parfum EDP Intense","Scandal Absolu Parfum Concentré","Scandal Intense EDP","Scandal By Night EDP Intense","So Scandal! EDP","Scandal À Paris EDT","Scandal Gold EDP","Scandal New Collector Editions"]},
+    {line:"Gaultier Divine",fragrances:["Gaultier Divine EDP","Gaultier Divine Le Parfum","Gaultier Divine Elixir Parfum","Gaultier Divine Collector Editions"]},
+    {line:"Other And Legacy",fragrances:["Gaultier² EDP","Gaultier² Eau D'amour","Gaultier² Pride Edition","Kokorico EDT","Kokorico By Night EDT","Fleur Du Mâle Eau De Cologne","Fleur Du Mâle La Cologne","Ma Dame EDP","Ma Dame EDT","Ma Dame Rose 'n Roll EDT","Ma Dame Eau Fraîche","Fragile EDP","Fragile EDT","Fragile Eau De Parfum L'or","Madame EDP","Monsieur EDT"]},
+  ],
+  "Le Labo":[
+    {line:"Classic Collection",fragrances:["Santal 33","Another 13","Thé Matcha 26","Thé Noir 29","Rose 31","Bergamote 22","Lavande 31","Eucalyptus 20","Violette 30","Baie 19","Lys 41","Jasmin 17","Fleur D'oranger 27","Tonka 25","Neroli 36","Vetiver 46","Patchouli 24","Ambrette 9","Ylang 49","Labdanum 18"]},
+    {line:"City Exclusive Collection",fragrances:["Shiu 25","Gaiac 10","Osmanthus 19","Vanille 44","Cedrat 37","Tabac 28","Musc 25","Myrrhe 55","Coriandre 39","Citron 28","Mousse De Chene 30","Bigarade 18","Tubereuse 40","Poivre 23","Cuir 28","Limette 37","Baie Rose 26","Aldehyde 44","Benjoin 19"]},
+    {line:"Legacy And Discontinued",fragrances:["Iris 39","Oud 27"]},
+  ],
+  "LV (Louis Vuitton)":[
+    {line:"Masculine Perfumes",fragrances:["L'immensité","Nouveau Monde","Orage","Sur La Route","Au Hasard","Imagination","Météore","LV Lovers"]},
+    {line:"Feminine Perfumes",fragrances:["Rose Des Vents","Turbulences","Dans La Peau","Apogée","Contre Moi","Matière Noire","Mille Feux","Le Jour Se Lève","Attrape-rêves","Cœur Battant","Heures D'absence","Spell On You","Elves Louis Vuitton"]},
+    {line:"Cologne Perfumes",fragrances:["Sun Song","Cactus Garden","Afternoon Swim","California Dream","On The Beach","City Of Stars","Pacific Chill"]},
+    {line:"Oud Perfumes",fragrances:["Ombre Nomade","Les Sables Roses","Nuit De Feu","Fleur Du Désert","Pur Oud","Ambre Levant"]},
+    {line:"Les Extraits Collection",fragrances:["Cosmic Cloud","Dancing Blossom","Rhapsody","Symphony","Stellar Times","Myriad","Fantasmagory"]},
+    {line:"Travel And Special Editions",fragrances:["Attrape-rêves Travel Spray","Imagination Travel Spray","L'immensité Travel Spray","Ombre Nomade Travel Spray","Spell On You Travel Spray","Rose Des Vents Travel Spray","Afternoon Swim Travel Spray","Miniature Set"]},
+    {line:"Legacy Fragrances",fragrances:["Eau De Voyage","Je Tu Il","Reminiscences","Heures D'absence (1927)","Eau De Cologne Louis Vuitton","Sur La Route (1925)"]},
+  ],
+  "MFK (Maison Francis Kurkdjian)":[
+    {line:"Baccarat Rouge 540",fragrances:["Baccarat Rouge 540 Eau De Parfum","Baccarat Rouge 540 Extrait De Parfum"]},
+    {line:"Aqua Collection",fragrances:["Aqua Universalis EDT","Aqua Universalis Forte EDP","Aqua Universalis Cologne Forte EDP","Aqua Vitae EDT","Aqua Vitae Forte EDP","Aqua Vitae Cologne Forte EDP","Aqua Celestia EDT","Aqua Celestia Forte EDP","Aqua Celestia Cologne Forte EDP","Aqua Media Cologne Forte EDP"]},
+    {line:"Oud Collection",fragrances:["OUD EDP","OUD Extrait De Parfum","OUD Satin Mood EDP","OUD Satin Mood Extrait De Parfum","OUD Silk Mood EDP","OUD Silk Mood Extrait De Parfum","OUD Cashmere Mood EDP","OUD Velvet Mood EDP"]},
+    {line:"À La Rose Collection",fragrances:["À La Rose EDP","L'eau À La Rose EDT","L'homme À La Rose EDP"]},
+    {line:"Amyris Collection",fragrances:["Amyris Femme EDP","Amyris Femme Extrait De Parfum","Amyris Homme EDT","Amyris Homme Extrait De Parfum"]},
+    {line:"Gentle Fluidity",fragrances:["Gentle Fluidity Gold EDP","Gentle Fluidity Silver EDP"]},
+    {line:"Apom Collection",fragrances:["APOM Pour Femme EDP","APOM Pour Homme EDT","APOM EDP"]},
+    {line:"Signature Fragrances",fragrances:["724 EDP","Grand Soir EDP","Petit Matin EDP","Masculin Pluriel EDT","Féminin Pluriel EDP"]},
+    {line:"My Very Intimate Perfumes",fragrances:["Absolue Pour Le Soir EDP","Cologne Pour Le Soir EDP","Le Beau Parfum EDP","Reflets D'ambre EDP","Lumière Noire Pour Femme EDP","Lumière Noire Pour Homme EDT"]},
+    {line:"Legacy And Discontinued",fragrances:["Aqua Universalis Forte","Aqua Vitae Forte","Aqua Celestia Forte","Ciel De Gum","Cologne Pour Le Matin","Cologne Pour Le Soir","Absolue Pour Le Matin","Aqua Vitae EDT Limited Editions"]},
+  ],
+  "Nishane":[
+    {line:"Early Collections",fragrances:["Nanshe","Duftblüten","Rosa Turca","Tuberoza","Vjola","Afrika Olifant","Musiqa Oud","Pachuli Kozha","Suede Et Safran"]},
+    {line:"Miniature Art",fragrances:["Ambra Calabria","Boszporusz","Munegu","Pasion Choco","Santalove","Spice Bazaar","Sultan Vetiver","Wulóng Chá"]},
+    {line:"No Boundaries",fragrances:["Ani","EGE / Αιγαιο","Florane","Muskane"]},
+    {line:"Prestige Collection",fragrances:["Hacivat Oud","Mana","Nefs","Shem"]},
+    {line:"Rumi",fragrances:["Fan Your Flames","Hundred Silent Ways","Thorns Become Roses"]},
+    {line:"Shadow Play Collection",fragrances:["Hacivat","Karagoz","Zenne"]},
+    {line:"Time Capsule Collection",fragrances:["Deziro","Kredo","Papilefiko","Tempfluo","Tero"]},
+    {line:"X Collection",fragrances:["Ani X","Fan Your Flames X","Hacivat X","Hundred Silent Ways X","Tuberóza X","Wulong Cha X"]},
+    {line:"Imaginative And Extrait De Cologne",fragrances:["B-612","Vain & Naïve","Colognise","Hespéridé Colognisé","Safran Colognise"]},
+    {line:"Experimental Exclusives And Standalone",fragrances:["Shinanay","Unutamam","A Date With Oud","Favonius","Oudous Lux Solis","Oudous Cerasus","Meant To Be Seen","Meltemia"]},
+  ],
+  "PDM (Parfums de Marly)":[
+    {line:"For Her — Les Signatures",fragrances:["Delina","Delina La Rosée","Valaya","Palatine","Oriana"]},
+    {line:"For Her — Les Premiers",fragrances:["Safanad","Cassili","Meliora","Athalia","Darcy"]},
+    {line:"For Her — Les Exclusifs",fragrances:["Delina Exclusif","Valaya Exclusif"]},
+    {line:"For Him — Les Signatures",fragrances:["Layton","Althaïr","Herod","Carlisle","Pegasus","Oajan","Kalan"]},
+    {line:"For Him — Les Eaux Intenses",fragrances:["Percival","Greenley","Sedley","Perseus"]},
+    {line:"For Him — Les Exclusifs",fragrances:["Haltane","Layton Exclusif","Pegasus Exclusif"]},
+    {line:"For Him — Les Premiers",fragrances:["Godolphin","Habdan","Galloway","Darley","Byerley","Hamdani","Akaster","Nisean","Shagya"]},
+    {line:"Legacy And Discontinued",fragrances:["Ispazon","Lippizan","Royal Essence","Kuhuyan"]},
+    {line:"Standalone And Special Editions",fragrances:["Delina Limited Editions","Layton Limited Editions","Pegasus Limited Editions"]},
+  ],
+  "Prada":[
+    {line:"Luna Rossa",fragrances:["Luna Rossa","Luna Rossa Carbon","Luna Rossa Ocean","Luna Rossa Sport","Luna Rossa Black"]},
+    {line:"Paradoxe",fragrances:["Paradoxe","Paradoxe Intense","Paradoxe Virtual Flower","Paradoxe Radical Essence","Paradoxe Sweet Chemistry"]},
+    {line:"Infusion",fragrances:["Infusion D'iris","Infusion D'homme","Infusion D'amande","Infusion De Rhubarbe","Infusion De Santal Chai"]},
+    {line:"Candy",fragrances:["Prada Candy","Candy L'eau","Candy Florale","Candy Night"]},
+    {line:"L'homme And La Femme",fragrances:["L'homme","L'homme Intense","L'homme L'eau","La Femme","La Femme L'eau"]},
+    {line:"Amber",fragrances:["Amber Pour Homme","Prada Man (amber)","Amber"]},
+    {line:"Paradigme",fragrances:["Paradigme","Paradigme Le Parfum"]},
+  ],
+  "Rabanne":[
+    {line:"1 Million",fragrances:["1 Million","1 Million Elixir","1 Million Parfum","1 Million Lucky","1 Million Royal","1 Million Privé"]},
+    {line:"Lady Million And Million Gold",fragrances:["Lady Million","Million Gold","Million Gold Elixir","Million Gold For Her"]},
+    {line:"Invictus",fragrances:["Invictus","Invictus Victory","Invictus Victory Absolu","Invictus Platinum","Invictus Aqua"]},
+    {line:"Olympea",fragrances:["Olympea","Olympea Solar","Olympea Absolu","Olympea Blossom"]},
+    {line:"Phantom",fragrances:["Phantom","Phantom Intense","Phantom Parfum","Phantom In Red"]},
+    {line:"Fame",fragrances:["Fame","Fame Parfum","Fame In Love"]},
+    {line:"Black XS",fragrances:["Black Xs","Black Xs L'exces"]},
+    {line:"Pure XS",fragrances:["Pure Xs","Pure Xs For Her"]},
+    {line:"Paco Rabanne Pour Homme",fragrances:["Paco Rabanne Pour Homme","Calandre"]},
+  ],
+  "Sospiro":[
+    {line:"Classica Collection",fragrances:["Erba Pura","Opera","Accento","Laylati","Muse","Diva","Soprano"]},
+    {line:"Erba Collection",fragrances:["Erba Pura","Erba Pura Magica","Erba Oud","Erba Gold"]},
+    {line:"Nero Collection",fragrances:["Afgano Puro","Basso","Bosco"]},
+    {line:"Red Collection",fragrances:["Red Collection Scents"]},
+    {line:"Accento Line",fragrances:["Accento","Accento Viola","Accento Overdose","Purple Accento"]},
+  ],
+  "Valentino":[
+    {line:"Born In Roma Donna",fragrances:["Donna Born In Roma","Born In Roma Ivory","Born In Roma Intense"]},
+    {line:"Born In Roma Uomo",fragrances:["Uomo Born In Roma","Uomo Born In Roma Intense","Uomo Born In Roma Purple Melancholia"]},
+    {line:"Voce Viva",fragrances:["Voce Viva","Voce Viva Intensa","Voce Viva Golden Essence"]},
+    {line:"Valentino Donna And Uomo",fragrances:["Valentino Donna","Valentino Uomo","Valentino Noir Absolu"]},
+    {line:"Very Valentino",fragrances:["Very Valentino"]},
+    {line:"Valentina",fragrances:["Valentina","Valentina Assoluto","Valentina Acqua Floreale"]},
+  ],
+  "Versace":[
+    {line:"Eros",fragrances:["Eros","Eros Flame","Eros Energy","Eros Pour Femme"]},
+    {line:"Dylan Blue",fragrances:["Dylan Blue","Dylan Blue Pour Femme","Dylan Purple"]},
+    {line:"Bright Crystal",fragrances:["Bright Crystal","Bright Crystal Absolu"]},
+    {line:"Crystal Noir",fragrances:["Crystal Noir"]},
+    {line:"Yellow Diamond",fragrances:["Yellow Diamond","Yellow Diamond Intense"]},
+    {line:"Pour Homme",fragrances:["Versace Pour Homme","Versace Pour Homme Dylan Blue","Man Eau Fraiche"]},
+  ],
+  "Viktor & Rolf":[
+    {line:"Flowerbomb And Spicebomb",fragrances:["Flowerbomb","Flowerbomb Extreme","Flowerbomb Tiger Lily","Spicebomb","Spicebomb Extreme","Antidote","Good Fortune","Bonbon"]},
+  ],
+};
+
 const ALL_LUXURY_HOUSES=[
   "Acqua Di Parma","Amouage","Azzaro","BDK Parfums","Boadicea The Victorious",
   "Bond No 9","Burberry","Bvlgari","Byredo","CK (Calvin Klein)",
@@ -3446,28 +3834,135 @@ document.addEventListener("mouseout",(e)=>{
 });
 document.addEventListener("scroll",hideBottleTooltip,true);
 
+function normalizeFragName(s){
+  return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+}
+// Merges the full catalog for one house with your actual owned/wishlisted
+// fragrances — real entries (with their real id/notes/lock state) take
+// priority wherever a catalog name matches one you actually have; every
+// other catalog fragrance shows up as a locked placeholder so the whole
+// collection/line is visible either way.
+function catalogEntriesForHouse(house){
+  const realItems=CLOSET_BY_HOUSE[house]||[];
+  const usedReal=new Set();
+  const lines=FRAGRANCE_CATALOG[house];
+  if(!lines){
+    // House isn't in the catalog (shouldn't normally happen) — just show
+    // whatever real entries exist, ungrouped.
+    return realItems.length?[{line:"",items:realItems}]:[];
+  }
+  const grouped=lines.map(lineObj=>{
+    const items=lineObj.fragrances.map(fragName=>{
+      const normCat=normalizeFragName(fragName);
+      const match=realItems.find(e=>{
+        if(usedReal.has(e.id))return false;
+        const normReal=normalizeFragName(e.name);
+        return normReal&&(normReal.includes(normCat)||normCat.includes(normReal));
+      });
+      if(match){
+        usedReal.add(match.id);
+        return match;
+      }
+      return {
+        id:"cat-"+verifiedNotesKey(house,fragName),
+        name:fragName,
+        house:house,
+        notes:[],
+        locked:true,
+      };
+    });
+    return {line:lineObj.line,items:items};
+  });
+  // Any real fragrance that never matched a catalog entry (custom/unlisted)
+  // still needs to show up somewhere.
+  const leftover=realItems.filter(e=>!usedReal.has(e.id));
+  if(leftover.length)grouped.push({line:"Other",items:leftover});
+  return grouped;
+}
+
+let CLOSET_LINE_INDEX=0;
+let CLOSET_LINE_GROUPS=[];
+
 function renderWardrobeShelf(){
   const shelvesEl=document.getElementById("wardrobe-shelves");
   const labelEl=document.getElementById("wardrobe-house-label");
+  const lineLabelEl=document.getElementById("wardrobe-line-label");
+  const lineNavEl=document.getElementById("wardrobe-line-nav");
   if(!shelvesEl||!CLOSET_DETAIL_HOUSE)return;
-  const items=CLOSET_BY_HOUSE[CLOSET_DETAIL_HOUSE]||[];
-  if(labelEl)labelEl.textContent=CLOSET_DETAIL_HOUSE+" ("+items.length+")";
+  const ownedItems=CLOSET_BY_HOUSE[CLOSET_DETAIL_HOUSE]||[];
+  if(labelEl)labelEl.textContent=CLOSET_DETAIL_HOUSE+" ("+ownedItems.length+")";
+
+  CLOSET_LINE_GROUPS=catalogEntriesForHouse(CLOSET_DETAIL_HOUSE).filter(g=>g.items.length);
+  if(CLOSET_LINE_GROUPS.length===0){
+    if(lineNavEl)lineNavEl.style.display="none";
+    shelvesEl.innerHTML='<div class="closet-empty">Nothing catalogued for this house yet.</div>';
+    return;
+  }
+  if(CLOSET_LINE_INDEX>=CLOSET_LINE_GROUPS.length)CLOSET_LINE_INDEX=0;
+  if(CLOSET_LINE_INDEX<0)CLOSET_LINE_INDEX=CLOSET_LINE_GROUPS.length-1;
+
+  const multi=CLOSET_LINE_GROUPS.length>1;
+  if(lineNavEl)lineNavEl.style.display=multi?"":"none";
+  const group=CLOSET_LINE_GROUPS[CLOSET_LINE_INDEX];
+  if(lineLabelEl){
+    lineLabelEl.textContent=(group.line||"Collection")+(multi?" ("+(CLOSET_LINE_INDEX+1)+"/"+CLOSET_LINE_GROUPS.length+")":"");
+  }
+
   const perShelf=4;
   let html="";
-  for(let i=0;i<items.length;i+=perShelf){
-    const chunk=items.slice(i,i+perShelf);
+  for(let i=0;i<group.items.length;i+=perShelf){
+    const chunk=group.items.slice(i,i+perShelf);
     html+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
   }
   shelvesEl.innerHTML=html;
 }
 
+function closetGoToLine(index,direction){
+  if(CLOSET_LINE_GROUPS.length<2)return;
+  CLOSET_LINE_INDEX=(index+CLOSET_LINE_GROUPS.length)%CLOSET_LINE_GROUPS.length;
+  renderWardrobeShelf();
+  const shelvesEl=document.getElementById("wardrobe-shelves");
+  if(shelvesEl&&direction){
+    shelvesEl.classList.remove("sliding-in-l","sliding-in-r");
+    void shelvesEl.offsetWidth; // restart animation
+    shelvesEl.classList.add(direction>0?"sliding-in-r":"sliding-in-l");
+  }
+}
+function closetPrevLine(){closetGoToLine(CLOSET_LINE_INDEX-1,-1);}
+function closetNextLine(){closetGoToLine(CLOSET_LINE_INDEX+1,1);}
+
+// Swipe support: left/right drag on the shelf area moves between lines
+(function(){
+  let touchStartX=null,touchStartY=null;
+  document.addEventListener("touchstart",(e)=>{
+    const shelves=e.target.closest&&e.target.closest("#wardrobe-shelves");
+    if(!shelves||!e.touches||!e.touches[0])return;
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener("touchend",(e)=>{
+    if(touchStartX===null)return;
+    const t=e.changedTouches&&e.changedTouches[0];
+    if(!t){touchStartX=null;return;}
+    const dx=t.clientX-touchStartX;
+    const dy=t.clientY-touchStartY;
+    touchStartX=null;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){
+      if(dx<0)closetNextLine();else closetPrevLine();
+    }
+  },{passive:true});
+})();
+
 function openHouseCabinet(house){
   CLOSET_DETAIL_HOUSE=house;
   CLOSET_VIEW="detail";
+  CLOSET_LINE_INDEX=0;
   applyClosetView();
   renderWardrobeShelf();
-  // Fetch real notes for anything in this cabinet we haven't verified yet
-  ensureVerifiedNotes(CLOSET_BY_HOUSE[house]||[]);
+  // Fetch real notes for everything shown in this cabinet (catalog +
+  // owned/wishlisted), not just what you actually own
+  const allForHouse=catalogEntriesForHouse(house).flatMap(g=>g.items);
+  ensureVerifiedNotes(allForHouse);
 }
 
 function closetBack(){
