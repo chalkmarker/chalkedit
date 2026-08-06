@@ -201,22 +201,22 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
 .wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px;background-color:#2A1C11}
-/* Floor planks laid on the same 45° isometric axis the cabinets project on:
-   long seams run up-right (matching the cabinets' depth direction), short
-   end-seams run perpendicular, and the whole plane fades toward the back. */
+/* Pixel-art wood-plank diamond floor: a seamless plank texture with true
+   diamond grout lines overlaid (drawn as crossing diagonals so it tiles
+   perfectly with no gaps), plus a falloff toward the top-right to match the
+   cabinets' isometric depth direction. */
 .wardrobe-gallery::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
   background-image:
-    repeating-linear-gradient(45deg,rgba(0,0,0,.5) 0 2px,transparent 2px 38px),
-    repeating-linear-gradient(45deg,rgba(255,220,180,.05) 2px 5px,transparent 5px 38px),
-    repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 1px,transparent 1px 7px),
-    repeating-linear-gradient(-45deg,rgba(0,0,0,.32) 0 2px,transparent 2px 150px);
+    repeating-linear-gradient(29.9deg, rgba(42,26,13,.85) 0 3px, transparent 3px 92px),
+    repeating-linear-gradient(-29.9deg, rgba(42,26,13,.85) 0 3px, transparent 3px 92px),
+    repeating-linear-gradient(29.9deg, rgba(255,220,180,.08) 3px 5px, transparent 5px 92px),
+    repeating-linear-gradient(-29.9deg, rgba(255,220,180,.08) 3px 5px, transparent 5px 92px),
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iNDYiIHZpZXdCb3g9IjAgMCAxNjAgNDYiPjxyZWN0IHdpZHRoPSIxNjAiIGhlaWdodD0iNDYiIGZpbGw9IiNDOThBM0UiLz48cmVjdCB5PSIwIiB3aWR0aD0iMTYwIiBoZWlnaHQ9IjIiIGZpbGw9IiMzQTI0MTIiLz48cmVjdCB5PSI0NCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIyIiBmaWxsPSIjM0EyNDEyIi8+PHJlY3QgeT0iMiIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIzIiBmaWxsPSIjRTBBMjVBIiBvcGFjaXR5PSIwLjUiLz48cGF0aCBkPSJNMTAsMTQgTDM1LDEyIEw2MCwxNiBMOTAsMTMgTDEyMCwxNyBMMTUwLDE0IiBzdHJva2U9IiM3QTRFMUUiIHN0cm9rZS13aWR0aD0iMS4xIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTEwLDEyLjcgTDM1LDEwLjcgTDYwLDE0LjcgTDkwLDExLjcgTDEyMCwxNS43IEwxNTAsMTIuNyIgc3Ryb2tlPSIjRjBCODZBIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC40Ii8+PHBhdGggZD0iTTUsMjYgTDMwLDI5IEw1OCwyNSBMODUsMjggTDExNSwyNCBMMTQ1LDI3IiBzdHJva2U9IiM3QTRFMUUiIHN0cm9rZS13aWR0aD0iMS4xIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTUsMjQuNyBMMzAsMjcuNyBMNTgsMjMuNyBMODUsMjYuNyBMMTE1LDIyLjcgTDE0NSwyNS43IiBzdHJva2U9IiNGMEI4NkEiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjQiLz48cGF0aCBkPSJNMTUsMzYgTDQ1LDM0IEw3NSwzNyBMMTA1LDMzIEwxMzUsMzYiIHN0cm9rZT0iIzdBNEUxRSIgc3Ryb2tlLXdpZHRoPSIxLjEiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz48cGF0aCBkPSJNMTUsMzQuNyBMNDUsMzIuNyBMNzUsMzUuNyBMMTA1LDMxLjcgTDEzNSwzNC43IiBzdHJva2U9IiNGMEI4NkEiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjQiLz48L3N2Zz4=");
+  background-size:auto,auto,auto,auto,160px 46px;
+  background-repeat:repeat;
 }
-/* Staggered end-seams: same perpendicular lines, offset half a plank */
 .wardrobe-gallery::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background-image:
-    repeating-linear-gradient(-45deg,rgba(0,0,0,.32) 0 2px,transparent 2px 150px),
-    linear-gradient(215deg,rgba(10,6,3,.85) 0%,rgba(10,6,3,.35) 28%,transparent 62%);
-  background-position:75px 0,0 0;
+  background-image:linear-gradient(215deg,rgba(10,6,3,.85) 0%,rgba(10,6,3,.35) 28%,transparent 62%);
 }
 .cabinet-cluster{position:relative;width:100%;max-width:340px;height:440px;flex-shrink:0;z-index:1}
 .cluster-slot{position:absolute;width:96px}
@@ -1799,6 +1799,116 @@ function deriveLiquidColor(notes){
   return "rgb("+Math.round(rSum/matchCount)+","+Math.round(gSum/matchCount)+","+Math.round(bSum/matchCount)+")";
 }
 
+// Specific note -> literal color (strawberry is red, lemon is yellow, etc.)
+// Used for the potion color, which is driven purely by the single most
+// prevalent TOP note rather than an average across the whole pyramid.
+const NOTE_COLOR_MAP=[
+  {match:["strawberry"],color:"rgb(214,60,60)"},
+  {match:["cherry"],color:"rgb(196,40,60)"},
+  {match:["raspberry"],color:"rgb(180,40,70)"},
+  {match:["pomegranate"],color:"rgb(180,40,55)"},
+  {match:["red apple"],color:"rgb(190,50,55)"},
+  {match:["peach"],color:"rgb(230,150,110)"},
+  {match:["apricot"],color:"rgb(232,160,90)"},
+  {match:["orange blossom","neroli"],color:"rgb(250,245,220)"},
+  {match:["orange","mandarin","tangerine","clementine"],color:"rgb(230,140,40)"},
+  {match:["lemon","citron"],color:"rgb(230,210,60)"},
+  {match:["lime"],color:"rgb(170,210,70)"},
+  {match:["grapefruit"],color:"rgb(230,120,100)"},
+  {match:["bergamot"],color:"rgb(210,200,90)"},
+  {match:["yuzu"],color:"rgb(220,215,80)"},
+  {match:["apple"],color:"rgb(160,200,90)"},
+  {match:["pear"],color:"rgb(200,215,120)"},
+  {match:["blackcurrant","cassis","black currant"],color:"rgb(90,40,90)"},
+  {match:["plum"],color:"rgb(110,50,90)"},
+  {match:["grape"],color:"rgb(110,60,120)"},
+  {match:["fig"],color:"rgb(120,70,90)"},
+  {match:["coconut"],color:"rgb(245,240,225)"},
+  {match:["mango"],color:"rgb(240,180,50)"},
+  {match:["pineapple"],color:"rgb(235,210,60)"},
+  {match:["melon"],color:"rgb(180,220,150)"},
+  {match:["blackberry"],color:"rgb(70,40,80)"},
+  {match:["rhubarb"],color:"rgb(200,80,90)"},
+
+  {match:["rose"],color:"rgb(220,110,140)"},
+  {match:["jasmine"],color:"rgb(245,240,215)"},
+  {match:["lavender"],color:"rgb(150,130,200)"},
+  {match:["violet"],color:"rgb(140,100,180)"},
+  {match:["iris","orris"],color:"rgb(190,180,210)"},
+  {match:["peony"],color:"rgb(235,180,195)"},
+  {match:["tuberose"],color:"rgb(245,245,235)"},
+  {match:["ylang"],color:"rgb(240,225,150)"},
+  {match:["lily"],color:"rgb(250,250,240)"},
+  {match:["magnolia"],color:"rgb(250,235,225)"},
+  {match:["freesia"],color:"rgb(235,225,245)"},
+  {match:["geranium"],color:"rgb(200,140,160)"},
+  {match:["mimosa"],color:"rgb(240,220,110)"},
+
+  {match:["vanilla"],color:"rgb(225,195,140)"},
+  {match:["caramel"],color:"rgb(180,110,50)"},
+  {match:["chocolate","cocoa"],color:"rgb(90,55,35)"},
+  {match:["coffee"],color:"rgb(75,50,35)"},
+  {match:["honey"],color:"rgb(210,150,40)"},
+  {match:["tonka"],color:"rgb(150,110,60)"},
+  {match:["almond"],color:"rgb(210,175,130)"},
+  {match:["praline"],color:"rgb(170,110,60)"},
+  {match:["marshmallow"],color:"rgb(240,225,220)"},
+  {match:["sugar","sweet"],color:"rgb(240,220,200)"},
+
+  {match:["mint","peppermint","spearmint"],color:"rgb(120,200,170)"},
+  {match:["basil"],color:"rgb(110,160,80)"},
+  {match:["green tea","tea"],color:"rgb(150,190,120)"},
+  {match:["fig leaf","galbanum","green"],color:"rgb(110,150,80)"},
+  {match:["sea salt","marine","aquatic","ozonic","water"],color:"rgb(90,160,190)"},
+  {match:["rain"],color:"rgb(140,180,200)"},
+
+  {match:["pink pepper"],color:"rgb(210,110,120)"},
+  {match:["pepper"],color:"rgb(150,90,80)"},
+  {match:["cardamom"],color:"rgb(160,150,90)"},
+  {match:["cinnamon"],color:"rgb(160,90,50)"},
+  {match:["clove"],color:"rgb(120,70,40)"},
+  {match:["saffron"],color:"rgb(220,140,30)"},
+  {match:["ginger"],color:"rgb(220,150,60)"},
+  {match:["nutmeg"],color:"rgb(140,100,60)"},
+  {match:["anise","licorice"],color:"rgb(70,60,80)"},
+
+  {match:["oud"],color:"rgb(75,50,35)"},
+  {match:["leather"],color:"rgb(100,60,40)"},
+  {match:["tobacco"],color:"rgb(140,95,50)"},
+  {match:["musk"],color:"rgb(200,190,175)"},
+  {match:["amber"],color:"rgb(190,130,60)"},
+  {match:["sandalwood"],color:"rgb(190,150,100)"},
+  {match:["cedar"],color:"rgb(150,110,75)"},
+  {match:["vetiver"],color:"rgb(120,130,80)"},
+  {match:["patchouli"],color:"rgb(95,75,55)"},
+  {match:["incense"],color:"rgb(130,105,90)"},
+  {match:["birch"],color:"rgb(80,65,55)"},
+  {match:["smoke"],color:"rgb(90,80,75)"},
+];
+function colorForNote(noteRaw){
+  const n=(noteRaw||"").toLowerCase().trim();
+  if(!n)return null;
+  const found=NOTE_COLOR_MAP.find(c=>c.match.some(m=>n.includes(m)));
+  if(found)return found.color;
+  const fam=NOTE_FAMILIES.find(f=>f.keywords.some(k=>n.includes(k)));
+  return fam?"rgb("+fam.color[0]+","+fam.color[1]+","+fam.color[2]+")":null;
+}
+// The potion color is driven purely by the single most prevalent (first
+// listed) TOP note — verified notes take priority, falling back to the
+// keyword-guessed top note, and finally to the old averaged color if no
+// top note can be identified at all.
+function potionColorFor(house,name,notes){
+  const v=getVerifiedNotes(house,name);
+  let topNote=null;
+  if(v&&v.found&&v.top&&v.top.length)topNote=v.top[0];
+  else{
+    const guess=deriveNotePyramid(notes);
+    if(guess.top&&guess.top!=="—")topNote=guess.top;
+  }
+  const c=topNote?colorForNote(topNote):null;
+  return c||deriveLiquidColor(notes);
+}
+
 // ── CLOSET (visual shelf) ──
 // Rough top/heart/base guess from a flat notes list — the data model doesn't
 // store a real pyramid, so this buckets known note keywords by where they
@@ -3051,8 +3161,8 @@ function saturateRgb(rgbStr,amount){
   b=Math.max(0,Math.min(255,Math.round(avg+(b-avg)*amount)));
   return "rgb("+r+","+g+","+b+")";
 }
-function potionSpriteSvg(id,notes){
-  const base=saturateRgb(deriveLiquidColor(notes),1.9);
+function potionSpriteSvg(id,colorIn){
+  const base=saturateRgb(colorIn,1.9);
   const mid=base;
   const light=shiftRgb(base,1.45);
   const lighter=shiftRgb(base,1.8);
@@ -3133,8 +3243,8 @@ function potionSpriteSvg(id,notes){
 }
 
 function bottleCardHtml(e){
-  const notes=effectiveNotes(e.house,e.name,e.notes);
-  const svg=potionSpriteSvg(e.id,notes);
+  const color=potionColorFor(e.house,e.name,e.notes);
+  const svg=potionSpriteSvg(e.id,color);
   const pyr=resolveNotePyramid(e.house,e.name,e.notes);
   const srcLabel=pyr.verified
     ?'<div class="closet-tooltip-src">✓ '+(pyr.source==="fragrantica"?"Fragrantica":pyr.source==="official"?"Official site":"Verified")+'</div>'
@@ -3414,6 +3524,10 @@ function renderCloset(){
   applyClosetView();
   renderWardrobeGallery();
   if(CLOSET_VIEW==="detail")renderWardrobeShelf();
+  // Verify notes for every fragrance in the whole collection in the
+  // background (not just the house currently open) — by the time you open
+  // any cabinet, its notes are likely already verified.
+  ensureVerifiedNotes(entries);
 }
 
 // ── ADD FRAGRANCE ──
