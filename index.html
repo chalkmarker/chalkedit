@@ -183,10 +183,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-glow-l{left:0;background:linear-gradient(90deg,rgba(90,180,220,.75),rgba(90,180,220,0) 100%)}
 .wardrobe-glow-r{right:0;background:linear-gradient(270deg,rgba(90,180,220,.75),rgba(90,180,220,0) 100%)}
 @keyframes wardrobeGlowPulse{0%,100%{opacity:.5}50%{opacity:1}}
-.wardrobe-center-seam{position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(217,199,163,.5);z-index:2;transform:translateX(-1px)}
-.wardrobe-center-seam span{position:absolute;left:50%;width:5px;height:22px;background:#C9A227;border-radius:1px;transform:translateX(-50%)}
-.wardrobe-center-seam span:first-child{top:32%}
-.wardrobe-center-seam span:last-child{top:58%}
 .wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;height:100%;overflow-y:auto;padding:16px 22px 16px 14px;-ms-overflow-style:none;scrollbar-width:none}
 .wardrobe-shelves::-webkit-scrollbar{display:none}
 .wardrobe-scrollbar-track{position:absolute;top:8px;bottom:8px;right:4px;width:7px;background:rgba(255,255,255,.08);border-radius:4px;z-index:3;pointer-events:none}
@@ -764,7 +760,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <div class="wardrobe-spot wardrobe-spot-r"></div>
           <div class="wardrobe-glow wardrobe-glow-l"></div>
           <div class="wardrobe-glow wardrobe-glow-r"></div>
-          <div class="wardrobe-center-seam"><span></span><span></span></div>
           <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
           <div class="wardrobe-scrollbar-track" id="wardrobe-scrollbar-track">
             <div class="wardrobe-scrollbar-thumb" id="wardrobe-scrollbar-thumb"></div>
