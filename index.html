@@ -172,7 +172,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .closet-legend span{display:flex;align-items:center;gap:6px}
 .closet-legend-swatch{width:9px;height:9px;border-radius:2px}
 .wardrobe-wrap{display:flex;align-items:center;justify-content:center;gap:8px;max-width:520px;margin:0 auto}
-.wardrobe-frame{position:relative;display:flex;flex-direction:column;flex:1;max-width:400px;min-height:560px;border:10px solid #D9C7A3;border-radius:3px;background:#D9C7A3;padding:0;box-sizing:border-box;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.wardrobe-frame{position:relative;display:flex;flex-direction:column;flex:1;max-width:400px;height:min(72vh,620px);min-height:460px;border:10px solid #D9C7A3;border-radius:3px;background:#D9C7A3;padding:0;box-sizing:border-box;box-shadow:0 10px 26px rgba(0,0,0,.4)}
 .wardrobe-cornice{position:absolute;top:-6px;left:-14px;right:-14px;height:14px;background:#E4D6B8;border-radius:2px;box-shadow:0 3px 6px rgba(0,0,0,.35);z-index:3}
 .wardrobe-house-label{position:relative;z-index:3;display:block;width:fit-content;margin:14px auto 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#DCEEF5;background:rgba(8,20,38,.85);border:1px solid rgba(110,198,224,.4);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
 .wardrobe-display{position:relative;flex:1;min-height:0;background:#081426;margin:0 4px;overflow:hidden;box-shadow:inset 0 2px 10px rgba(0,0,0,.5)}
@@ -187,9 +187,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-center-seam span{position:absolute;left:50%;width:5px;height:22px;background:#C9A227;border-radius:1px;transform:translateX(-50%)}
 .wardrobe-center-seam span:first-child{top:32%}
 .wardrobe-center-seam span:last-child{top:58%}
-.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;height:100%;overflow-y:auto;padding:16px 14px}
+.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;height:100%;overflow-y:auto;padding:16px 22px 16px 14px;-ms-overflow-style:none;scrollbar-width:none}
+.wardrobe-shelves::-webkit-scrollbar{display:none}
+.wardrobe-scrollbar-track{position:absolute;top:8px;bottom:8px;right:4px;width:7px;background:rgba(255,255,255,.08);border-radius:4px;z-index:3;pointer-events:none}
+.wardrobe-scrollbar-thumb{position:absolute;left:0;right:0;top:0;background:linear-gradient(180deg,#F0E6D2,#C9A97A);border-radius:4px;min-height:24px;box-shadow:0 0 4px rgba(0,0,0,.4);pointer-events:auto;cursor:grab;touch-action:none}
+.wardrobe-scrollbar-thumb:active{cursor:grabbing}
+.wardrobe-scrollbar-track.hidden{display:none}
 .wardrobe-house-group{margin-bottom:2px}
-.wardrobe-house-sublabel-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px}
+.wardrobe-house-sublabel-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-bottom:6px}
 .wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8FC4DC;white-space:nowrap}
 .wardrobe-line-mini-btn{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px solid rgba(180,220,235,.3);background:rgba(8,20,38,.7);color:#DCEEF5;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s}
 .wardrobe-line-mini-btn:hover{background:rgba(90,180,220,.3)}
@@ -761,6 +766,9 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <div class="wardrobe-glow wardrobe-glow-r"></div>
           <div class="wardrobe-center-seam"><span></span><span></span></div>
           <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
+          <div class="wardrobe-scrollbar-track" id="wardrobe-scrollbar-track">
+            <div class="wardrobe-scrollbar-thumb" id="wardrobe-scrollbar-thumb"></div>
+          </div>
         </div>
         <div class="wardrobe-cabinet-footer">
           <div class="wardrobe-fluted-door"></div>
@@ -3910,7 +3918,67 @@ function renderWardrobeShelf(){
     +'</div>';
   });
   shelvesEl.innerHTML=html;
+  syncWardrobeScrollbar();
 }
+
+// Custom always-visible scrollbar for the shelf area — more reliable across
+// mobile browsers than relying on native scrollbar rendering, and
+// draggable directly.
+function syncWardrobeScrollbar(){
+  const shelves=document.getElementById("wardrobe-shelves");
+  const track=document.getElementById("wardrobe-scrollbar-track");
+  const thumb=document.getElementById("wardrobe-scrollbar-thumb");
+  if(!shelves||!track||!thumb)return;
+  const scrollable=shelves.scrollHeight>shelves.clientHeight+2;
+  track.classList.toggle("hidden",!scrollable);
+  if(!scrollable)return;
+  const trackH=track.clientHeight;
+  const thumbH=Math.max(24,trackH*(shelves.clientHeight/shelves.scrollHeight));
+  const maxScroll=shelves.scrollHeight-shelves.clientHeight;
+  const scrollFrac=maxScroll>0?shelves.scrollTop/maxScroll:0;
+  const thumbTop=(trackH-thumbH)*scrollFrac;
+  thumb.style.height=thumbH+"px";
+  thumb.style.top=thumbTop+"px";
+}
+(function(){
+  document.addEventListener("scroll",(e)=>{
+    if(e.target&&e.target.id==="wardrobe-shelves")syncWardrobeScrollbar();
+  },true);
+  let dragging=false,dragStartY=0,dragStartScroll=0;
+  function onDown(clientY){
+    const shelves=document.getElementById("wardrobe-shelves");
+    const track=document.getElementById("wardrobe-scrollbar-track");
+    if(!shelves||!track)return;
+    dragging=true;
+    dragStartY=clientY;
+    dragStartScroll=shelves.scrollTop;
+  }
+  function onMove(clientY){
+    if(!dragging)return;
+    const shelves=document.getElementById("wardrobe-shelves");
+    const track=document.getElementById("wardrobe-scrollbar-track");
+    if(!shelves||!track)return;
+    const trackH=track.clientHeight;
+    const maxScroll=shelves.scrollHeight-shelves.clientHeight;
+    if(maxScroll<=0)return;
+    const dy=clientY-dragStartY;
+    const scrollableTrackH=Math.max(1,trackH-24);
+    shelves.scrollTop=dragStartScroll+dy*(maxScroll/scrollableTrackH);
+  }
+  function onUp(){dragging=false;}
+  document.addEventListener("mousedown",(e)=>{
+    if(e.target&&e.target.id==="wardrobe-scrollbar-thumb")onDown(e.clientY);
+  });
+  document.addEventListener("mousemove",(e)=>onMove(e.clientY));
+  document.addEventListener("mouseup",onUp);
+  document.addEventListener("touchstart",(e)=>{
+    if(e.target&&e.target.id==="wardrobe-scrollbar-thumb"&&e.touches[0])onDown(e.touches[0].clientY);
+  },{passive:true});
+  document.addEventListener("touchmove",(e)=>{
+    if(dragging&&e.touches[0])onMove(e.touches[0].clientY);
+  },{passive:true});
+  document.addEventListener("touchend",onUp);
+})();
 
 function closetLinePage(groupIndex,direction){
   const groups=catalogEntriesForHouse(CLOSET_DETAIL_HOUSE).filter(g=>g.items.length);
