@@ -187,15 +187,12 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-center-seam span{position:absolute;left:50%;width:5px;height:22px;background:#C9A227;border-radius:1px;transform:translateX(-50%)}
 .wardrobe-center-seam span:first-child{top:32%}
 .wardrobe-center-seam span:last-child{top:58%}
-.wardrobe-line-nav{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 14px 0}
-.wardrobe-line-btn{flex-shrink:0;width:28px;height:28px;border-radius:50%;border:1px solid rgba(180,220,235,.3);background:rgba(8,20,38,.7);color:#DCEEF5;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
-.wardrobe-line-btn:hover{background:rgba(90,180,220,.25)}
-.wardrobe-line-label{flex:1;text-align:center;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8FC4DC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;height:100%;overflow-y:auto;padding:10px 14px 16px;touch-action:pan-y}
-.wardrobe-shelves.sliding-in-l{animation:shelfSlideInL .22s ease-out}
-.wardrobe-shelves.sliding-in-r{animation:shelfSlideInR .22s ease-out}
-@keyframes shelfSlideInL{from{transform:translateX(-24px);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes shelfSlideInR{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+.wardrobe-shelves{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;height:100%;overflow-y:auto;padding:16px 14px}
+.wardrobe-house-group{margin-bottom:2px}
+.wardrobe-house-sublabel-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px}
+.wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8FC4DC;white-space:nowrap}
+.wardrobe-line-mini-btn{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px solid rgba(180,220,235,.3);background:rgba(8,20,38,.7);color:#DCEEF5;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s}
+.wardrobe-line-mini-btn:hover{background:rgba(90,180,220,.3)}
 .wardrobe-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:8px 4px 14px;border-bottom:1px solid rgba(180,220,235,.35);min-height:70px}
 .wardrobe-house-group{margin-bottom:6px}
 .wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8FC4DC;padding:2px 2px 6px}
@@ -763,11 +760,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <div class="wardrobe-glow wardrobe-glow-l"></div>
           <div class="wardrobe-glow wardrobe-glow-r"></div>
           <div class="wardrobe-center-seam"><span></span><span></span></div>
-          <div class="wardrobe-line-nav" id="wardrobe-line-nav">
-            <button class="wardrobe-line-btn" onclick="closetPrevLine()" aria-label="Previous collection">‹</button>
-            <div class="wardrobe-line-label" id="wardrobe-line-label">Line (1/1)</div>
-            <button class="wardrobe-line-btn" onclick="closetNextLine()" aria-label="Next collection">›</button>
-          </div>
           <div class="wardrobe-shelves" id="wardrobe-shelves"></div>
         </div>
         <div class="wardrobe-cabinet-footer">
@@ -3880,83 +3872,61 @@ function catalogEntriesForHouse(house){
   return grouped;
 }
 
-let CLOSET_LINE_INDEX=0;
-let CLOSET_LINE_GROUPS=[];
+// Keyed by line index within the currently open house — each line/collection
+// pages through its own bottles independently, while every line stays
+// visible at once (the cabinet just scrolls vertically to see them all).
+let CLOSET_LINE_PAGES={};
 
 function renderWardrobeShelf(){
   const shelvesEl=document.getElementById("wardrobe-shelves");
   const labelEl=document.getElementById("wardrobe-house-label");
-  const lineLabelEl=document.getElementById("wardrobe-line-label");
-  const lineNavEl=document.getElementById("wardrobe-line-nav");
   if(!shelvesEl||!CLOSET_DETAIL_HOUSE)return;
   const ownedItems=CLOSET_BY_HOUSE[CLOSET_DETAIL_HOUSE]||[];
   if(labelEl)labelEl.textContent=CLOSET_DETAIL_HOUSE+" ("+ownedItems.length+")";
 
-  CLOSET_LINE_GROUPS=catalogEntriesForHouse(CLOSET_DETAIL_HOUSE).filter(g=>g.items.length);
-  if(CLOSET_LINE_GROUPS.length===0){
-    if(lineNavEl)lineNavEl.style.display="none";
+  const groups=catalogEntriesForHouse(CLOSET_DETAIL_HOUSE).filter(g=>g.items.length);
+  if(groups.length===0){
     shelvesEl.innerHTML='<div class="closet-empty">Nothing catalogued for this house yet.</div>';
     return;
-  }
-  if(CLOSET_LINE_INDEX>=CLOSET_LINE_GROUPS.length)CLOSET_LINE_INDEX=0;
-  if(CLOSET_LINE_INDEX<0)CLOSET_LINE_INDEX=CLOSET_LINE_GROUPS.length-1;
-
-  const multi=CLOSET_LINE_GROUPS.length>1;
-  if(lineNavEl)lineNavEl.style.display=multi?"":"none";
-  const group=CLOSET_LINE_GROUPS[CLOSET_LINE_INDEX];
-  if(lineLabelEl){
-    lineLabelEl.textContent=(group.line||"Collection")+(multi?" ("+(CLOSET_LINE_INDEX+1)+"/"+CLOSET_LINE_GROUPS.length+")":"");
   }
 
   const perShelf=4;
   let html="";
-  for(let i=0;i<group.items.length;i+=perShelf){
-    const chunk=group.items.slice(i,i+perShelf);
-    html+='<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>';
-  }
+  groups.forEach((g,gi)=>{
+    const totalPages=Math.max(1,Math.ceil(g.items.length/perShelf));
+    let page=CLOSET_LINE_PAGES[gi]||0;
+    if(page>=totalPages)page=totalPages-1;
+    if(page<0)page=0;
+    CLOSET_LINE_PAGES[gi]=page;
+    const chunk=g.items.slice(page*perShelf,(page+1)*perShelf);
+    const multi=totalPages>1;
+    html+='<div class="wardrobe-house-group">'
+      +'<div class="wardrobe-house-sublabel-row">'
+        +(multi?'<button class="wardrobe-line-mini-btn" onclick="closetLinePage('+gi+',-1)" aria-label="Previous page">‹</button>':"")
+        +'<span class="wardrobe-house-sublabel">'+(g.line||"Collection")+(multi?" ("+(page+1)+"/"+totalPages+")":"")+'</span>'
+        +(multi?'<button class="wardrobe-line-mini-btn" onclick="closetLinePage('+gi+',1)" aria-label="Next page">›</button>':"")
+      +'</div>'
+      +'<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>'
+    +'</div>';
+  });
   shelvesEl.innerHTML=html;
 }
 
-function closetGoToLine(index,direction){
-  if(CLOSET_LINE_GROUPS.length<2)return;
-  CLOSET_LINE_INDEX=(index+CLOSET_LINE_GROUPS.length)%CLOSET_LINE_GROUPS.length;
+function closetLinePage(groupIndex,direction){
+  const groups=catalogEntriesForHouse(CLOSET_DETAIL_HOUSE).filter(g=>g.items.length);
+  const g=groups[groupIndex];
+  if(!g)return;
+  const totalPages=Math.max(1,Math.ceil(g.items.length/4));
+  let page=(CLOSET_LINE_PAGES[groupIndex]||0)+direction;
+  page=(page+totalPages)%totalPages;
+  CLOSET_LINE_PAGES[groupIndex]=page;
   renderWardrobeShelf();
-  const shelvesEl=document.getElementById("wardrobe-shelves");
-  if(shelvesEl&&direction){
-    shelvesEl.classList.remove("sliding-in-l","sliding-in-r");
-    void shelvesEl.offsetWidth; // restart animation
-    shelvesEl.classList.add(direction>0?"sliding-in-r":"sliding-in-l");
-  }
 }
-function closetPrevLine(){closetGoToLine(CLOSET_LINE_INDEX-1,-1);}
-function closetNextLine(){closetGoToLine(CLOSET_LINE_INDEX+1,1);}
-
-// Swipe support: left/right drag on the shelf area moves between lines
-(function(){
-  let touchStartX=null,touchStartY=null;
-  document.addEventListener("touchstart",(e)=>{
-    const shelves=e.target.closest&&e.target.closest("#wardrobe-shelves");
-    if(!shelves||!e.touches||!e.touches[0])return;
-    touchStartX=e.touches[0].clientX;
-    touchStartY=e.touches[0].clientY;
-  },{passive:true});
-  document.addEventListener("touchend",(e)=>{
-    if(touchStartX===null)return;
-    const t=e.changedTouches&&e.changedTouches[0];
-    if(!t){touchStartX=null;return;}
-    const dx=t.clientX-touchStartX;
-    const dy=t.clientY-touchStartY;
-    touchStartX=null;
-    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){
-      if(dx<0)closetNextLine();else closetPrevLine();
-    }
-  },{passive:true});
-})();
 
 function openHouseCabinet(house){
   CLOSET_DETAIL_HOUSE=house;
   CLOSET_VIEW="detail";
-  CLOSET_LINE_INDEX=0;
+  CLOSET_LINE_PAGES={};
   applyClosetView();
   renderWardrobeShelf();
   // Fetch real notes for everything shown in this cabinet (catalog +
