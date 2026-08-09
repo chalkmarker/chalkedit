@@ -190,7 +190,11 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-scrollbar-thumb:active{cursor:grabbing}
 .wardrobe-scrollbar-track.hidden{display:none}
 .wardrobe-house-group{margin-bottom:2px}
-.wardrobe-house-sublabel-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-bottom:6px}
+.wardrobe-house-sublabel-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.wardrobe-verify-btn{margin-left:auto;flex-shrink:0;font-size:9px;letter-spacing:.03em;padding:4px 8px;border-radius:6px;border:1px solid rgba(143,196,140,.5);background:rgba(143,196,140,.12);color:#9FD89C;cursor:pointer;font-family:inherit;transition:background .15s}
+.wardrobe-verify-btn:hover{background:rgba(143,196,140,.25)}
+.wardrobe-verify-btn:disabled{opacity:.6;cursor:default}
+.wardrobe-verify-done{margin-left:auto;flex-shrink:0;font-size:10px;color:#7FB87C;opacity:.7}
 .wardrobe-house-sublabel{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8FC4DC;white-space:nowrap}
 .wardrobe-line-mini-btn{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px solid rgba(180,220,235,.3);background:rgba(8,20,38,.7);color:#DCEEF5;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s}
 .wardrobe-line-mini-btn:hover{background:rgba(90,180,220,.3)}
@@ -3888,6 +3892,7 @@ function renderWardrobeShelf(){
   if(labelEl)labelEl.textContent=CLOSET_DETAIL_HOUSE+" ("+ownedItems.length+")";
 
   const groups=catalogEntriesForHouse(CLOSET_DETAIL_HOUSE).filter(g=>g.items.length);
+  CLOSET_CURRENT_GROUPS=groups;
   if(groups.length===0){
     shelvesEl.innerHTML='<div class="closet-empty">Nothing catalogued for this house yet.</div>';
     return;
@@ -3903,11 +3908,15 @@ function renderWardrobeShelf(){
     CLOSET_LINE_PAGES[gi]=page;
     const chunk=g.items.slice(page*perShelf,(page+1)*perShelf);
     const multi=totalPages>1;
+    const unverifiedCount=g.items.filter(it=>!VERIFIED_NOTES[verifiedNotesKey(it.house,it.name)]).length;
     html+='<div class="wardrobe-house-group">'
       +'<div class="wardrobe-house-sublabel-row">'
         +(multi?'<button class="wardrobe-line-mini-btn" onclick="closetLinePage('+gi+',-1)" aria-label="Previous page">‹</button>':"")
         +'<span class="wardrobe-house-sublabel">'+(g.line||"Collection")+(multi?" ("+(page+1)+"/"+totalPages+")":"")+'</span>'
         +(multi?'<button class="wardrobe-line-mini-btn" onclick="closetLinePage('+gi+',1)" aria-label="Next page">›</button>':"")
+        +(unverifiedCount>0
+          ?'<button class="wardrobe-verify-btn" data-group-index="'+gi+'" onclick="closetVerifyLine('+gi+')" title="Look up real notes for this collection">✓ Verify ('+unverifiedCount+')</button>'
+          :'<span class="wardrobe-verify-done" title="All verified">✓</span>')
       +'</div>'
       +'<div class="wardrobe-shelf">'+chunk.map(bottleCardHtml).join("")+'</div>'
     +'</div>';
@@ -3915,6 +3924,17 @@ function renderWardrobeShelf(){
   shelvesEl.innerHTML=html;
   syncWardrobeScrollbar();
 }
+
+let CLOSET_CURRENT_GROUPS=[];
+async function closetVerifyLine(groupIndex){
+  const g=CLOSET_CURRENT_GROUPS[groupIndex];
+  if(!g)return;
+  const btn=document.querySelector('.wardrobe-verify-btn[data-group-index="'+groupIndex+'"]');
+  if(btn){btn.disabled=true;btn.textContent="Verifying…";}
+  await ensureVerifiedNotes(g.items);
+  renderWardrobeShelf();
+}
+
 
 // Custom always-visible scrollbar for the shelf area — more reliable across
 // mobile browsers than relying on native scrollbar rendering, and
@@ -3992,10 +4012,8 @@ function openHouseCabinet(house){
   CLOSET_LINE_PAGES={};
   applyClosetView();
   renderWardrobeShelf();
-  // Fetch real notes for everything shown in this cabinet (catalog +
-  // owned/wishlisted), not just what you actually own
-  const allForHouse=catalogEntriesForHouse(house).flatMap(g=>g.items);
-  ensureVerifiedNotes(allForHouse);
+  // Note: no automatic catalog-wide verification here — that costs real API
+  // calls, so it only runs when you tap "Verify" on a specific line/collection.
 }
 
 function closetBack(){
