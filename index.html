@@ -1343,9 +1343,18 @@ function setFilter(f){currentFilter=f;renderCollection();}
 
 // ── MONTHS PAST ──
 // ── WEAR LOG ──
+// Guards against any malformed date key in /logs (e.g. leftover bad data
+// from early testing) ever showing up as the literal text "Invalid Date" —
+// falls back to just showing the raw key so it's obvious something's off
+// without looking broken.
+function formatLogDate(dateStr,opts){
+  const dt=new Date(dateStr+"T00:00:00");
+  if(isNaN(dt.getTime()))return dateStr;
+  return dt.toLocaleDateString(undefined,opts);
+}
 async function renderWearLog(){
   const logs=await fbGet("/logs")||{};
-  const dates=Object.keys(logs).sort().reverse();
+  const dates=Object.keys(logs).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort().reverse();
   const body=document.getElementById("wearlog-body");
   if(dates.length===0){
     body.innerHTML='<div class="wearlog-empty">No wear logs yet — log what you wore from Today\'s Pick to start building history here.</div>';
@@ -1354,7 +1363,7 @@ async function renderWearLog(){
   body.innerHTML=dates.map(d=>{
     const entry=logs[d];
     const worn=entry.worn||[];
-    const label=new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+    const label=formatLogDate(d,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
     const fragHtml=worn.map(id=>{
       const f=FRAGS.find(fr=>fr.id===id);
       return f
@@ -1495,7 +1504,7 @@ async function renderMonthDetail(key){
   }else{
     listHtml=monthEntries.slice().reverse().map(([d,entry])=>{
       const worn=entry.worn||[];
-      const dLabel=new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+      const dLabel=formatLogDate(d,{weekday:"short",month:"short",day:"numeric"});
       const fragHtml=worn.map(id=>{
         const f=FRAGS.find(fr=>fr.id===id);
         return f
