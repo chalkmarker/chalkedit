@@ -943,8 +943,40 @@ const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
 let FRAGS=[],acquired={},wishlist={},customFrags={},logSelected={},weatherData=null,currentFilter="all",currentMonthKey=null,pageHistory=["menu"];
 
 // ── FIREBASE ──
-async function fbGet(path){try{const r=await fetch(FB+path+".json");return await r.json();}catch(e){return null;}}
-async function fbSet(path,data){try{await fetch(FB+path+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});}catch(e){}}
+// Anonymous auth via Firebase's REST API directly (no SDK loaded, matching
+// the rest of this app's plain-fetch approach). Runs once on load, silently
+// — no login screen, nothing the user sees. The resulting token is attached
+// to every read/write so the database can require "auth != null" instead of
+// being open to the whole internet.
+const FIREBASE_API_KEY="AIzaSyBzjIEKfEQw7zGq6J44nonOLIzdQZsszgI";
+let FB_AUTH_TOKEN=null;
+let FB_AUTH_READY=null;
+async function signInAnon(){
+  try{
+    const r=await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FIREBASE_API_KEY,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({returnSecureToken:true}),
+    });
+    const data=await r.json();
+    if(data&&data.idToken)FB_AUTH_TOKEN=data.idToken;
+  }catch(e){
+    // If this fails, requests just go out unauthenticated — fine as long as
+    // the database rules haven't been switched to require auth yet.
+  }
+}
+FB_AUTH_READY=signInAnon();
+function fbUrl(path){
+  return FB+path+".json"+(FB_AUTH_TOKEN?"?auth="+FB_AUTH_TOKEN:"");
+}
+async function fbGet(path){
+  await FB_AUTH_READY;
+  try{const r=await fetch(fbUrl(path));return await r.json();}catch(e){return null;}
+}
+async function fbSet(path,data){
+  await FB_AUTH_READY;
+  try{await fetch(fbUrl(path),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});}catch(e){}
+}
 
 // ── INIT ──
 (async()=>{
