@@ -4043,23 +4043,8 @@ function applyClosetView(){
 }
 
 function renderCloset(){
-  const body=document.getElementById("closet-body");
-  const gal=document.getElementById("wardrobe-gallery");
   const legend=document.querySelector("#closet .closet-legend");
   const entries=closetEntries();
-  if(entries.length===0){
-    if(gal)gal.style.display="none";
-    if(legend)legend.style.display="none";
-    let empty=document.getElementById("closet-empty-msg");
-    if(!empty){
-      empty=document.createElement("div");
-      empty.id="closet-empty-msg";
-      empty.className="closet-empty";
-      empty.textContent="Nothing on the shelf yet — add a fragrance or wishlist one to see it here.";
-      body.appendChild(empty);
-    }
-    return;
-  }
   const existingEmpty=document.getElementById("closet-empty-msg");
   if(existingEmpty)existingEmpty.remove();
   if(legend)legend.style.display="";
