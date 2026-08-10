@@ -362,14 +362,20 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 
 /* ── MONTH DETAIL (calendar) ── */
 .monthdetail-body{padding:16px}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:22px}
-.cal-dow{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);text-align:center;padding:4px 0 8px}
-.cal-day{aspect-ratio:1/1;border:1px solid var(--border);border-radius:8px;padding:3px 4px;display:flex;flex-direction:column;overflow:hidden;background:var(--card)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:22px}
+.cal-dow{font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);text-align:center;padding:2px 0 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.cal-day{position:relative;aspect-ratio:1/1;border:1px solid var(--border);border-radius:10px;padding:5px 6px;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(160deg,var(--card),rgba(0,0,0,.12));transition:transform .12s,border-color .12s}
+.cal-day.clickable{cursor:pointer}
+.cal-day.clickable:hover{border-color:var(--gold2);transform:translateY(-1px)}
 .cal-day.empty{border-color:transparent;background:transparent}
-.cal-day.has-log{border-color:var(--gold2);background:rgba(212,176,122,0.08)}
-.cal-day-num{font-size:9px;color:var(--t3);margin-bottom:2px}
-.cal-day.has-log .cal-day-num{color:var(--gold);font-weight:600}
-.cal-day-frag{font-size:7.5px;line-height:1.15;color:var(--t1);overflow:hidden}
+.cal-day.has-log{border-color:var(--gold2);background:linear-gradient(160deg,rgba(212,176,122,0.14),rgba(212,176,122,0.04));box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.cal-day.has-log:hover{transform:translateY(-2px);border-color:var(--gold)}
+.cal-day.is-today{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.cal-day-num{font-size:10px;font-weight:600;color:var(--t3);margin-bottom:3px}
+.cal-day.has-log .cal-day-num{color:var(--gold);font-weight:700}
+.cal-day.is-today .cal-day-num{color:var(--gold)}
+.cal-day.is-today .cal-day-num::after{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--gold);margin-left:4px;vertical-align:middle}
+.cal-day-frag{font-size:7.5px;line-height:1.25;color:var(--t1);overflow:hidden}
 .monthdetail-list-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
 .month-title{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:12px}
 .month-stat{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -889,7 +895,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 <div class="modal-overlay" id="log-modal" onclick="closeLogModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">What did you wear today?</div>
+    <div class="modal-title" id="log-modal-title">What did you wear today?</div>
     <div class="modal-sub">Select all that apply</div>
     <div id="log-list"></div>
     <div class="log-other">
@@ -1189,10 +1195,26 @@ async function renderPick(surprise=false){
 function renderSurprise(){renderPick(true);}
 
 // ── LOG MODAL ──
-function openLogModal(){
+let LOG_TARGET_DATE=null;
+async function openLogModal(dateKey){
+  LOG_TARGET_DATE=dateKey||new Date().toISOString().split("T")[0];
+  const todayKey=new Date().toISOString().split("T")[0];
+  const titleEl=document.getElementById("log-modal-title");
+  if(titleEl){
+    if(LOG_TARGET_DATE===todayKey){
+      titleEl.textContent="What did you wear today?";
+    }else{
+      const dLabel=formatLogDate(LOG_TARGET_DATE,{weekday:"long",month:"long",day:"numeric"});
+      titleEl.textContent="What did you wear on "+dLabel+"?";
+    }
+  }
   const acqIds=Object.keys(acquired).filter(id=>acquired[id]);
   const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id));
+  // Pre-fill from any existing entry for this date, so re-opening a
+  // logged day lets you edit it instead of starting blank.
+  const existing=await fbGet("/logs/"+LOG_TARGET_DATE);
   logSelected={};
+  (existing&&existing.worn||[]).forEach(id=>{logSelected[id]=true;});
   const list=document.getElementById("log-list");
   list.innerHTML=acqFrags.map(f=>
     '<div class="log-item" id="log-'+f.id+'" onclick="toggleLog(\''+f.id+'\')">'
@@ -1200,7 +1222,16 @@ function openLogModal(){
       +'<div class="log-check" id="logck-'+f.id+'"></div>'
     +'</div>'
   ).join("");
-  document.getElementById("log-other-input").value="";
+  // Reflect pre-selected items visually
+  Object.keys(logSelected).forEach(id=>{
+    if(!logSelected[id])return;
+    const ck=document.getElementById("logck-"+id);
+    if(ck){
+      ck.classList.add("checked");
+      ck.innerHTML='<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+  });
+  document.getElementById("log-other-input").value=existing&&existing.other?existing.other:"";
   document.getElementById("log-modal").classList.add("open");
 }
 
@@ -1268,12 +1299,15 @@ async function confirmLog(){
   const worn=Object.keys(logSelected).filter(id=>logSelected[id]);
   const other=document.getElementById("log-other-input").value.trim();
   if(worn.length===0&&!other){showToast("Select at least one");return;}
-  const today=new Date().toISOString().split("T")[0];
+  const targetDate=LOG_TARGET_DATE||new Date().toISOString().split("T")[0];
   const entry={worn:worn};
   if(other)entry.other=other;;
-  await fbSet("/logs/"+today,entry);
+  await fbSet("/logs/"+targetDate,entry);
   document.getElementById("log-modal").classList.remove("open");
   showToast("Logged ✓");
+  if(currentMonthKey&&targetDate.startsWith(currentMonthKey)){
+    renderMonthDetail(currentMonthKey);
+  }
 }
 
 // ── COLLECTION ──
@@ -1479,6 +1513,7 @@ async function renderMonthDetail(key){
   const daysInMonth=new Date(y,mo,0).getDate();
   const firstDow=new Date(y,mo-1,1).getDay();
   const dowLabels=["S","M","T","W","T","F","S"];
+  const todayKey=new Date().toISOString().split("T")[0];
 
   let gridHtml='<div class="cal-grid">'+dowLabels.map(d=>'<div class="cal-dow">'+d+'</div>').join("");
   for(let i=0;i<firstDow;i++){gridHtml+='<div class="cal-day empty"></div>';}
@@ -1491,7 +1526,10 @@ async function renderMonthDetail(key){
       return f?f.name:id;
     });
     const hasLog=worn.length>0||(entry&&entry.other);
-    gridHtml+='<div class="cal-day'+(hasLog?" has-log":"")+'">'
+    const isToday=dateKey===todayKey;
+    const isPastOrToday=dateKey<=todayKey;
+    gridHtml+='<div class="cal-day'+(hasLog?" has-log":"")+(isToday?" is-today":"")+(isPastOrToday?" clickable":"")+'"'
+      +(isPastOrToday?' onclick="openLogModal(\''+dateKey+'\')"':"")+'>'
       +'<div class="cal-day-num">'+day+'</div>'
       +(names.length?'<div class="cal-day-frag">'+names.join(", ")+'</div>':"")
     +'</div>';
@@ -4300,6 +4338,15 @@ function enterApp(){
         menu.style.transform="translateY(0)";
       });
     });
+    // Once the entrance animation finishes, clear these inline styles —
+    // otherwise they permanently override the .page.hidden class rule on
+    // every later goTo() call, leaving #menu stuck visible (just
+    // non-interactive) behind every other page for the rest of the session.
+    setTimeout(()=>{
+      menu.style.opacity="";
+      menu.style.transform="";
+      menu.style.transition="";
+    },450);
   },450);
   pageHistory=["menu"];
   setTimeout(showSprayWarning,900);
@@ -4318,6 +4365,9 @@ function performBackToCover(){
   menu.style.transform="translateY(12px)";
   setTimeout(()=>{
     menu.classList.add("hidden");
+    menu.style.opacity="";
+    menu.style.transform="";
+    menu.style.transition="";
     cover.style.display="flex";
     cover.style.pointerEvents="auto";
     requestAnimationFrame(()=>{
@@ -4327,6 +4377,11 @@ function performBackToCover(){
         cover.style.transform="scale(1)";
       });
     });
+    setTimeout(()=>{
+      cover.style.opacity="";
+      cover.style.transform="";
+      cover.style.transition="";
+    },550);
   },400);
 }
 
