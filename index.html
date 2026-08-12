@@ -4545,6 +4545,7 @@ const MODEL_URL = "images/cabinet.glb";
 let glbScene = null;
 let cabinetTemplates = null;   // {beige, brown} — Object3D, potions stripped
 let potionTemplates = null;    // {potion, super_potion, hyper_potion, max_potion}
+let furnitureNodes = [];       // decor set (rug/sofa/chairs/table/plants/magazines), if present
 let gallery3D = null;          // active scene/camera/renderer state, once initialized
 
 // Builds a repeating wood-plank floor texture using the exact 4 wood tones
@@ -4616,6 +4617,13 @@ async function ensureModelLoaded(){
     };
     window.potionModelReady = !!(potionTemplates.potion && potionTemplates.super_potion && potionTemplates.hyper_potion && potionTemplates.max_potion);
     if(window.potionModelReady && window.renderWardrobeShelf) window.renderWardrobeShelf();
+    // Optional decor set (rug, sofa, chairs, coffee table, plants,
+    // magazines) — present in newer versions of the model; older ones
+    // without it just skip this, no error.
+    const FURNITURE_NAMES = ["area_rug","sofa","lounge_chair_left","lounge_chair_right","coffee_table","plant_tall_left","plant_tall_right","magazines"];
+    furnitureNodes = FURNITURE_NAMES
+      .map(name=>glbScene.getObjectByName(name))
+      .filter(Boolean);
     return true;
   }catch(err){
     console.warn("3D cabinet model failed to load, falling back to 2D:",err);
@@ -4651,7 +4659,6 @@ async function render3DGallery(container, houseData){
     const width = wrap.clientWidth || 400, height = wrap.clientHeight || 480;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x171009);
-    scene.fog = new THREE.Fog(0x171009, 8, 20);
 
     const camera = new THREE.PerspectiveCamera(35, width/height, 0.05, 60);
     const camRig = new THREE.Group();
@@ -4660,11 +4667,11 @@ async function render3DGallery(container, houseData){
     camRig.add(camera);
     scene.add(camRig);
 
-    scene.add(new THREE.AmbientLight(0xfff2e0, 0.75));
-    const dir = new THREE.DirectionalLight(0xfff2e0, 1.1);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
     dir.position.set(4,7,3);
     scene.add(dir);
-    const fill = new THREE.DirectionalLight(0x6699cc, 0.3);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.4);
     fill.position.set(-4,3,-3);
     scene.add(fill);
 
@@ -4673,6 +4680,7 @@ async function render3DGallery(container, houseData){
     const floor = new THREE.Mesh(floorGeo,floorMat);
     floor.rotation.x = -Math.PI/2;
     scene.add(floor);
+
 
     const renderer = new THREE.WebGLRenderer({canvas,antialias:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
@@ -4683,7 +4691,7 @@ async function render3DGallery(container, houseData){
 
     gallery3D = {
       scene, camera, camRig, renderer, labelRenderer, wrap, canvas,
-      instances: [], raycaster: new THREE.Raycaster(),
+      instances: [], furnitureInstances: [], raycaster: new THREE.Raycaster(),
       panBoundX: 6, panBoundZ: 6, floorY: 0,
       baseCameraOffset: camera.position.clone(), zoomDist: 1, minZoom: 0.4, maxZoom: 2.5,
     };
@@ -4722,28 +4730,75 @@ function layoutCabinets(houseData){
     if(inst.label && inst.label.element) inst.label.element.remove();
   });
   g.instances = [];
+  (g.furnitureInstances||[]).forEach(f=>g.scene.remove(f));
+  g.furnitureInstances = [];
 
-  const cols = Math.max(4, Math.ceil(Math.sqrt(houseData.length*1.4)));
   const spacingX = 1.7, spacingZ = 1.5;
-  const rows = Math.ceil(houseData.length/cols);
+  // Reserve a few grid slots for furniture instead of a cabinet — the dead
+  // center slot is mandatory, plus two more spread through the grid so
+  // there's furniture nestled between cabinets elsewhere too, not just in
+  // the middle.
+  const NUM_FURNITURE_SLOTS = 3;
+  const totalSlots = houseData.length + NUM_FURNITURE_SLOTS;
+  const cols = Math.max(4, Math.ceil(Math.sqrt(totalSlots*1.4)));
+  const rows = Math.ceil(totalSlots/cols);
+
+  const centerIdx = Math.floor(rows/2)*cols + Math.floor(cols/2);
+  const idxA = Math.floor(rows*0.28)*cols + Math.floor(cols*0.28);
+  const idxB = Math.floor(rows*0.72)*cols + Math.floor(cols*0.72);
+  const reserved = [...new Set([centerIdx, idxA, idxB])];
+
   // Rotates every cabinet to face the camera. I can't preview the exact
   // angle from here — if it's facing the wrong way, this is the one number
   // to change (try Math.PI/2 or -Math.PI/2 if 180° isn't it).
   const FACE_ROTATION_Y = Math.PI/4; // was 180°, rotated 135° clockwise from there
 
-  houseData.forEach((hd,i)=>{
-    const col = i % cols, row = Math.floor(i/cols);
+  // Deterministic per-house scatter — seeded from the house name so it's
+  // stable across re-renders. This nudges each cabinet's POSITION off the
+  // perfect grid point (not its facing direction), same idea as the
+  // earlier 2D scattered-cluster layout — alphabetical order is still
+  // exactly preserved (houses fill remaining slots in order, skipping the
+  // reserved ones), only the exact spot within each grid slot varies.
+  function seededUnit(str){
+    let h=0;
+    for(let i=0;i<str.length;i++){h=(h<<5)-h+str.charCodeAt(i);h|=0;}
+    return (Math.abs(h)%1000)/1000; // 0..1
+  }
+
+  let houseCursor = 0;
+  for(let slot=0; slot<totalSlots; slot++){
+    const col = slot % cols, row = Math.floor(slot/cols);
+    const worldX = (col-(cols-1)/2) * spacingX;
+    const worldZ = (row-(rows-1)/2) * spacingZ;
+
+    if(reserved.includes(slot)){
+      if(furnitureNodes.length){
+        const furnitureGroup = new THREE.Group();
+        furnitureNodes.forEach(n=>furnitureGroup.add(n.clone(true)));
+        furnitureGroup.rotation.y = FACE_ROTATION_Y;
+        const fbox = new THREE.Box3().setFromObject(furnitureGroup);
+        furnitureGroup.position.set(worldX, -fbox.min.y, worldZ);
+        g.scene.add(furnitureGroup);
+        g.furnitureInstances.push(furnitureGroup);
+      }
+      continue;
+    }
+
+    const hd = houseData[houseCursor++];
+    if(!hd) continue;
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
     obj.rotation.y = FACE_ROTATION_Y;
+    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.55;
+    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.55;
 
     // Runtime bounding-box alignment: rather than hand-guessing the
     // model's internal origin convention, measure it and sit the cabinet's
     // actual bottom exactly on the floor plane every time.
     const box = new THREE.Box3().setFromObject(obj);
     const bottomY = box.min.y;
-    obj.position.x = (col - (cols-1)/2) * spacingX;
-    obj.position.z = (row - (rows-1)/2) * spacingZ;
+    obj.position.x = worldX + jitterX;
+    obj.position.z = worldZ + jitterZ;
     obj.position.y = -bottomY;
     g.scene.add(obj);
 
@@ -4757,7 +4812,7 @@ function layoutCabinets(houseData){
     obj.add(label);
 
     g.instances.push({house: hd.house, object: obj, label});
-  });
+  }
 
   // Keep pan bounds roughly matching the actual layout size
   g.panBoundX = Math.max(3, (cols*spacingX)/2 + 1);
