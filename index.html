@@ -213,7 +213,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-gallery{position:relative;padding:0;background-color:#171009}
 .wardrobe-gallery.fallback-2d{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px}
 .gallery3d-wrap{position:relative;width:100%;min-height:320px;background:#171009;overflow:hidden;touch-action:none}
-#gallery3d-canvas{display:block;width:100%;height:100%;cursor:grab}
+#gallery3d-canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
 #gallery3d-canvas:active{cursor:grabbing}
 .gallery3d-labels{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
 .gallery3d-label{transform:translate(-50%,-100%);pointer-events:none;text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap}
@@ -4648,6 +4648,7 @@ async function render3DGallery(container, houseData){
       scene, camera, camRig, renderer, labelRenderer, wrap, canvas,
       instances: [], raycaster: new THREE.Raycaster(),
       panBoundX: 6, panBoundZ: 6, floorY: 0,
+      baseCameraOffset: camera.position.clone(), zoomDist: 1, minZoom: 0.4, maxZoom: 2.5,
     };
 
     setupDragPan();
@@ -4726,30 +4727,87 @@ function layoutCabinets(houseData){
   g.panBoundZ = Math.max(3, (rows*spacingZ)/2 + 1);
 }
 
+function applyZoom(g,newDist){
+  g.zoomDist = Math.max(g.minZoom, Math.min(g.maxZoom, newDist));
+  g.camera.position.copy(g.baseCameraOffset).multiplyScalar(g.zoomDist);
+}
+
 function setupDragPan(){
   const g = gallery3D;
+  // Derive the camera's actual on-screen "right" and "forward" directions
+  // (flattened onto the ground plane) from its real world orientation,
+  // instead of assuming the camera lines up with the world X/Z axes. The
+  // camera sits at a diagonal angle, so without this, a straight vertical
+  // drag ends up moving the world diagonally instead of straight.
+  const camQuat = new THREE.Quaternion();
+  g.camera.getWorldQuaternion(camQuat);
+  const panRight = new THREE.Vector3(1,0,0).applyQuaternion(camQuat);
+  panRight.y = 0; panRight.normalize();
+  const panForward = new THREE.Vector3(0,0,-1).applyQuaternion(camQuat);
+  panForward.y = 0; panForward.normalize();
+
   let dragging=false, lastX=0, lastY=0, moved=0;
+  const activePointers = new Map();
+  let pinchStartDist=null, pinchStartZoom=1;
+
+  function panBy(dx,dy){
+    const scale = 0.012;
+    g.camRig.position.addScaledVector(panRight, -dx*scale);
+    g.camRig.position.addScaledVector(panForward, -dy*scale);
+    g.camRig.position.x = Math.max(-g.panBoundX, Math.min(g.panBoundX, g.camRig.position.x));
+    g.camRig.position.z = Math.max(-g.panBoundZ, Math.min(g.panBoundZ, g.camRig.position.z));
+  }
+
   g.canvas.addEventListener("pointerdown",(e)=>{
-    dragging=true; moved=0; lastX=e.clientX; lastY=e.clientY;
+    activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     try{g.canvas.setPointerCapture(e.pointerId);}catch(err){}
+    if(activePointers.size===1){
+      dragging=true; moved=0; lastX=e.clientX; lastY=e.clientY;
+    }else if(activePointers.size===2){
+      dragging=false; // a 2nd finger means pinch-zoom, not pan
+      const pts=[...activePointers.values()];
+      pinchStartDist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      pinchStartZoom=g.zoomDist;
+    }
   });
+
   g.canvas.addEventListener("pointermove",(e)=>{
+    if(!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+    if(activePointers.size>=2){
+      const pts=[...activePointers.values()];
+      const dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      if(pinchStartDist){
+        // fingers spreading apart (dist grows) = zoom in = smaller distance value
+        applyZoom(g, pinchStartZoom*(pinchStartDist/dist));
+      }
+      return;
+    }
     if(!dragging) return;
     const dx=e.clientX-lastX, dy=e.clientY-lastY;
     moved += Math.abs(dx)+Math.abs(dy);
     lastX=e.clientX; lastY=e.clientY;
-    g.camRig.position.x -= dx*0.012;
-    g.camRig.position.z -= dy*0.012;
-    g.camRig.position.x = Math.max(-g.panBoundX, Math.min(g.panBoundX, g.camRig.position.x));
-    g.camRig.position.z = Math.max(-g.panBoundZ, Math.min(g.panBoundZ, g.camRig.position.z));
+    panBy(dx,dy);
   });
-  function endDrag(e){
-    if(!dragging) return;
-    dragging=false;
-    if(moved < 6 && e.clientX!==undefined) handleClick(e);
+
+  function releasePointer(e){
+    activePointers.delete(e.pointerId);
+    if(activePointers.size<2) pinchStartDist=null;
+    if(activePointers.size===0) dragging=false;
   }
-  g.canvas.addEventListener("pointerup",endDrag);
-  g.canvas.addEventListener("pointercancel",()=>{dragging=false;});
+  g.canvas.addEventListener("pointerup",(e)=>{
+    const wasDragging=dragging;
+    releasePointer(e);
+    if(wasDragging && moved<6 && e.clientX!==undefined) handleClick(e);
+  });
+  g.canvas.addEventListener("pointercancel",releasePointer);
+
+  // Scroll wheel zoom (desktop) — scroll down/away = zoom out
+  g.canvas.addEventListener("wheel",(e)=>{
+    e.preventDefault();
+    applyZoom(g, g.zoomDist + e.deltaY*0.0012);
+  },{passive:false});
 }
 
 function handleClick(e){
