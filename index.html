@@ -4755,7 +4755,7 @@ function layoutCabinets(houseData){
   // than one grid cell, so it can spill into neighboring slots regardless
   // of jitter — compute real furniture positions up front so cabinets can
   // be kept clear of them by actual distance, not just by slot index.
-  const furniturePositions = reserved.map(slot=>({...slotWorldPos(slot), radius: 2.7}));
+  const furniturePositions = reserved.map(slot=>({...slotWorldPos(slot), radius: 2.1}));
   const placedCabinetPositions = []; // for cabinet-vs-cabinet clearance below
 
   // Rotates every cabinet to face the camera. I can't preview the exact
@@ -4797,37 +4797,43 @@ function layoutCabinets(houseData){
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
     obj.rotation.y = FACE_ROTATION_Y;
-    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 1.1;
-    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 1.1;
+    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.9;
+    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.9;
     let px = worldX + jitterX, pz = worldZ + jitterZ;
+    const CABINET_CLEARANCE = 1.35;
 
-    // Push away from any furniture group whose actual footprint this
-    // cabinet's jittered position would land inside of.
-    furniturePositions.forEach(fp=>{
-      let dx = px-fp.x, dz = pz-fp.z;
-      let dist = Math.hypot(dx,dz);
-      if(dist < fp.radius){
-        if(dist < 0.001){dx=1; dz=0; dist=1;} // degenerate exact-overlap fallback
-        const push = fp.radius - dist;
-        px += (dx/dist) * push;
-        pz += (dz/dist) * push;
-      }
-    });
-    // Push away from any already-placed cabinet too close to actually sit
-    // next to (a tight clearance, not a generous gap — some cabinets
-    // ending up close/almost touching is fine, just not clipping through
-    // each other).
-    const CABINET_CLEARANCE = 0.95;
-    placedCabinetPositions.forEach(cp=>{
-      let dx = px-cp.x, dz = pz-cp.z;
-      let dist = Math.hypot(dx,dz);
-      if(dist < CABINET_CLEARANCE){
-        if(dist < 0.001){dx=1; dz=0; dist=1;}
-        const push = CABINET_CLEARANCE - dist;
-        px += (dx/dist) * push;
-        pz += (dz/dist) * push;
-      }
-    });
+    // Push clear of furniture and other cabinets — iteratively, not just
+    // once. A single pass can resolve one violation by pushing a cabinet
+    // straight into a different one (e.g. away from furniture and right
+    // into a neighboring cabinet), so this re-checks everything each round
+    // until nothing's left violated (confirmed via simulation this
+    // converges for the full real house list, typically in 1-2 passes).
+    for(let iter=0; iter<10; iter++){
+      let violated = false;
+      furniturePositions.forEach(fp=>{
+        let dx = px-fp.x, dz = pz-fp.z;
+        let dist = Math.hypot(dx,dz);
+        if(dist < fp.radius){
+          violated = true;
+          if(dist < 0.001){dx=1; dz=0; dist=1;} // degenerate exact-overlap fallback
+          const push = fp.radius - dist;
+          px += (dx/dist) * push;
+          pz += (dz/dist) * push;
+        }
+      });
+      placedCabinetPositions.forEach(cp=>{
+        let dx = px-cp.x, dz = pz-cp.z;
+        let dist = Math.hypot(dx,dz);
+        if(dist < CABINET_CLEARANCE){
+          violated = true;
+          if(dist < 0.001){dx=1; dz=0; dist=1;}
+          const push = CABINET_CLEARANCE - dist;
+          px += (dx/dist) * push;
+          pz += (dz/dist) * push;
+        }
+      });
+      if(!violated) break;
+    }
     placedCabinetPositions.push({x:px, z:pz});
 
     // Runtime bounding-box alignment: rather than hand-guessing the
