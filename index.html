@@ -4733,7 +4733,7 @@ function layoutCabinets(houseData){
   (g.furnitureInstances||[]).forEach(f=>g.scene.remove(f));
   g.furnitureInstances = [];
 
-  const spacingX = 1.7, spacingZ = 1.5;
+  const spacingX = 2.1, spacingZ = 1.9;
   // Reserve a few grid slots for furniture instead of a cabinet — the dead
   // center slot is mandatory, plus two more spread through the grid so
   // there's furniture nestled between cabinets elsewhere too, not just in
@@ -4747,6 +4747,15 @@ function layoutCabinets(houseData){
   const idxA = Math.floor(rows*0.28)*cols + Math.floor(cols*0.28);
   const idxB = Math.floor(rows*0.72)*cols + Math.floor(cols*0.72);
   const reserved = [...new Set([centerIdx, idxA, idxB])];
+  const slotWorldPos = (slot)=>{
+    const col = slot % cols, row = Math.floor(slot/cols);
+    return {x:(col-(cols-1)/2)*spacingX, z:(row-(rows-1)/2)*spacingZ};
+  };
+  // Furniture's actual footprint (the rug alone is ~3 units wide) is bigger
+  // than one grid cell, so it can spill into neighboring slots regardless
+  // of jitter — compute real furniture positions up front so cabinets can
+  // be kept clear of them by actual distance, not just by slot index.
+  const furniturePositions = reserved.map(slot=>({...slotWorldPos(slot), radius: 2.3}));
 
   // Rotates every cabinet to face the camera. I can't preview the exact
   // angle from here — if it's facing the wrong way, this is the one number
@@ -4767,9 +4776,7 @@ function layoutCabinets(houseData){
 
   let houseCursor = 0;
   for(let slot=0; slot<totalSlots; slot++){
-    const col = slot % cols, row = Math.floor(slot/cols);
-    const worldX = (col-(cols-1)/2) * spacingX;
-    const worldZ = (row-(rows-1)/2) * spacingZ;
+    const {x:worldX, z:worldZ} = slotWorldPos(slot);
 
     if(reserved.includes(slot)){
       if(furnitureNodes.length){
@@ -4789,16 +4796,30 @@ function layoutCabinets(houseData){
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
     obj.rotation.y = FACE_ROTATION_Y;
-    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.55;
-    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.55;
+    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.8;
+    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.8;
+    let px = worldX + jitterX, pz = worldZ + jitterZ;
+
+    // Push away from any furniture group whose actual footprint this
+    // cabinet's jittered position would land inside of.
+    furniturePositions.forEach(fp=>{
+      let dx = px-fp.x, dz = pz-fp.z;
+      let dist = Math.hypot(dx,dz);
+      if(dist < fp.radius){
+        if(dist < 0.001){dx=1; dz=0; dist=1;} // degenerate exact-overlap fallback
+        const push = fp.radius - dist;
+        px += (dx/dist) * push;
+        pz += (dz/dist) * push;
+      }
+    });
 
     // Runtime bounding-box alignment: rather than hand-guessing the
     // model's internal origin convention, measure it and sit the cabinet's
     // actual bottom exactly on the floor plane every time.
     const box = new THREE.Box3().setFromObject(obj);
     const bottomY = box.min.y;
-    obj.position.x = worldX + jitterX;
-    obj.position.z = worldZ + jitterZ;
+    obj.position.x = px;
+    obj.position.z = pz;
     obj.position.y = -bottomY;
     g.scene.add(obj);
 
