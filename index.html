@@ -4691,7 +4691,7 @@ function layoutCabinets(houseData){
   // Rotates every cabinet to face the camera. I can't preview the exact
   // angle from here — if it's facing the wrong way, this is the one number
   // to change (try Math.PI/2 or -Math.PI/2 if 180° isn't it).
-  const FACE_ROTATION_Y = Math.PI;
+  const FACE_ROTATION_Y = Math.PI/4; // was 180°, rotated 135° clockwise from there
 
   houseData.forEach((hd,i)=>{
     const col = i % cols, row = Math.floor(i/cols);
