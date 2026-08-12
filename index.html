@@ -212,7 +212,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
 .wardrobe-gallery{position:relative;padding:0;background-color:#171009}
 .wardrobe-gallery.fallback-2d{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px}
-.gallery3d-wrap{position:relative;width:100%;height:70vh;min-height:420px;max-height:640px;background:#171009;overflow:hidden;touch-action:none}
+.gallery3d-wrap{position:relative;width:100%;min-height:320px;background:#171009;overflow:hidden;touch-action:none}
 #gallery3d-canvas{display:block;width:100%;height:100%;cursor:grab}
 #gallery3d-canvas:active{cursor:grabbing}
 .gallery3d-labels{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
@@ -4609,6 +4609,7 @@ async function render3DGallery(container, houseData){
     container.innerHTML = "";
     container.classList.remove("fallback-2d");
     container.appendChild(wrap);
+    sizeWrapToViewport(wrap);
 
     const width = wrap.clientWidth || 400, height = wrap.clientHeight || 480;
     const scene = new THREE.Scene();
@@ -4657,8 +4658,18 @@ async function render3DGallery(container, houseData){
   layoutCabinets(houseData);
 }
 
+// Fills whatever space is actually left below the page header/legend down
+// to the bottom of the viewport, instead of a fixed vh-based height — so it
+// genuinely adapts to each device's real window size.
+function sizeWrapToViewport(wrap){
+  const rect = wrap.getBoundingClientRect();
+  const available = window.innerHeight - rect.top - 16;
+  wrap.style.height = Math.max(320, available) + "px";
+}
+
 function handleResize(){
   if(!gallery3D) return;
+  sizeWrapToViewport(gallery3D.wrap);
   const w = gallery3D.wrap.clientWidth || 400, h = gallery3D.wrap.clientHeight || 480;
   gallery3D.camera.aspect = w/h;
   gallery3D.camera.updateProjectionMatrix();
@@ -4675,13 +4686,18 @@ function layoutCabinets(houseData){
   g.instances = [];
 
   const cols = Math.max(4, Math.ceil(Math.sqrt(houseData.length*1.4)));
-  const spacingX = 1.15, spacingZ = 1.0;
+  const spacingX = 1.7, spacingZ = 1.5;
   const rows = Math.ceil(houseData.length/cols);
+  // Rotates every cabinet to face the camera. I can't preview the exact
+  // angle from here — if it's facing the wrong way, this is the one number
+  // to change (try Math.PI/2 or -Math.PI/2 if 180° isn't it).
+  const FACE_ROTATION_Y = Math.PI;
 
   houseData.forEach((hd,i)=>{
     const col = i % cols, row = Math.floor(i/cols);
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
+    obj.rotation.y = FACE_ROTATION_Y;
 
     // Runtime bounding-box alignment: rather than hand-guessing the
     // model's internal origin convention, measure it and sit the cabinet's
