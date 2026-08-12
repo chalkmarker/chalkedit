@@ -4755,7 +4755,8 @@ function layoutCabinets(houseData){
   // than one grid cell, so it can spill into neighboring slots regardless
   // of jitter — compute real furniture positions up front so cabinets can
   // be kept clear of them by actual distance, not just by slot index.
-  const furniturePositions = reserved.map(slot=>({...slotWorldPos(slot), radius: 2.3}));
+  const furniturePositions = reserved.map(slot=>({...slotWorldPos(slot), radius: 2.7}));
+  const placedCabinetPositions = []; // for cabinet-vs-cabinet clearance below
 
   // Rotates every cabinet to face the camera. I can't preview the exact
   // angle from here — if it's facing the wrong way, this is the one number
@@ -4796,8 +4797,8 @@ function layoutCabinets(houseData){
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
     obj.rotation.y = FACE_ROTATION_Y;
-    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.8;
-    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.8;
+    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 1.1;
+    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 1.1;
     let px = worldX + jitterX, pz = worldZ + jitterZ;
 
     // Push away from any furniture group whose actual footprint this
@@ -4812,6 +4813,22 @@ function layoutCabinets(houseData){
         pz += (dz/dist) * push;
       }
     });
+    // Push away from any already-placed cabinet too close to actually sit
+    // next to (a tight clearance, not a generous gap — some cabinets
+    // ending up close/almost touching is fine, just not clipping through
+    // each other).
+    const CABINET_CLEARANCE = 0.95;
+    placedCabinetPositions.forEach(cp=>{
+      let dx = px-cp.x, dz = pz-cp.z;
+      let dist = Math.hypot(dx,dz);
+      if(dist < CABINET_CLEARANCE){
+        if(dist < 0.001){dx=1; dz=0; dist=1;}
+        const push = CABINET_CLEARANCE - dist;
+        px += (dx/dist) * push;
+        pz += (dz/dist) * push;
+      }
+    });
+    placedCabinetPositions.push({x:px, z:pz});
 
     // Runtime bounding-box alignment: rather than hand-guessing the
     // model's internal origin convention, measure it and sit the cabinet's
