@@ -210,28 +210,15 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .wardrobe-nav-btn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(42,35,29,.75);color:var(--t1);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .wardrobe-nav-btn:hover{background:rgba(212,176,122,.18)}
 .wardrobe-hint{text-align:center;font-size:10px;color:var(--t3);margin-top:12px}
-.wardrobe-gallery{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px;background-color:#2A1C11}
-/* Hardwood-style plank flooring, angled to the exact 45° isometric depth
-   direction the cabinets project on (confirmed from their own geometry).
-   Built entirely from CSS gradients (not a separate tile image), so it's
-   guaranteed to tile perfectly at any viewport size with no seam mismatch.
-   Two alternating plank shades + dark edge lines + light bevel highlights,
-   all encoded in one repeating gradient per concern so nothing can drift
-   out of phase with anything else. */
-.wardrobe-gallery::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background-image:
-    /* base alternating plank color bands */
-    repeating-linear-gradient(45deg,
-      #C08238 0 44px, #3A2412 44px 46px,
-      #B87A34 46px 90px, #3A2412 90px 92px),
-    /* dark seam line + light bevel highlight just inside each edge */
-    repeating-linear-gradient(45deg,
-      transparent 0 2px, rgba(224,162,90,.45) 2px 5px, transparent 5px 44px,
-      transparent 44px 48px, rgba(224,162,90,.45) 48px 51px, transparent 51px 90px),
-    /* subtle grain streaks, tighter spacing, same axis */
-    repeating-linear-gradient(45deg,
-      rgba(122,78,30,.16) 0 1px, transparent 1px 9px);
-}
+.wardrobe-gallery{position:relative;padding:0;background-color:#171009}
+.wardrobe-gallery.fallback-2d{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 12px 60px}
+.gallery3d-wrap{position:relative;width:100%;height:70vh;min-height:420px;max-height:640px;background:#171009;overflow:hidden;touch-action:none}
+#gallery3d-canvas{display:block;width:100%;height:100%;cursor:grab}
+#gallery3d-canvas:active{cursor:grabbing}
+.gallery3d-labels{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.gallery3d-label{transform:translate(-50%,-100%);pointer-events:none;text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap}
+.gallery3d-hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:10px;color:var(--t3);background:rgba(0,0,0,.4);padding:5px 12px;border-radius:999px;pointer-events:none}
+.gallery3d-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:12px;letter-spacing:.05em}
 .cabinet-cluster{position:relative;width:100%;max-width:340px;height:440px;flex-shrink:0;z-index:1}
 .cluster-slot{position:absolute;width:96px}
 /* Default: diamond */
@@ -3383,15 +3370,40 @@ function potionSpriteSvg(id,colorIn){
   +'</svg>';
 }
 
+// Deterministic per-fragrance tier pick (purely for visual variety across
+// a shelf — color, not tier, is what reflects the actual scent).
+function pickPotionTier(id){
+  const tiers=["potion","super_potion","hyper_potion","max_potion"];
+  return tiers[closetSeed(id)%tiers.length];
+}
+// If the real 3D flask model has loaded, swap the SVG placeholder for a
+// cached snapshot render of the actual model, recolored to match. Safe to
+// call even if the target element has since been removed by a re-render —
+// it's just a no-op in that case.
+async function upgradePotionImage(wrapId,tier,color){
+  if(!window.renderPotionSnapshot)return;
+  try{
+    const dataUrl=await window.renderPotionSnapshot(tier,color);
+    if(!dataUrl)return;
+    const el=document.getElementById(wrapId);
+    if(el)el.innerHTML='<img src="'+dataUrl+'" alt="" style="width:100%;height:100%;object-fit:contain">';
+  }catch(err){/* stays on the SVG fallback */}
+}
+
 function bottleCardHtml(e){
   const color=potionColorFor(e.house,e.name,e.notes);
+  const tier=pickPotionTier(e.id);
   const svg=potionSpriteSvg(e.id,color);
+  const wrapId="potimg-"+String(e.id).replace(/[^a-zA-Z0-9]/g,"");
+  if(window.potionModelReady){
+    upgradePotionImage(wrapId,tier,color);
+  }
   const pyr=resolveNotePyramid(e.house,e.name,e.notes);
   const srcLabel=pyr.verified
     ?'<div class="closet-tooltip-src">✓ '+(pyr.source==="fragrantica"?"Fragrantica":pyr.source==="official"?"Official site":"Verified")+'</div>'
     :'<div class="closet-tooltip-src dim">estimated</div>';
   return '<div class="closet-bottle'+(e.locked?" locked":"")+'">'
-    +'<div class="closet-bottle-imgwrap potion-imgwrap">'
+    +'<div class="closet-bottle-imgwrap potion-imgwrap" id="'+wrapId+'">'
       +svg
     +'</div>'
     +(e.locked?'<div class="closet-lock">🔒</div>':"")
@@ -3877,23 +3889,41 @@ const ALL_LUXURY_HOUSES=[
 function renderWardrobeGallery(){
   const gal=document.getElementById("wardrobe-gallery");
   if(!gal)return;
-  // Show every known house plus any extra houses actually in the collection
   const extras=CLOSET_HOUSES.filter(h=>!ALL_LUXURY_HOUSES.some(k=>k.toLowerCase()===h.toLowerCase()));
-  const houses=[...ALL_LUXURY_HOUSES,...extras].sort((a,b)=>a.localeCompare(b));
-  // Arrange into clusters of 4, cycling through several shapes so the page
-  // reads as scattered rather than a rigid repeating grid
+  const houseNames=[...ALL_LUXURY_HOUSES,...extras].sort((a,b)=>a.localeCompare(b));
+  // Pre-compute per-house data here (classic script has direct access to
+  // CLOSET_BY_HOUSE/isDupeHouse) and hand it to the 3D module, which runs
+  // as a separate ES module and can't see this script's `let` bindings
+  // directly — only window-exposed functions and whatever's passed in.
+  const houseData=houseNames.map(h=>({
+    house:h,
+    count:(CLOSET_BY_HOUSE[h]||[]).length,
+    dupe:isDupeHouse(h),
+  }));
+  if(window.gallery3DFailed||!window.render3DGallery){
+    renderWardrobeGalleryFallback(gal,houseData);
+  }else{
+    window.render3DGallery(gal,houseData);
+  }
+}
+
+// If the 3D model/library fails to load for any reason, fall back to the
+// original flat pixel-cabinet grid so the Closet still works.
+function renderWardrobeGalleryFallback(gal,houseData){
+  gal.classList.add("fallback-2d");
   const slots=["top","left","right","bottom"];
   const shapes=["","shape-b","shape-c","shape-d"];
   let html="";
-  for(let i=0;i<houses.length;i+=4){
-    const group=houses.slice(i,i+4);
+  for(let i=0;i<houseData.length;i+=4){
+    const group=houseData.slice(i,i+4);
     const shape=shapes[(i/4)%shapes.length];
     html+='<div class="cabinet-cluster '+shape+'">'
-      +group.map((h,j)=>'<div class="cluster-slot slot-'+slots[j]+'">'+pixelCabinetHtml(h)+'</div>').join("")
+      +group.map((hd,j)=>'<div class="cluster-slot slot-'+slots[j]+'">'+pixelCabinetHtml(hd.house)+'</div>').join("")
     +'</div>';
   }
   gal.innerHTML=html;
 }
+window.renderWardrobeGalleryRetry=renderWardrobeGallery;
 
 // Bottles for one house, split into shelf rows so a house with many
 // fragrances doesn't overcrowd one row.
@@ -4488,5 +4518,309 @@ window.addEventListener("load",()=>{
   if(cov)cov.addEventListener("click",enterApp);
 });
 </script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+// ── 3D CABINET GALLERY + POTION SNAPSHOT RENDERER ──
+// Loads Mark's own cabinet.glb (built specifically for this project — see
+// /images/cabinet.glb) once, then:
+//   1. Clones the empty cabinet shell (potions stripped out) once per house
+//      for the draggable/pannable gallery view.
+//   2. Renders small cached snapshot images of the actual flask models
+//      (recolored per fragrance, same note-based color logic as before)
+//      for use in the existing 2D expanded/detail shelf view.
+// If anything here fails to load (network hiccup, browser without WebGL,
+// etc.), it flags window.gallery3DFailed and the classic script falls back
+// to the original flat pixel-cabinet grid + SVG potions — nothing breaks.
+
+const MODEL_URL = "images/cabinet.glb";
+let glbScene = null;
+let cabinetTemplates = null;   // {beige, brown} — Object3D, potions stripped
+let potionTemplates = null;    // {potion, super_potion, hyper_potion, max_potion}
+let gallery3D = null;          // active scene/camera/renderer state, once initialized
+
+function stripPotions(node){
+  const clone = node.clone(true);
+  const toRemove = [];
+  clone.children.forEach(c=>{
+    if(/^(potion|super_potion|hyper_potion|max_potion)_\d+$/.test(c.name)) toRemove.push(c);
+  });
+  toRemove.forEach(c=>clone.remove(c));
+  return clone;
+}
+
+function loadModel(){
+  return new Promise((resolve,reject)=>{
+    new GLTFLoader().load(MODEL_URL,(gltf)=>resolve(gltf.scene),undefined,reject);
+  });
+}
+
+async function ensureModelLoaded(){
+  if(glbScene) return true;
+  try{
+    glbScene = await loadModel();
+    const beige = glbScene.getObjectByName("cabinet_beige");
+    const brown = glbScene.getObjectByName("cabinet_brown");
+    if(!beige || !brown) throw new Error("expected cabinet_beige/cabinet_brown nodes not found in model");
+    cabinetTemplates = { beige: stripPotions(beige), brown: stripPotions(brown) };
+    potionTemplates = {
+      potion: glbScene.getObjectByName("potion_1"),
+      super_potion: glbScene.getObjectByName("super_potion_2"),
+      hyper_potion: glbScene.getObjectByName("hyper_potion_3"),
+      max_potion: glbScene.getObjectByName("max_potion_4"),
+    };
+    window.potionModelReady = !!(potionTemplates.potion && potionTemplates.super_potion && potionTemplates.hyper_potion && potionTemplates.max_potion);
+    if(window.potionModelReady && window.renderWardrobeShelf) window.renderWardrobeShelf();
+    return true;
+  }catch(err){
+    console.warn("3D cabinet model failed to load, falling back to 2D:",err);
+    window.gallery3DFailed = true;
+    if(window.renderWardrobeGalleryRetry) window.renderWardrobeGalleryRetry();
+    return false;
+  }
+}
+
+// ── GALLERY SCENE ──
+async function render3DGallery(container, houseData){
+  const ok = await ensureModelLoaded();
+  if(!ok) return;
+
+  if(!gallery3D){
+    const wrap = document.createElement("div");
+    wrap.className = "gallery3d-wrap";
+    const canvas = document.createElement("canvas");
+    canvas.id = "gallery3d-canvas";
+    const labelLayer = document.createElement("div");
+    labelLayer.className = "gallery3d-labels";
+    const hint = document.createElement("div");
+    hint.className = "gallery3d-hint";
+    hint.textContent = "Drag to look around · tap a cabinet to open it";
+    wrap.appendChild(canvas);
+    wrap.appendChild(labelLayer);
+    wrap.appendChild(hint);
+    container.innerHTML = "";
+    container.classList.remove("fallback-2d");
+    container.appendChild(wrap);
+
+    const width = wrap.clientWidth || 400, height = wrap.clientHeight || 480;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x171009);
+    scene.fog = new THREE.Fog(0x171009, 8, 20);
+
+    const camera = new THREE.PerspectiveCamera(35, width/height, 0.05, 60);
+    const camRig = new THREE.Group();
+    camera.position.set(3.2, 3.6, 3.2);
+    camera.lookAt(0,0.4,0);
+    camRig.add(camera);
+    scene.add(camRig);
+
+    scene.add(new THREE.AmbientLight(0xfff2e0, 0.75));
+    const dir = new THREE.DirectionalLight(0xfff2e0, 1.1);
+    dir.position.set(4,7,3);
+    scene.add(dir);
+    const fill = new THREE.DirectionalLight(0x6699cc, 0.3);
+    fill.position.set(-4,3,-3);
+    scene.add(fill);
+
+    const floorGeo = new THREE.PlaneGeometry(80,80);
+    const floorMat = new THREE.MeshStandardMaterial({color:0x8a5a2e,roughness:0.95,metalness:0});
+    const floor = new THREE.Mesh(floorGeo,floorMat);
+    floor.rotation.x = -Math.PI/2;
+    scene.add(floor);
+
+    const renderer = new THREE.WebGLRenderer({canvas,antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setSize(width,height,false);
+
+    const labelRenderer = new CSS2DRenderer({element:labelLayer});
+    labelRenderer.setSize(width,height);
+
+    gallery3D = {
+      scene, camera, camRig, renderer, labelRenderer, wrap, canvas,
+      instances: [], raycaster: new THREE.Raycaster(),
+      panBoundX: 6, panBoundZ: 6, floorY: 0,
+    };
+
+    setupDragPan();
+    window.addEventListener("resize", handleResize);
+    animate();
+  }
+
+  layoutCabinets(houseData);
+}
+
+function handleResize(){
+  if(!gallery3D) return;
+  const w = gallery3D.wrap.clientWidth || 400, h = gallery3D.wrap.clientHeight || 480;
+  gallery3D.camera.aspect = w/h;
+  gallery3D.camera.updateProjectionMatrix();
+  gallery3D.renderer.setSize(w,h,false);
+  gallery3D.labelRenderer.setSize(w,h);
+}
+
+function layoutCabinets(houseData){
+  const g = gallery3D;
+  g.instances.forEach(inst=>{
+    g.scene.remove(inst.object);
+    if(inst.label && inst.label.element) inst.label.element.remove();
+  });
+  g.instances = [];
+
+  const cols = Math.max(4, Math.ceil(Math.sqrt(houseData.length*1.4)));
+  const spacingX = 1.15, spacingZ = 1.0;
+  const rows = Math.ceil(houseData.length/cols);
+
+  houseData.forEach((hd,i)=>{
+    const col = i % cols, row = Math.floor(i/cols);
+    const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
+    const obj = template.clone(true);
+
+    // Runtime bounding-box alignment: rather than hand-guessing the
+    // model's internal origin convention, measure it and sit the cabinet's
+    // actual bottom exactly on the floor plane every time.
+    const box = new THREE.Box3().setFromObject(obj);
+    const bottomY = box.min.y;
+    obj.position.x = (col - (cols-1)/2) * spacingX;
+    obj.position.z = (row - (rows-1)/2) * spacingZ;
+    obj.position.y = -bottomY;
+    g.scene.add(obj);
+
+    const labelDiv = document.createElement("div");
+    labelDiv.className = "gallery3d-label";
+    labelDiv.style.color = hd.dupe ? "#E8C043" : "#D7DBE0";
+    labelDiv.innerHTML = hd.house + "<br>(" + hd.count + ")";
+    const label = new CSS2DObject(labelDiv);
+    const topY = box.max.y - bottomY;
+    label.position.set(0, topY + 0.12, 0);
+    obj.add(label);
+
+    g.instances.push({house: hd.house, object: obj, label});
+  });
+
+  // Keep pan bounds roughly matching the actual layout size
+  g.panBoundX = Math.max(3, (cols*spacingX)/2 + 1);
+  g.panBoundZ = Math.max(3, (rows*spacingZ)/2 + 1);
+}
+
+function setupDragPan(){
+  const g = gallery3D;
+  let dragging=false, lastX=0, lastY=0, moved=0;
+  g.canvas.addEventListener("pointerdown",(e)=>{
+    dragging=true; moved=0; lastX=e.clientX; lastY=e.clientY;
+    try{g.canvas.setPointerCapture(e.pointerId);}catch(err){}
+  });
+  g.canvas.addEventListener("pointermove",(e)=>{
+    if(!dragging) return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY;
+    moved += Math.abs(dx)+Math.abs(dy);
+    lastX=e.clientX; lastY=e.clientY;
+    g.camRig.position.x -= dx*0.012;
+    g.camRig.position.z -= dy*0.012;
+    g.camRig.position.x = Math.max(-g.panBoundX, Math.min(g.panBoundX, g.camRig.position.x));
+    g.camRig.position.z = Math.max(-g.panBoundZ, Math.min(g.panBoundZ, g.camRig.position.z));
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging=false;
+    if(moved < 6 && e.clientX!==undefined) handleClick(e);
+  }
+  g.canvas.addEventListener("pointerup",endDrag);
+  g.canvas.addEventListener("pointercancel",()=>{dragging=false;});
+}
+
+function handleClick(e){
+  const g = gallery3D;
+  const rect = g.canvas.getBoundingClientRect();
+  const mouse = new THREE.Vector2(
+    ((e.clientX-rect.left)/rect.width)*2-1,
+    -((e.clientY-rect.top)/rect.height)*2+1
+  );
+  g.raycaster.setFromCamera(mouse,g.camera);
+  for(const inst of g.instances){
+    const hits = g.raycaster.intersectObject(inst.object,true);
+    if(hits.length>0){
+      if(window.openHouseCabinet) window.openHouseCabinet(inst.house);
+      return;
+    }
+  }
+}
+
+function animate(){
+  if(!gallery3D) return;
+  requestAnimationFrame(animate);
+  gallery3D.renderer.render(gallery3D.scene, gallery3D.camera);
+  gallery3D.labelRenderer.render(gallery3D.scene, gallery3D.camera);
+}
+
+window.render3DGallery = render3DGallery;
+
+// ── POTION SNAPSHOT RENDERER (for the 2D expanded/detail shelf view) ──
+// Renders one small offscreen image of the real flask model, recolored to
+// match a fragrance's note-based color, and caches it — so the detail view
+// stays a normal lightweight <img>, not a live WebGL bottle per fragrance.
+const potionSnapshotCache = {};
+let offscreenRenderer = null;
+
+function getOffscreenRenderer(size){
+  if(!offscreenRenderer){
+    offscreenRenderer = new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+  }
+  offscreenRenderer.setSize(size,size,false);
+  offscreenRenderer.setClearColor(0x000000,0);
+  return offscreenRenderer;
+}
+
+window.renderPotionSnapshot = async function(tier,colorHex){
+  const key = tier+"|"+colorHex;
+  if(potionSnapshotCache[key]) return potionSnapshotCache[key];
+  const ok = await ensureModelLoaded();
+  if(!ok || !potionTemplates || !potionTemplates[tier]) return null;
+
+  const size = 96;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(28,1,0.01,10);
+  scene.add(new THREE.AmbientLight(0xffffff,1.0));
+  const dir = new THREE.DirectionalLight(0xffffff,1.1);
+  dir.position.set(1,2,2);
+  scene.add(dir);
+
+  const obj = potionTemplates[tier].clone(true);
+  const color = new THREE.Color(colorHex);
+  obj.traverse(child=>{
+    if(child.isMesh && child.material){
+      const isFlask = /_flask$/.test(child.name);
+      const isMeniscus = /_meniscus$/.test(child.name);
+      if(isFlask || isMeniscus){
+        child.material = child.material.clone();
+        child.material.color.copy(color);
+        if(isMeniscus) child.material.color.offsetHSL(0,0,0.18);
+      }
+    }
+  });
+  scene.add(obj);
+
+  const box = new THREE.Box3().setFromObject(obj);
+  const centerPt = box.getCenter(new THREE.Vector3());
+  const sizeVec = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(sizeVec.x,sizeVec.y,sizeVec.z) || 0.1;
+  camera.position.set(centerPt.x, centerPt.y + sizeVec.y*0.05, centerPt.z + maxDim*2.2);
+  camera.lookAt(centerPt);
+
+  const renderer = getOffscreenRenderer(size);
+  renderer.render(scene,camera);
+  const dataUrl = renderer.domElement.toDataURL("image/png");
+  potionSnapshotCache[key] = dataUrl;
+  return dataUrl;
+};
+</script>
+
 </body>
 </html>
