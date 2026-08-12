@@ -4547,6 +4547,43 @@ let cabinetTemplates = null;   // {beige, brown} — Object3D, potions stripped
 let potionTemplates = null;    // {potion, super_potion, hyper_potion, max_potion}
 let gallery3D = null;          // active scene/camera/renderer state, once initialized
 
+// Builds a repeating wood-plank floor texture using the exact 4 wood tones
+// baked into the reference model's own materials (wood_1–wood_4), rather
+// than tiling the model's tiny floor-swatch geometry directly — that piece
+// was sized for one demo cabinet, not a 44-cabinet gallery floor, so
+// reproducing it at scale would mean well over a thousand mesh instances.
+// Same visual result (real plank colors, dark seams, staggered joints),
+// far cheaper: one texture on one large plane.
+function buildWoodFloorTexture(){
+  const WOOD_COLORS = ["#af8055","#996c44","#a7794c","#8c603c"];
+  const SEAM = "#2a1c11";
+  const size = 512, plankH = 64, plankW = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  let rowIndex = 0;
+  for(let y=0; y<size; y+=plankH){
+    const offset = (rowIndex%2===0) ? 0 : plankW/2;
+    ctx.fillStyle = SEAM;
+    ctx.fillRect(0,y,size,plankH);
+    for(let x=-offset; x<size; x+=plankW){
+      const color = WOOD_COLORS[(rowIndex + Math.floor((x+offset)/plankW)) % WOOD_COLORS.length];
+      ctx.fillStyle = color;
+      ctx.fillRect(x+2, y+2, plankW-4, plankH-4);
+      // subtle top highlight per plank for a bit of depth
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(x+2, y+2, plankW-4, 4);
+    }
+    rowIndex++;
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(14,14);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function stripPotions(node){
   const clone = node.clone(true);
   const toRemove = [];
@@ -4632,7 +4669,7 @@ async function render3DGallery(container, houseData){
     scene.add(fill);
 
     const floorGeo = new THREE.PlaneGeometry(80,80);
-    const floorMat = new THREE.MeshStandardMaterial({color:0x8a5a2e,roughness:0.95,metalness:0});
+    const floorMat = new THREE.MeshStandardMaterial({map:buildWoodFloorTexture(),roughness:0.95,metalness:0});
     const floor = new THREE.Mesh(floorGeo,floorMat);
     floor.rotation.x = -Math.PI/2;
     scene.add(floor);
@@ -4753,7 +4790,7 @@ function setupDragPan(){
   function panBy(dx,dy){
     const scale = 0.012;
     g.camRig.position.addScaledVector(panRight, -dx*scale);
-    g.camRig.position.addScaledVector(panForward, -dy*scale);
+    g.camRig.position.addScaledVector(panForward, dy*scale);
     g.camRig.position.x = Math.max(-g.panBoundX, Math.min(g.panBoundX, g.camRig.position.x));
     g.camRig.position.z = Math.max(-g.panBoundZ, Math.min(g.panBoundZ, g.camRig.position.z));
   }
