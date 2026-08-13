@@ -4776,13 +4776,27 @@ function layoutCabinets(houseData){
     if(!inFurniture) availablePoints.push(p);
   }
 
+  // Same camera-relative direction technique that fixed the drag-pan
+  // direction earlier — "upper right on screen" isn't a fixed world axis
+  // once the camera sits at an angle, so this derives it from the
+  // camera's actual orientation instead of guessing X/Z signs by hand.
+  const camQuatF = new THREE.Quaternion();
+  g.camera.getWorldQuaternion(camQuatF);
+  const screenRight = new THREE.Vector3(1,0,0).applyQuaternion(camQuatF);
+  screenRight.y = 0; screenRight.normalize();
+  const screenUp = new THREE.Vector3(0,0,-1).applyQuaternion(camQuatF);
+  screenUp.y = 0; screenUp.normalize();
+
   furnitureZones.forEach(fz=>{
     if(!furnitureNodes.length) return;
     const furnitureGroup = new THREE.Group();
     furnitureNodes.forEach(n=>furnitureGroup.add(n.clone(true)));
     furnitureGroup.rotation.y = FACE_ROTATION_Y;
     const fbox = new THREE.Box3().setFromObject(furnitureGroup);
-    furnitureGroup.position.set(fz.x, -fbox.min.y, fz.z + 2);
+    const diag = new THREE.Vector3(screenRight.x+screenUp.x, 0, screenRight.z+screenUp.z).normalize();
+    const upperRightX = diag.x * 2;
+    const upperRightZ = diag.z * 2;
+    furnitureGroup.position.set(fz.x + upperRightX, -fbox.min.y, fz.z + upperRightZ);
     g.scene.add(furnitureGroup);
     g.furnitureInstances.push(furnitureGroup);
   });
