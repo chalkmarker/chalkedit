@@ -4782,7 +4782,7 @@ function layoutCabinets(houseData){
     furnitureNodes.forEach(n=>furnitureGroup.add(n.clone(true)));
     furnitureGroup.rotation.y = FACE_ROTATION_Y;
     const fbox = new THREE.Box3().setFromObject(furnitureGroup);
-    furnitureGroup.position.set(fz.x, -fbox.min.y + 2, fz.z);
+    furnitureGroup.position.set(fz.x, -fbox.min.y, fz.z + 2);
     g.scene.add(furnitureGroup);
     g.furnitureInstances.push(furnitureGroup);
   });
