@@ -4734,9 +4734,7 @@ function layoutCabinets(houseData){
   g.furnitureInstances = [];
 
   const spacingX = 2.1, spacingZ = 1.9;
-  // Rotates every cabinet to face the camera. I can't preview the exact
-  // angle from here — if it's facing the wrong way, this is the one number
-  // to change (try Math.PI/2 or -Math.PI/2 if 180° isn't it).
+  const avgSpacing = (spacingX+spacingZ)/2;
   const FACE_ROTATION_Y = Math.PI/4; // was 180°, rotated 135° clockwise from there
   const FURNITURE_RADIUS = 2.6;
   const CABINET_CLEARANCE = 1.35;
@@ -4747,36 +4745,36 @@ function layoutCabinets(houseData){
     return (Math.abs(h)%1000)/1000; // 0..1
   }
 
-  // Reserve three genuinely empty clearings for furniture — left, right
-  // (same height), and bottom-center, matching the sketched layout — then
-  // proactively EXCLUDE any grid slot whose position falls inside one of
-  // those clearings from ever being assigned a cabinet, rather than
-  // placing a cabinet first and trying to push it out afterward. Grows the
-  // grid automatically until there's enough non-excluded room for every
-  // house, so this never runs short of space.
-  let cols, rows, furnitureZones, availableSlots, gridScale = 1.6, attempt = 0;
-  let slotWorldPos;
-  do{
-    cols = Math.max(6, Math.ceil(Math.sqrt(houseData.length*gridScale)));
-    rows = Math.ceil((houseData.length*gridScale)/cols);
-    slotWorldPos = (slot)=>{
-      const col = slot % cols, row = Math.floor(slot/cols);
-      return {x:(col-(cols-1)/2)*spacingX, z:(row-(rows-1)/2)*spacingZ};
-    };
-    furnitureZones = [
-      {...slotWorldPos(Math.floor(rows*0.40)*cols + Math.floor(cols*0.12)), radius: FURNITURE_RADIUS},
-      {...slotWorldPos(Math.floor(rows*0.40)*cols + Math.floor(cols*0.88)), radius: FURNITURE_RADIUS},
-      {...slotWorldPos(Math.floor(rows*0.88)*cols + Math.floor(cols*0.50)), radius: FURNITURE_RADIUS},
-    ];
-    availableSlots = [];
-    for(let slot=0; slot<cols*rows; slot++){
-      const pos = slotWorldPos(slot);
-      const inFurniture = furnitureZones.some(fz=>Math.hypot(pos.x-fz.x, pos.z-fz.z) < fz.radius);
-      if(!inFurniture) availableSlots.push(slot);
-    }
-    gridScale += 0.3;
-    attempt++;
-  }while(availableSlots.length < houseData.length && attempt < 10);
+  // No grid at all — a rectangular grid always reads as a parallelogram
+  // once viewed from an angled camera. Instead, candidate cabinet spots
+  // are generated with a "sunflower" point distribution: the same
+  // even-density-with-no-grid-structure technique used for seed heads and
+  // packing problems (golden-angle spiral). It naturally fills a circular
+  // area with no straight rows, columns, or edges from any viewing angle.
+  const GOLDEN_ANGLE = Math.PI*(3-Math.sqrt(5));
+  const bufferCount = houseData.length + 30; // extra candidates so furniture-exclusion has room to work with
+  const R = Math.sqrt(bufferCount * spacingX*spacingZ / Math.PI) * 1.15;
+  function sunflowerPoint(i){
+    const r = R * Math.sqrt((i+0.5)/bufferCount);
+    const theta = i*GOLDEN_ANGLE;
+    return {x:r*Math.cos(theta), z:r*Math.sin(theta)};
+  }
+
+  // Three genuinely empty clearings for furniture — left, right (same
+  // height), and toward the front — positioned within the circular
+  // arrangement rather than a grid, matching the sketched layout.
+  const furnitureZones = [
+    {x:-R*0.55, z:0, radius:FURNITURE_RADIUS},
+    {x: R*0.55, z:0, radius:FURNITURE_RADIUS},
+    {x:0, z:R*0.62, radius:FURNITURE_RADIUS},
+  ];
+
+  const availablePoints = [];
+  for(let i=0; i<bufferCount && availablePoints.length<houseData.length; i++){
+    const p = sunflowerPoint(i);
+    const inFurniture = furnitureZones.some(fz=>Math.hypot(p.x-fz.x, p.z-fz.z) < fz.radius);
+    if(!inFurniture) availablePoints.push(p);
+  }
 
   furnitureZones.forEach(fz=>{
     if(!furnitureNodes.length) return;
@@ -4791,19 +4789,18 @@ function layoutCabinets(houseData){
 
   const placedCabinetPositions = [];
   houseData.forEach((hd,i)=>{
-    const slot = availableSlots[i];
-    if(slot===undefined) return; // shouldn't happen given the grid-growth loop above
-    const {x:worldX, z:worldZ} = slotWorldPos(slot);
+    const point = availablePoints[i];
+    if(!point) return; // shouldn't happen — bufferCount has generous headroom
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
     obj.rotation.y = FACE_ROTATION_Y;
-    const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.9;
-    const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.9;
-    let px = worldX + jitterX, pz = worldZ + jitterZ;
+    const jitterX = (seededUnit(hd.house+"x")-0.5) * avgSpacing * 0.7;
+    const jitterZ = (seededUnit(hd.house+"z")-0.5) * avgSpacing * 0.7;
+    let px = point.x + jitterX, pz = point.z + jitterZ;
 
     // Safety net on top of the proactive exclusion above — jitter could in
-    // principle nudge a cabinet from a valid slot toward a nearby
-    // clearing's edge, and this still keeps cabinets clear of each other.
+    // principle nudge a cabinet toward a nearby clearing's edge or another
+    // cabinet, and this keeps everything clear regardless.
     for(let iter=0; iter<10; iter++){
       let violated = false;
       furnitureZones.forEach(fz=>{
@@ -4854,9 +4851,14 @@ function layoutCabinets(houseData){
     g.instances.push({house: hd.house, object: obj, label});
   });
 
-  // Keep pan bounds roughly matching the actual layout size
-  g.panBoundX = Math.max(3, (cols*spacingX)/2 + 1);
-  g.panBoundZ = Math.max(3, (rows*spacingZ)/2 + 1);
+  // Keep pan bounds matching the circular layout's actual extent
+  g.panBoundX = Math.max(3, R + 2);
+  g.panBoundZ = Math.max(3, R + 2);
+}
+
+function applyZoom(g,newDist){
+  g.zoomDist = Math.max(g.minZoom, Math.min(g.maxZoom, newDist));
+  g.camera.position.copy(g.baseCameraOffset).multiplyScalar(g.zoomDist);
 }
 
 function setupDragPan(){
