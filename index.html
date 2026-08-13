@@ -4794,8 +4794,8 @@ function layoutCabinets(houseData){
     furnitureGroup.rotation.y = FACE_ROTATION_Y;
     const fbox = new THREE.Box3().setFromObject(furnitureGroup);
     const diag = new THREE.Vector3(screenRight.x+screenUp.x, 0, screenRight.z+screenUp.z).normalize();
-    const upperRightX = diag.x * 2;
-    const upperRightZ = diag.z * 2;
+    const upperRightX = diag.x * 2 - screenRight.x * 1;
+    const upperRightZ = diag.z * 2 - screenRight.z * 1;
     furnitureGroup.position.set(fz.x + upperRightX, -fbox.min.y, fz.z + upperRightZ);
     g.scene.add(furnitureGroup);
     g.furnitureInstances.push(furnitureGroup);
