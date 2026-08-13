@@ -4734,89 +4734,85 @@ function layoutCabinets(houseData){
   g.furnitureInstances = [];
 
   const spacingX = 2.1, spacingZ = 1.9;
-  // Reserve a few grid slots for furniture instead of a cabinet — the dead
-  // center slot is mandatory, plus two more spread through the grid so
-  // there's furniture nestled between cabinets elsewhere too, not just in
-  // the middle.
-  const NUM_FURNITURE_SLOTS = 3;
-  const totalSlots = houseData.length + NUM_FURNITURE_SLOTS;
-  const cols = Math.max(4, Math.ceil(Math.sqrt(totalSlots*1.4)));
-  const rows = Math.ceil(totalSlots/cols);
-
-  const centerIdx = Math.floor(rows/2)*cols + Math.floor(cols/2);
-  const idxA = Math.floor(rows*0.28)*cols + Math.floor(cols*0.28);
-  const idxB = Math.floor(rows*0.72)*cols + Math.floor(cols*0.72);
-  const reserved = [...new Set([centerIdx, idxA, idxB])];
-  const slotWorldPos = (slot)=>{
-    const col = slot % cols, row = Math.floor(slot/cols);
-    return {x:(col-(cols-1)/2)*spacingX, z:(row-(rows-1)/2)*spacingZ};
-  };
-  // Furniture's actual footprint (the rug alone is ~3 units wide) is bigger
-  // than one grid cell, so it can spill into neighboring slots regardless
-  // of jitter — compute real furniture positions up front so cabinets can
-  // be kept clear of them by actual distance, not just by slot index.
-  const furniturePositions = reserved.map(slot=>({...slotWorldPos(slot), radius: 2.1}));
-  const placedCabinetPositions = []; // for cabinet-vs-cabinet clearance below
-
   // Rotates every cabinet to face the camera. I can't preview the exact
   // angle from here — if it's facing the wrong way, this is the one number
   // to change (try Math.PI/2 or -Math.PI/2 if 180° isn't it).
   const FACE_ROTATION_Y = Math.PI/4; // was 180°, rotated 135° clockwise from there
+  const FURNITURE_RADIUS = 2.6;
+  const CABINET_CLEARANCE = 1.35;
 
-  // Deterministic per-house scatter — seeded from the house name so it's
-  // stable across re-renders. This nudges each cabinet's POSITION off the
-  // perfect grid point (not its facing direction), same idea as the
-  // earlier 2D scattered-cluster layout — alphabetical order is still
-  // exactly preserved (houses fill remaining slots in order, skipping the
-  // reserved ones), only the exact spot within each grid slot varies.
   function seededUnit(str){
     let h=0;
     for(let i=0;i<str.length;i++){h=(h<<5)-h+str.charCodeAt(i);h|=0;}
     return (Math.abs(h)%1000)/1000; // 0..1
   }
 
-  let houseCursor = 0;
-  for(let slot=0; slot<totalSlots; slot++){
-    const {x:worldX, z:worldZ} = slotWorldPos(slot);
-
-    if(reserved.includes(slot)){
-      if(furnitureNodes.length){
-        const furnitureGroup = new THREE.Group();
-        furnitureNodes.forEach(n=>furnitureGroup.add(n.clone(true)));
-        furnitureGroup.rotation.y = FACE_ROTATION_Y;
-        const fbox = new THREE.Box3().setFromObject(furnitureGroup);
-        furnitureGroup.position.set(worldX, -fbox.min.y, worldZ);
-        g.scene.add(furnitureGroup);
-        g.furnitureInstances.push(furnitureGroup);
-      }
-      continue;
+  // Reserve three genuinely empty clearings for furniture — left, right
+  // (same height), and bottom-center, matching the sketched layout — then
+  // proactively EXCLUDE any grid slot whose position falls inside one of
+  // those clearings from ever being assigned a cabinet, rather than
+  // placing a cabinet first and trying to push it out afterward. Grows the
+  // grid automatically until there's enough non-excluded room for every
+  // house, so this never runs short of space.
+  let cols, rows, furnitureZones, availableSlots, gridScale = 1.6, attempt = 0;
+  let slotWorldPos;
+  do{
+    cols = Math.max(6, Math.ceil(Math.sqrt(houseData.length*gridScale)));
+    rows = Math.ceil((houseData.length*gridScale)/cols);
+    slotWorldPos = (slot)=>{
+      const col = slot % cols, row = Math.floor(slot/cols);
+      return {x:(col-(cols-1)/2)*spacingX, z:(row-(rows-1)/2)*spacingZ};
+    };
+    furnitureZones = [
+      {...slotWorldPos(Math.floor(rows*0.40)*cols + Math.floor(cols*0.12)), radius: FURNITURE_RADIUS},
+      {...slotWorldPos(Math.floor(rows*0.40)*cols + Math.floor(cols*0.88)), radius: FURNITURE_RADIUS},
+      {...slotWorldPos(Math.floor(rows*0.88)*cols + Math.floor(cols*0.50)), radius: FURNITURE_RADIUS},
+    ];
+    availableSlots = [];
+    for(let slot=0; slot<cols*rows; slot++){
+      const pos = slotWorldPos(slot);
+      const inFurniture = furnitureZones.some(fz=>Math.hypot(pos.x-fz.x, pos.z-fz.z) < fz.radius);
+      if(!inFurniture) availableSlots.push(slot);
     }
+    gridScale += 0.3;
+    attempt++;
+  }while(availableSlots.length < houseData.length && attempt < 10);
 
-    const hd = houseData[houseCursor++];
-    if(!hd) continue;
+  furnitureZones.forEach(fz=>{
+    if(!furnitureNodes.length) return;
+    const furnitureGroup = new THREE.Group();
+    furnitureNodes.forEach(n=>furnitureGroup.add(n.clone(true)));
+    furnitureGroup.rotation.y = FACE_ROTATION_Y;
+    const fbox = new THREE.Box3().setFromObject(furnitureGroup);
+    furnitureGroup.position.set(fz.x, -fbox.min.y, fz.z);
+    g.scene.add(furnitureGroup);
+    g.furnitureInstances.push(furnitureGroup);
+  });
+
+  const placedCabinetPositions = [];
+  houseData.forEach((hd,i)=>{
+    const slot = availableSlots[i];
+    if(slot===undefined) return; // shouldn't happen given the grid-growth loop above
+    const {x:worldX, z:worldZ} = slotWorldPos(slot);
     const template = hd.dupe ? cabinetTemplates.brown : cabinetTemplates.beige;
     const obj = template.clone(true);
     obj.rotation.y = FACE_ROTATION_Y;
     const jitterX = (seededUnit(hd.house+"x")-0.5) * spacingX * 0.9;
     const jitterZ = (seededUnit(hd.house+"z")-0.5) * spacingZ * 0.9;
     let px = worldX + jitterX, pz = worldZ + jitterZ;
-    const CABINET_CLEARANCE = 1.35;
 
-    // Push clear of furniture and other cabinets — iteratively, not just
-    // once. A single pass can resolve one violation by pushing a cabinet
-    // straight into a different one (e.g. away from furniture and right
-    // into a neighboring cabinet), so this re-checks everything each round
-    // until nothing's left violated (confirmed via simulation this
-    // converges for the full real house list, typically in 1-2 passes).
+    // Safety net on top of the proactive exclusion above — jitter could in
+    // principle nudge a cabinet from a valid slot toward a nearby
+    // clearing's edge, and this still keeps cabinets clear of each other.
     for(let iter=0; iter<10; iter++){
       let violated = false;
-      furniturePositions.forEach(fp=>{
-        let dx = px-fp.x, dz = pz-fp.z;
+      furnitureZones.forEach(fz=>{
+        let dx = px-fz.x, dz = pz-fz.z;
         let dist = Math.hypot(dx,dz);
-        if(dist < fp.radius){
+        if(dist < fz.radius){
           violated = true;
-          if(dist < 0.001){dx=1; dz=0; dist=1;} // degenerate exact-overlap fallback
-          const push = fp.radius - dist;
+          if(dist < 0.001){dx=1; dz=0; dist=1;}
+          const push = fz.radius - dist;
           px += (dx/dist) * push;
           pz += (dz/dist) * push;
         }
@@ -4856,16 +4852,11 @@ function layoutCabinets(houseData){
     obj.add(label);
 
     g.instances.push({house: hd.house, object: obj, label});
-  }
+  });
 
   // Keep pan bounds roughly matching the actual layout size
   g.panBoundX = Math.max(3, (cols*spacingX)/2 + 1);
   g.panBoundZ = Math.max(3, (rows*spacingZ)/2 + 1);
-}
-
-function applyZoom(g,newDist){
-  g.zoomDist = Math.max(g.minZoom, Math.min(g.maxZoom, newDist));
-  g.camera.position.copy(g.baseCameraOffset).multiplyScalar(g.zoomDist);
 }
 
 function setupDragPan(){
