@@ -965,23 +965,56 @@ async function signInAnon(){
       body:JSON.stringify({returnSecureToken:true}),
     });
     const data=await r.json();
-    if(data&&data.idToken)FB_AUTH_TOKEN=data.idToken;
+    if(data&&data.idToken){
+      FB_AUTH_TOKEN=data.idToken;
+    }else{
+      console.warn("Firebase anonymous sign-in did not return a token — check that Anonymous auth is enabled in the Firebase console.",data);
+    }
   }catch(e){
-    // If this fails, requests just go out unauthenticated — fine as long as
-    // the database rules haven't been switched to require auth yet.
+    console.warn("Firebase anonymous sign-in failed:",e);
+    // If this fails, requests go out unauthenticated — fine only if the
+    // database rules haven't been switched to require auth.
   }
 }
 FB_AUTH_READY=signInAnon();
 function fbUrl(path){
   return FB+path+".json"+(FB_AUTH_TOKEN?"?auth="+FB_AUTH_TOKEN:"");
 }
-async function fbGet(path){
+// Anonymous tokens expire after ~1 hour — if a request comes back
+// unauthorized, re-sign-in once and retry before giving up, so a long
+// session doesn't just start silently failing.
+async function fbRequest(path,opts){
   await FB_AUTH_READY;
-  try{const r=await fetch(fbUrl(path));return await r.json();}catch(e){return null;}
+  let r;
+  try{
+    r=await fetch(fbUrl(path),opts);
+  }catch(e){
+    console.warn("Firebase request failed (network):",path,e);
+    return null;
+  }
+  if((r.status===401||r.status===403)){
+    await signInAnon();
+    try{
+      r=await fetch(fbUrl(path),opts);
+    }catch(e){
+      console.warn("Firebase request failed after re-auth retry:",path,e);
+      return null;
+    }
+  }
+  if(!r.ok){
+    console.warn("Firebase request returned an error status:",path,r.status);
+    return null;
+  }
+  return r;
+}
+async function fbGet(path){
+  const r=await fbRequest(path);
+  if(!r)return null;
+  try{return await r.json();}catch(e){return null;}
 }
 async function fbSet(path,data){
-  await FB_AUTH_READY;
-  try{await fetch(fbUrl(path),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});}catch(e){}
+  const r=await fbRequest(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  return !!r;
 }
 
 // ── INIT ──
@@ -1302,7 +1335,11 @@ async function confirmLog(){
   const targetDate=LOG_TARGET_DATE||new Date().toISOString().split("T")[0];
   const entry={worn:worn};
   if(other)entry.other=other;;
-  await fbSet("/logs/"+targetDate,entry);
+  const saved=await fbSet("/logs/"+targetDate,entry);
+  if(!saved){
+    showToast("Couldn't save — check your connection and try again");
+    return; // modal stays open, selection preserved, nothing falsely marked as logged
+  }
   document.getElementById("log-modal").classList.remove("open");
   showToast("Logged ✓");
   const thisMonthPage=document.getElementById("thismonth");
