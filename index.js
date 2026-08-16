@@ -379,3 +379,56 @@ Rules:
       }
     },
 );
+
+// GET /lookupHousePriceTier?house=<house name>
+// One-time classification of a fragrance HOUSE (not per-fragrance) as
+// "luxury" (typically $100-400+, department store/boutique) or
+// "affordable" (typically $15-60, often explicitly marketed as inspired-by
+// alternatives). Used to color the Closet cabinet correctly — a budget
+// house like Maison Alhambra shouldn't render with the same styling as an
+// actual niche/luxury house. Cached client-side forever once resolved, so
+// this only ever runs once per house, not per fragrance.
+exports.lookupHousePriceTier = onRequest(
+    {secrets: [ANTHROPIC_API_KEY], cors: true, timeoutSeconds: 60},
+    async (req, res) => {
+      const house = (req.query.house || "").toString().trim();
+      if (!house) {
+        res.status(400).json({found: false, error: "missing house"});
+        return;
+      }
+
+      const prompt = `Is the fragrance house/brand "${house}" generally considered a
+LUXURY / NICHE / DESIGNER perfume house (fragrances typically retail
+$100-400+ per bottle, sold at department stores, Sephora, or dedicated
+boutiques — e.g. Creed, Tom Ford, Xerjoff, Amouage), or an AFFORDABLE /
+BUDGET / "DUPE" house (fragrances typically $15-60 per bottle, often
+explicitly marketed as inspired-by or alternatives to designer scents,
+commonly sold on Amazon, AliExpress, or budget fragrance retailers — e.g.
+Lattafa, Armaf, Maison Alhambra, Fragrance World)?
+
+Search the web if you're not already confident.
+
+Respond with ONLY this JSON — start with { and end with }, no prose, no
+markdown fences:
+{
+  "found": true,
+  "tier": "luxury" | "affordable",
+  "typicalPrice": "~$XX-XX"
+}
+
+If you cannot confidently classify this house, respond with:
+{"found":false,"tier":"luxury","typicalPrice":""}`;
+
+      try {
+        const raw = await callClaude(prompt, 400, {
+          tools: [{type: "web_search_20250305", name: "web_search", max_uses: 2}],
+        });
+        const parsed = extractJson(raw);
+        if (parsed.tier !== "affordable") parsed.tier = "luxury";
+        res.json(parsed);
+      } catch (err) {
+        console.error("lookupHousePriceTier error", err);
+        res.status(500).json({found: false, tier: "luxury", typicalPrice: "", error: "lookup failed"});
+      }
+    },
+);
