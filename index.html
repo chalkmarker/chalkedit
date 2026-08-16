@@ -1019,13 +1019,14 @@ async function fbSet(path,data){
 
 // ── INIT ──
 (async()=>{
-  const [fd,sd,wd,cd,vn]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes")]);
+  const [fd,sd,wd,cd,vn,pt]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes"),fbGet("/housePriceTier")]);
   if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
   else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
   if(sd&&typeof sd==="object")acquired=sd;
   if(wd&&typeof wd==="object")wishlist=wd;
   if(cd&&typeof cd==="object")customFrags=cd;
   if(vn&&typeof vn==="object")VERIFIED_NOTES=vn;
+  if(pt&&typeof pt==="object")HOUSE_PRICE_TIER=pt;
   await maybeCompileLastMonth();
   loadRemoteSuggestions();
   getWeather();
@@ -2895,6 +2896,7 @@ function bottleSvg(id,liquidColor,house,photoUrl){
 // other split-house cases turn up.
 const HOUSE_CANONICAL=[
   {match:["initio"],name:"Initio Parfums Prives"},
+  {match:["fragrance world","french avenue"],name:"Fragrance World | French Avenue"},
 ];
 function canonicalHouse(house){
   const h=(house||"").toLowerCase();
@@ -2911,7 +2913,17 @@ function closetEntries(){
   const wishlisted=[...wishSugg,...wishCustom].map(s=>({
     id:s.id,name:s.name,house:canonicalHouse(s.house),notes:s.tags||[],locked:true,
   }));
-  return [...owned,...wishlisted];
+  // Dedupe the same physical fragrance appearing more than once (e.g. once
+  // per occasion tag, or logged separately for different situations) — one
+  // bottle shouldn't render as three cabinet entries. Owned takes priority
+  // over a wishlist duplicate of the same name.
+  const seen=new Map();
+  [...owned,...wishlisted].forEach(e=>{
+    const key=e.house.toLowerCase()+"|"+e.name.toLowerCase().replace(/[^a-z0-9]+/g,"");
+    const existing=seen.get(key);
+    if(!existing||(existing.locked&&!e.locked))seen.set(key,e);
+  });
+  return [...seen.values()];
 }
 
 // Real bottle photos, keyed by house+LINE/COLLECTION where known — most
@@ -3476,9 +3488,55 @@ function bottleCardHtml(e){
 // treatment with gold house-name text; everything else is "luxury" (beige
 // cabinet, silver house-name text).
 const DUPE_HOUSE_MATCH=["french avenue","rayhaan","lattafa","afnan","armaf"];
+// Cabinet color is meant to reflect actual price tier, not just a
+// hand-maintained list — a budget house like Maison Alhambra shouldn't
+// render with the same styling as an actual niche/luxury house just
+// because it isn't in DUPE_HOUSE_MATCH. This is verified via a one-time
+// (per house, not per fragrance — only ~44-50 houses total) web-search
+// lookup, cached forever once resolved. Falls back to the hardcoded list
+// as a reasonable default until (or if) that lookup completes.
+let HOUSE_PRICE_TIER={}; // house key (normalized) -> "luxury" | "affordable"
+function priceTierKey(house){
+  return (house||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
 function isDupeHouse(house){
+  const key=priceTierKey(house);
+  if(HOUSE_PRICE_TIER[key])return HOUSE_PRICE_TIER[key]==="affordable";
   const h=(house||"").toLowerCase();
   return DUPE_HOUSE_MATCH.some(m=>h.includes(m));
+}
+async function fetchHousePriceTier(house){
+  const key=priceTierKey(house);
+  if(HOUSE_PRICE_TIER[key])return HOUSE_PRICE_TIER[key];
+  try{
+    const res=await fetch(FUNCTIONS_BASE+"/lookupHousePriceTier?house="+encodeURIComponent(house));
+    const data=await res.json();
+    const tier=(data&&data.found&&data.tier==="affordable")?"affordable":"luxury";
+    HOUSE_PRICE_TIER[key]=tier;
+    fbSet("/housePriceTier/"+key,tier);
+    return tier;
+  }catch(e){
+    return null;
+  }
+}
+// Classifies every known house in the background (once per house, ever —
+// cached in Firebase and loaded on startup), re-rendering the gallery once
+// results land so cabinet colors update to reflect real pricing.
+async function ensureHousePriceTiers(houses){
+  const missing=houses.filter(h=>!HOUSE_PRICE_TIER[priceTierKey(h)]);
+  if(!missing.length)return;
+  const CONCURRENCY=5;
+  let cursor=0, changed=false;
+  async function worker(){
+    while(cursor<missing.length){
+      const house=missing[cursor++];
+      const before=HOUSE_PRICE_TIER[priceTierKey(house)];
+      await fetchHousePriceTier(house);
+      if(HOUSE_PRICE_TIER[priceTierKey(house)]!==before)changed=true;
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(CONCURRENCY,missing.length)},worker));
+  if(changed&&typeof renderWardrobeGallery==="function")renderWardrobeGallery();
 }
 
 // Built as one SVG with shared vertices (not stacked CSS divs) so the
@@ -3957,6 +4015,7 @@ function renderWardrobeGallery(){
   }else{
     window.render3DGallery(gal,houseData);
   }
+  ensureHousePriceTiers(houseNames);
 }
 
 // If the 3D model/library fails to load for any reason, fall back to the
