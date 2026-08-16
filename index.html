@@ -1662,8 +1662,20 @@ async function renderYearEnd(){
   const monthly=await fbGet("/monthly")||{};
   const body=document.getElementById("ye-body");
   const year=new Date().getFullYear();
+  const currentKey=new Date().toISOString().slice(0,7);
   const yearKeys=Object.keys(monthly).filter(k=>k.startsWith(year+"-"));
-  if(yearKeys.length===0){
+
+  // The current month is never in /monthly (that only gets written once a
+  // month is fully over) — compute its stats live from /logs so it isn't
+  // silently missing from every total until it happens to get compiled.
+  const logs=await fbGet("/logs")||{};
+  const currentMonthEntries=Object.entries(logs).filter(([d])=>d.startsWith(currentKey));
+  const currentMonthCompiled=yearKeys.includes(currentKey);
+  const effectiveYearKeys=(!currentMonthCompiled&&currentMonthEntries.length>0)
+    ?[...yearKeys,currentKey]
+    :yearKeys;
+
+  if(effectiveYearKeys.length===0){
     body.innerHTML='<div class="ye-empty">Year-end report will be ready in December once you\'ve been logging your wears throughout the year.</div>';
     return;
   }
@@ -1673,8 +1685,11 @@ async function renderYearEnd(){
     totalDays+=m.days||0;
     totalWears+=m.total||0;
   });
-  // find top fragrance across all months
-  const logs=await fbGet("/logs")||{};
+  if(!currentMonthCompiled&&currentMonthEntries.length>0){
+    totalDays+=currentMonthEntries.length;
+    currentMonthEntries.forEach(([,e])=>{totalWears+=(e.worn||[]).length;});
+  }
+  // find top fragrance across all months (compiled + current live month)
   Object.entries(logs).filter(([d])=>d.startsWith(year+"-")).forEach(([,e])=>{
     (e.worn||[]).forEach(id=>{allTop[id]=(allTop[id]||0)+1;});
   });
@@ -1683,7 +1698,7 @@ async function renderYearEnd(){
   body.innerHTML=
     '<div class="ye-card"><div class="ye-card-label">Days Logged</div><div class="ye-card-value">'+totalDays+'</div><div class="ye-card-sub">days of wear tracked this year</div></div>'
     +'<div class="ye-card"><div class="ye-card-label">Total Wears</div><div class="ye-card-value">'+totalWears+'</div><div class="ye-card-sub">fragrance applications logged</div></div>'
-    +'<div class="ye-card"><div class="ye-card-label">Months Logged</div><div class="ye-card-value">'+yearKeys.length+'</div><div class="ye-card-sub">of 12 months tracked</div></div>'
+    +'<div class="ye-card"><div class="ye-card-label">Months Logged</div><div class="ye-card-value">'+effectiveYearKeys.length+'</div><div class="ye-card-sub">of 12 months tracked</div></div>'
     +(topFrag?'<div class="ye-card"><div class="ye-card-label">Most Worn</div><div class="ye-card-value">'+topFrag.name+'</div><div class="ye-card-sub">'+topFrag.house+' · worn '+(topEntry[1])+'x</div></div>':"");
 }
 
