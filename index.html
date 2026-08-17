@@ -1356,7 +1356,7 @@ async function confirmLog(){
 
 // ── COLLECTION ──
 function renderCollection(){
-  const uids=[...new Set(FRAGS.map(f=>f.id))];
+  const uids=[...new Set(FRAGS.filter(f=>!(wishlist[f.id]&&!acquired[f.id])).map(f=>f.id))];
   const ac=uids.filter(id=>acquired[id]).length;
   document.getElementById("coll-prog-label").textContent=ac+" / "+uids.length;
   document.getElementById("coll-prog-fill").style.width=Math.round((ac/uids.length)*100)+"%";
@@ -1369,7 +1369,7 @@ function renderCollection(){
     ).join("")+'<button class="rb" onclick="resetAcquired()">Reset</button>';
   // sections
   document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
-    const frags=FRAGS.filter(f=>f.slot===slot.id);
+    const frags=FRAGS.filter(f=>f.slot===slot.id&&!(wishlist[f.id]&&!acquired[f.id]));
     const hidden=!vs.find(s=>s.id===slot.id);
     const cards=frags.map(frag=>{
       const isAcq=!!acquired[frag.id];
@@ -1409,13 +1409,21 @@ function toggleAcq(id){
   showToast(acquired[id]?"Acquired":"Removed");
 }
 
-function moveToWishlist(id,e){
+async function moveToWishlist(id,e){
   if(e)e.stopPropagation();
+  const prevAcquired=acquired[id];
+  const prevWishlist=wishlist[id];
   acquired[id]=false;
   wishlist[id]=true;
-  fbSet("/collection",acquired);
-  fbSet("/wishlist",wishlist);
   renderCollection();
+  const [savedAcq,savedWish]=await Promise.all([fbSet("/collection",acquired),fbSet("/wishlist",wishlist)]);
+  if(!savedAcq||!savedWish){
+    acquired[id]=prevAcquired;
+    wishlist[id]=prevWishlist;
+    renderCollection();
+    showToast("Couldn't save — check your connection and try again");
+    return;
+  }
   showToast("Moved to wishlist");
 }
 
@@ -1887,9 +1895,10 @@ function renderSuggestions(){
 
 // ── WISHLIST ──
 function renderWishlist(){
+  const fragItems=FRAGS.filter(f=>!!wishlist[f.id]&&!acquired[f.id]);
   const suggItems=SUGGESTIONS.filter(s=>!!wishlist[s.id]);
   const customItems=Object.values(customFrags).filter(c=>!!wishlist[c.id]);
-  const items=[...suggItems,...customItems];
+  const items=[...fragItems,...suggItems,...customItems];
   const body=document.getElementById("wishlist-body");
   if(items.length===0){
     body.innerHTML='<div class="sugg-empty">Nothing shady to see here! 👀</div>';
@@ -1914,9 +1923,10 @@ function renderWishlist(){
 
 function moveWishlistToCollection(id,e){
   if(e)e.stopPropagation();
-  const s=SUGGESTIONS.find(x=>x.id===id)||customFrags[id];
+  const existingFrag=FRAGS.find(f=>f.id===id);
+  const s=existingFrag||SUGGESTIONS.find(x=>x.id===id)||customFrags[id];
   if(!s)return;
-  if(!FRAGS.find(f=>f.id===id)){
+  if(!existingFrag){
     const prof=deriveFragranceProfile(s.tags||[]);
     FRAGS.push({id:s.id,name:s.name,house:s.house,notes:s.tags||[],slot:"unknown",longevity:prof.longevity,maxSprays:prof.maxSprays,tint:prof.tint,synced:false});
     fbSet("/fragrances",FRAGS);
