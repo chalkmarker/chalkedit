@@ -4785,7 +4785,7 @@ function initBloomMenu(){
   BLOOM_PETALS.forEach(p=>{
     const el=document.createElement("div");
     el.className="petal-slot";
-    el.style.transform="rotate("+p.angle+"deg)";
+    el.style.transform="translate(0px,0px) rotate("+p.angle+"deg)";
     el.innerHTML=petalSvgMarkup()+(p.label?'<div class="petal-label" style="transform:translateX(-50%) rotate('+(-p.angle)+'deg)">'+p.label+'</div>':"");
     wrap.appendChild(el);
 
@@ -4808,12 +4808,19 @@ function initBloomMenu(){
       const dist=Math.min(70,moved);
       const ang=Math.atan2(dy,dx);
       const ox=Math.cos(ang)*dist,oy=Math.sin(ang)*dist;
-      el.style.transform="rotate("+p.angle+"deg) translate("+ox+"px,"+oy+"px)";
+      // translate() must come BEFORE rotate() here — CSS transform
+      // functions apply right-to-left, so this order means the drag
+      // offset is applied first, in true screen space, then the petal's
+      // own rest rotation is layered on top. The reverse order (which
+      // this was previously) re-rotates the drag vector itself by the
+      // petal's angle, so the petal visibly drags in the wrong direction
+      // for anything but the one petal sitting at 0°.
+      el.style.transform="translate("+ox+"px,"+oy+"px) rotate("+p.angle+"deg)";
     });
     function endDrag(){
       if(!dragging)return;
       dragging=false;el.classList.remove("dragging");
-      el.style.transform="rotate("+p.angle+"deg)";
+      el.style.transform="translate(0px,0px) rotate("+p.angle+"deg)";
       if(p.special)hideTodayBadge();
       // Any pull distance (including a plain tap) opens the page.
       p.go();
@@ -4821,7 +4828,7 @@ function initBloomMenu(){
     el.addEventListener("pointerup",endDrag);
     el.addEventListener("pointercancel",()=>{
       dragging=false;el.classList.remove("dragging");
-      el.style.transform="rotate("+p.angle+"deg)";
+      el.style.transform="translate(0px,0px) rotate("+p.angle+"deg)";
       if(p.special)hideTodayBadge();
     });
   });
