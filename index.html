@@ -54,6 +54,33 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .menu-child-dot{width:4px;height:4px;border-radius:50%;background:var(--t3);flex-shrink:0}
 .menu-child-label{font-size:13px;color:#E8D9C0;font-weight:300}
 .menu-weather{margin:24px 28px 0;padding:14px 16px;background:var(--card);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+#menu-weather{display:none !important}
+
+/* ── PLUM BLOSSOM NAVIGATION ── */
+.bloom-wrap{position:relative;width:300px;height:300px;margin:36px auto 0;touch-action:none}
+.bloom-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:3}
+.petal-slot{position:absolute;top:50%;left:50%;width:140px;height:158px;margin-left:-70px;margin-top:-158px;
+  transform-origin:70px 158px;cursor:grab;z-index:2;touch-action:none;pointer-events:none}
+.petal-slot svg{display:block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));transition:filter .2s;pointer-events:auto}
+.petal-slot:hover svg{filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)) brightness(1.06)}
+.petal-slot.dragging{cursor:grabbing;z-index:10}
+.petal-label{position:absolute;left:50%;top:36%;text-align:center;
+  color:#4a2e26;font-size:10px;letter-spacing:.05em;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+.petal-slot:hover .petal-label,.petal-slot.dragging .petal-label{opacity:1}
+.today-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+  opacity:0;transition:opacity .2s;z-index:5;width:180px;text-align:center}
+.today-badge.show{opacity:1}
+.today-badge-plate{background:rgba(20,15,11,.88);border:1px solid rgba(217,199,163,.3);border-radius:12px;
+  padding:12px 14px;backdrop-filter:blur(2px)}
+.tb-temp{color:#D9C7A3;font-size:19px;font-weight:600}
+.tb-desc{color:#9a8a6c;font-size:9px;letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
+.tb-pick-label{color:#7a6a50;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;margin-top:10px;opacity:.8}
+.tb-pick-name{color:#EFE3C8;font-size:12.5px;margin-top:3px;line-height:1.3}
+.tb-pick-house{color:#8a7a5c;font-size:9.5px;font-style:italic;margin-top:1px}
+.bloom-hint{text-align:center;color:#5f5138;font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-top:8px}
+.menu-more-toggle{text-align:center;color:#6b5c42;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  margin-top:28px;cursor:pointer;transition:color .15s}
+.menu-more-toggle:hover{color:#D9C7A3}
 .menu-weather-icon{font-size:22px}
 .menu-weather-text{font-size:12px;color:var(--t2)}
 .menu-weather-temp{font-size:15px;font-weight:500;color:var(--t1)}
@@ -632,6 +659,9 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
       <div class="menu-byline">by Mark Lee</div>
     </div>
   </div>
+  <!-- Kept for weather/pick data plumbing (getWeather/renderPick write into
+       these) but not shown directly — the blossom's fifth petal surfaces
+       the same data instead. -->
   <div id="menu-weather" class="menu-weather" style="display:none">
     <div class="menu-weather-icon" id="mw-icon">—</div>
     <div>
@@ -639,8 +669,23 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
       <div class="menu-weather-text" id="mw-desc">Loading weather...</div>
     </div>
   </div>
-  <div id="menu-pick-wrap" class="menu-pick-wrap"></div>
-  <div class="menu-nav">
+  <div id="menu-pick-wrap" class="menu-pick-wrap" style="display:none"></div>
+
+  <div class="bloom-wrap" id="bloomWrap">
+    <div class="today-badge" id="todayBadge">
+      <div class="today-badge-plate">
+        <div class="tb-temp" id="tb-temp">—</div>
+        <div class="tb-desc" id="tb-desc">Loading weather…</div>
+        <div class="tb-pick-label">Today's Pick</div>
+        <div class="tb-pick-name" id="tb-pick-name">—</div>
+        <div class="tb-pick-house" id="tb-pick-house"></div>
+      </div>
+    </div>
+  </div>
+  <div class="bloom-hint">pull a petal open · hover the fifth for today</div>
+
+  <div class="menu-more-toggle" onclick="toggleFullMenu()" id="menuMoreToggle">Show all pages ›</div>
+  <div class="menu-nav" id="menu-nav-full" style="display:none">
     <div class="menu-section">
       <div class="menu-parent" onclick="goTo('closet')">
         <span class="menu-parent-label">Closet</span>
@@ -4635,6 +4680,174 @@ function toggleMenu(key){
     arrow.classList.add("open");
   }
 }
+
+function toggleFullMenu(){
+  const nav=document.getElementById("menu-nav-full");
+  const toggle=document.getElementById("menuMoreToggle");
+  const open=nav.style.display!=="none";
+  nav.style.display=open?"none":"";
+  toggle.textContent=open?"Show all pages ›":"Hide all pages ‹";
+}
+
+// ── PLUM BLOSSOM MENU ──
+// Botanically-modeled 5-petal navigation: pulling any petal outward by any
+// distance opens its page; the fifth petal (no sub-pages of its own) shows
+// weather + today's pick on hover/touch instead, reading from the same
+// hidden elements getWeather()/renderPick() already populate — so this
+// never needs its own data-fetching logic, just mirrors what's already
+// there.
+const PETAL_SHAPE_PATH=`M 0,-8
+  C -14,-14 -34,-22 -48,-42
+  C -62,-62 -68,-88 -60,-112
+  C -54,-130 -40,-142 -22,-146
+  C -14,-148 -8,-144 -5,-136
+  C -8,-146 -4,-155 0,-158
+  C 4,-155 8,-146 5,-136
+  C 8,-144 14,-148 22,-146
+  C 40,-142 54,-130 60,-112
+  C 68,-88 62,-62 48,-42
+  C 34,-22 14,-14 0,-8
+  Z`;
+const PETAL_VEINS=[
+  "M0,-15 C-4,-55 -14,-95 -28,-125",
+  "M0,-15 C4,-55 14,-95 28,-125",
+  "M0,-15 C-1,-60 -2,-105 -3,-145",
+  "M0,-15 C1,-60 2,-105 3,-145",
+  "M0,-15 C-8,-50 -22,-80 -40,-105",
+  "M0,-15 C8,-50 22,-80 40,-105",
+];
+function petalSvgMarkup(){
+  return '<svg viewBox="-70 -165 140 165" width="140" xmlns="http://www.w3.org/2000/svg">'
+    +'<defs><radialGradient id="pg" cx="50%" cy="98%" r="98%">'
+      +'<stop offset="0%" stop-color="#E8899A"/><stop offset="16%" stop-color="#F3B9C2"/>'
+      +'<stop offset="40%" stop-color="#FDF3EE"/><stop offset="100%" stop-color="#FFFFFF"/>'
+    +'</radialGradient></defs>'
+    +'<path d="'+PETAL_SHAPE_PATH+'" fill="url(#pg)" stroke="#D98A9A" stroke-width="0.6" stroke-opacity="0.35"/>'
+    +'<g stroke="#D98A9A" stroke-width="0.7" stroke-opacity="0.3" fill="none">'
+      +PETAL_VEINS.map(v=>'<path d="'+v+'"/>').join("")
+    +'</g></svg>';
+}
+function centerClusterSvg(){
+  const P=[];
+  const px=(s)=>P.push(s);
+  px('<circle cx="0" cy="0" r="55" fill="url(#cg)"/>');
+  const n=34;
+  for(let i=0;i<n;i++){
+    const ang=(360/n)*i+bloomSeeded(i,"a")*18-9;
+    const lengthBand=bloomSeeded(i,"b");
+    const length=lengthBand<0.34?(35+bloomSeeded(i,"c")*20):lengthBand<0.67?(60+bloomSeeded(i,"c")*20):(82+bloomSeeded(i,"c")*20);
+    const rad=Math.PI*ang/180;
+    const x2=length*Math.sin(rad), y2=-length*Math.cos(rad);
+    const cx=x2*0.5+(bloomSeeded(i,"d")*12-6), cy=y2*0.5+(bloomSeeded(i,"e")*12-6);
+    px('<path d="M0,0 Q'+cx.toFixed(1)+','+cy.toFixed(1)+' '+x2.toFixed(1)+','+y2.toFixed(1)+'" stroke="#F2E8C9" stroke-width="1" fill="none" opacity="0.85"/>');
+    px('<circle cx="'+x2.toFixed(1)+'" cy="'+y2.toFixed(1)+'" r="'+(2.6+bloomSeeded(i,"f")*1).toFixed(1)+'" fill="#E8B23A"/>');
+    px('<circle cx="'+x2.toFixed(1)+'" cy="'+y2.toFixed(1)+'" r="1.2" fill="#F5D26B"/>');
+  }
+  px('<circle cx="0" cy="0" r="7" fill="#9AAE5C"/><circle cx="0" cy="0" r="4" fill="#6E7F3C"/>');
+  for(let i=0;i<5;i++){
+    const rad=Math.PI*(72*i)/180;
+    const x2=9*Math.sin(rad), y2=-9*Math.cos(rad);
+    px('<line x1="0" y1="0" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="#7A8C46" stroke-width="1"/>');
+  }
+  return '<svg viewBox="-100 -100 200 200" width="200" xmlns="http://www.w3.org/2000/svg">'
+    +'<defs><radialGradient id="cg" cx="50%" cy="50%" r="50%">'
+      +'<stop offset="0%" stop-color="#F0C419" stop-opacity="0.9"/>'
+      +'<stop offset="60%" stop-color="#C9962E" stop-opacity="0.35"/>'
+      +'<stop offset="100%" stop-color="#C9962E" stop-opacity="0"/>'
+    +'</radialGradient></defs>'
+    +P.join("")+'</svg>';
+}
+// Deterministic per-index pseudo-random (0..1) so the center cluster looks
+// hand-scattered but doesn't reshuffle on every render.
+function bloomSeeded(i,tag){
+  let h=0;const s=i+tag;
+  for(let k=0;k<s.length;k++){h=(h<<5)-h+s.charCodeAt(k);h|=0;}
+  return (Math.abs(h)%1000)/1000;
+}
+
+const BLOOM_PETALS=[
+  {label:"Wardrobe",angle:0,go:()=>goTo("collection")},
+  {label:"Closet",angle:72,go:()=>goTo("closet")},
+  {label:"Year Wrap",angle:144,go:()=>goTo("wearlog")},
+  {label:"Suggested",angle:216,go:()=>goTo("suggestions")},
+  {label:"",angle:288,special:true,go:()=>goTo("today")},
+];
+
+function initBloomMenu(){
+  const wrap=document.getElementById("bloomWrap");
+  if(!wrap||wrap.dataset.built)return;
+  wrap.dataset.built="1";
+  const center=document.createElement("div");
+  center.className="bloom-center";
+  center.innerHTML=centerClusterSvg();
+  wrap.insertBefore(center,wrap.firstChild);
+
+  BLOOM_PETALS.forEach(p=>{
+    const el=document.createElement("div");
+    el.className="petal-slot";
+    el.style.transform="rotate("+p.angle+"deg)";
+    el.innerHTML=petalSvgMarkup()+(p.label?'<div class="petal-label" style="transform:translateX(-50%) rotate('+(-p.angle)+'deg)">'+p.label+'</div>':"");
+    wrap.appendChild(el);
+
+    if(p.special){
+      el.addEventListener("mouseenter",showTodayBadge);
+      el.addEventListener("mouseleave",hideTodayBadge);
+    }
+
+    let dragging=false,startX=0,startY=0,moved=0,pid=null;
+    el.addEventListener("pointerdown",e=>{
+      dragging=true;moved=0;startX=e.clientX;startY=e.clientY;pid=e.pointerId;
+      el.classList.add("dragging");
+      try{el.setPointerCapture(pid);}catch(err){}
+      if(p.special)showTodayBadge();
+    });
+    el.addEventListener("pointermove",e=>{
+      if(!dragging)return;
+      const dx=e.clientX-startX,dy=e.clientY-startY;
+      moved=Math.hypot(dx,dy);
+      const dist=Math.min(70,moved);
+      const ang=Math.atan2(dy,dx);
+      const ox=Math.cos(ang)*dist,oy=Math.sin(ang)*dist;
+      el.style.transform="rotate("+p.angle+"deg) translate("+ox+"px,"+oy+"px)";
+    });
+    function endDrag(){
+      if(!dragging)return;
+      dragging=false;el.classList.remove("dragging");
+      el.style.transform="rotate("+p.angle+"deg)";
+      if(p.special)hideTodayBadge();
+      // Any pull distance (including a plain tap) opens the page.
+      p.go();
+    }
+    el.addEventListener("pointerup",endDrag);
+    el.addEventListener("pointercancel",()=>{
+      dragging=false;el.classList.remove("dragging");
+      el.style.transform="rotate("+p.angle+"deg)";
+      if(p.special)hideTodayBadge();
+    });
+  });
+}
+// Mirrors whatever getWeather()/renderPick() already wrote into the hidden
+// menu elements — no separate data-fetch needed, so it can't drift out of
+// sync with the rest of the app.
+function showTodayBadge(){
+  const badge=document.getElementById("todayBadge");
+  if(!badge)return;
+  const temp=document.getElementById("mw-temp");
+  const desc=document.getElementById("mw-desc");
+  const pickWrap=document.getElementById("menu-pick-wrap");
+  document.getElementById("tb-temp").textContent=temp?temp.textContent:"—";
+  document.getElementById("tb-desc").textContent=desc?desc.textContent:"";
+  const nameEl=pickWrap?pickWrap.querySelector(".menu-pick-name"):null;
+  const houseEl=pickWrap?pickWrap.querySelector(".menu-pick-house"):null;
+  document.getElementById("tb-pick-name").textContent=nameEl?nameEl.textContent:"Add a fragrance to get a pick";
+  document.getElementById("tb-pick-house").textContent=houseEl?houseEl.textContent:"";
+  badge.classList.add("show");
+}
+function hideTodayBadge(){
+  const badge=document.getElementById("todayBadge");
+  if(badge)badge.classList.remove("show");
+}
+initBloomMenu();
 
 // ── TOAST ──
 let toastTimer;
