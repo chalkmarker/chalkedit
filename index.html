@@ -308,10 +308,21 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .cg{display:block}
 @media(min-width:768px){.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
 .fc{margin:0 12px 7px;border-radius:11px;background:var(--card);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:opacity .2s,box-shadow .2s;display:flex;position:relative}
+.fc .br span:first-child,.fc .lon{color:#A99C8B !important}
+@media(min-width:768px){.fc .move-wish-btn{right:50px}}
+.fc:not(.acq){background:linear-gradient(90deg,#2E2620 45%,var(--tint-bg,rgba(160,140,120,.1)) 100%)}
+.fc.dragging{opacity:.25}
+.fc-ghost{position:fixed;z-index:400;pointer-events:none;margin:0 !important;box-shadow:0 14px 34px rgba(0,0,0,.6);transform:scale(1.03) rotate(1.5deg);opacity:.95}
+.sec.drop-hot .cg{outline:2px dashed rgba(212,178,122,.7);outline-offset:4px;border-radius:12px}
+body.card-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
+#slot-dock{position:fixed;left:0;right:0;bottom:0;z-index:390;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:rgba(20,16,13,.92);border-top:1px solid rgba(255,255,255,.1);transform:translateY(110%);transition:transform .22s}
+#slot-dock.show{transform:translateY(0)}
+.dock-chip{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:9px 14px;border-radius:999px;border:1.5px solid var(--c);color:var(--c);background:transparent;transition:all .12s}
+.dock-chip.hot{background:var(--c);color:#14100D;transform:scale(1.08)}
 .move-wish-btn{position:absolute;bottom:6px;right:8px;font-size:9px;letter-spacing:.03em;color:var(--t3);background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:999px;padding:3px 8px;cursor:pointer;transition:color .15s,border-color .15s}
 .move-wish-btn:hover{color:var(--gold);border-color:var(--gold2)}
 @media(min-width:768px){.fc{margin:0;border-radius:12px}}
-.fc.acq{opacity:.35}
+.fc.acq{background:linear-gradient(90deg,#3A2F27 40%,var(--acq-tint,rgba(200,170,120,.16)) 100%) !important;border-color:rgba(212,178,122,.35);box-shadow:0 0 0 1px rgba(212,178,122,.08),0 3px 14px rgba(0,0,0,.25)}
 .fc.syn{border-style:dashed;border-color:rgba(255,255,255,.08)}
 .fc:hover{box-shadow:0 4px 20px rgba(0,0,0,.5);border-color:rgba(255,255,255,.1)}
 .fa{width:3px;flex-shrink:0}
@@ -324,7 +335,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.di{display:flex}}
 .fn{font-size:14px;font-weight:500;line-height:1.2;color:var(--t1);margin-bottom:2px}
 @media(min-width:768px){.fn{font-size:15px;margin-bottom:3px}}
-.fc.acq .fn{text-decoration:line-through;color:var(--t3)}
+.fc.acq .fn{color:#F4EBDD}
+.fc.acq .fh{color:#CDBFAE}
 .fh{font-size:11px;color:var(--t2);font-style:italic;margin-bottom:8px}
 @media(min-width:768px){.fh{margin-bottom:12px}}
 .fcat{font-size:10px;color:#C8884A;background:rgba(200,136,74,.12);padding:2px 7px;border-radius:999px;display:inline-block;margin-bottom:8px}
@@ -1437,8 +1449,8 @@ function renderCollection(){
       const pills=(frag.notes||[]).map(n=>'<span class="np">'+n+'</span>').join("");
       const caut=frag.caution?'<div class="fcat">'+frag.caution+'</div>':"";
       const ss="color:"+slot.color+";background:"+slot.color+"22";
-      return '<div class="fc'+(isAcq?" acq":"")+(frag.synced?" syn":"")
-        +'" style="background:linear-gradient(90deg,#241E1A 45%,'+tint+' 100%)" onclick="toggleAcq(\''+frag.id+'\')">'
+      return '<div class="fc'+(isAcq?" acq":"")+(frag.synced?" syn":"")+'" data-id="'+frag.id
+        +'" style="--acq-tint:'+tint.replace(/[\d.]+\)$/,'.28)')+';background:linear-gradient(90deg,#2E2620 45%,'+tint+' 100%)" onclick="toggleAcq(\''+frag.id+'\')">'
         +'<div class="fa" style="background:'+accent+'"></div>'
         +'<div class="fb2">'
           +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
@@ -1454,7 +1466,7 @@ function renderCollection(){
           +'</div>'
         +'</div></div>';
     }).join("");
-    return '<div class="sec'+(hidden?" hidden":"")+'">'
+    return '<div class="sec'+(hidden?" hidden":"")+'" data-slot="'+slot.id+'">'
       +'<div class="shm"><div class="sl"></div><div style="display:flex;align-items:center;gap:5px"><div class="sd" style="background:'+slot.color+'"></div><span class="slbl">'+slot.label+'</span></div><div class="sl"></div></div>'
       +'<div class="shd"><div class="sls"></div><div class="sdl" style="background:'+slot.color+'"></div><span class="slbl">'+slot.label+'</span><div class="sl"></div></div>'
       +'<div class="cg">'+cards+'</div></div>';
@@ -4402,6 +4414,92 @@ function renderCloset(){
   ensureVerifiedNotes(entries);
 }
 
+// ── DRAG A CARD BETWEEN OCCASIONS ──
+(function(){
+  let st=null,suppressClick=false;
+  const dock=()=>document.getElementById("slot-dock");
+  function slotAt(x,y){
+    const els=document.elementsFromPoint(x,y);
+    for(const el of els){
+      if(el.classList&&el.classList.contains("dock-chip"))return el.dataset.slot;
+      const sec=el.closest&&el.closest("#coll-main .sec:not(.hidden)");
+      if(sec)return sec.dataset.slot;
+    }
+    return null;
+  }
+  function hot(slotId){
+    document.querySelectorAll("#coll-main .sec").forEach(s=>s.classList.toggle("drop-hot",s.dataset.slot===slotId&&slotId!==st.from));
+    document.querySelectorAll(".dock-chip").forEach(c=>c.classList.toggle("hot",c.dataset.slot===slotId&&slotId!==st.from));
+  }
+  function begin(){
+    st.active=true;
+    const r=st.card.getBoundingClientRect();
+    const g=st.card.cloneNode(true);
+    g.classList.add("fc-ghost");g.removeAttribute("onclick");
+    g.style.width=r.width+"px";g.style.left=r.left+"px";g.style.top=r.top+"px";
+    st.dx=st.x-r.left;st.dy=st.y-r.top;
+    document.body.appendChild(g);st.ghost=g;
+    st.card.classList.add("dragging");
+    document.body.classList.add("card-dragging");
+    const d=dock();
+    d.innerHTML=SLOTS.map(sl=>'<div class="dock-chip" data-slot="'+sl.id+'" style="--c:'+sl.color.replace(/^#(..)(..)(..)$/,(m,a,b,c)=>"rgb("+[a,b,c].map(h=>Math.min(255,parseInt(h,16)+70)).join(",")+")")+'">'+sl.label+'</div>').join("");
+    d.classList.add("show");
+    if(navigator.vibrate)try{navigator.vibrate(15);}catch(e){}
+  }
+  function end(drop){
+    clearTimeout(st.timer);
+    if(st.active){
+      suppressClick=true;setTimeout(()=>{suppressClick=false;},0);
+      const target=drop?slotAt(st.x,st.y):null;
+      st.ghost.remove();st.card.classList.remove("dragging");
+      document.body.classList.remove("card-dragging");
+      dock().classList.remove("show");
+      document.querySelectorAll(".drop-hot").forEach(e=>e.classList.remove("drop-hot"));
+      if(target&&target!==st.from){
+        const f=FRAGS.find(x=>x.id===st.id);
+        if(f){
+          f.slot=target;
+          fbSet("/fragrances",FRAGS);
+          renderCollection();
+          showToast("Moved to "+(SLOTMAP[target]||{}).label);
+        }
+      }
+    }
+    st=null;
+  }
+  function init(){
+    const main=document.getElementById("coll-main");
+    if(!main)return;
+    main.addEventListener("pointerdown",e=>{
+      if(e.button!==undefined&&e.button!==0)return;
+      if(e.target.closest(".move-wish-btn"))return;
+      const card=e.target.closest(".fc");if(!card||!card.dataset.id)return;
+      st={card,id:card.dataset.id,from:card.closest(".sec").dataset.slot,x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,touch:e.pointerType==="touch",active:false};
+      if(st.touch)st.timer=setTimeout(()=>{if(st&&!st.active)begin();},350);
+    });
+    window.addEventListener("pointermove",e=>{
+      if(!st)return;
+      st.x=e.clientX;st.y=e.clientY;
+      if(!st.active){
+        const moved=Math.hypot(st.x-st.sx,st.y-st.sy);
+        if(st.touch){if(moved>8){clearTimeout(st.timer);st=null;}}
+        else if(moved>6)begin();
+        return;
+      }
+      st.ghost.style.left=(st.x-st.dx)+"px";st.ghost.style.top=(st.y-st.dy)+"px";
+      hot(slotAt(st.x,st.y));
+    });
+    window.addEventListener("pointerup",()=>{if(st)end(true);});
+    window.addEventListener("pointercancel",()=>{if(st)end(false);});
+    window.addEventListener("touchmove",e=>{if(st&&st.active)e.preventDefault();},{passive:false});
+    window.addEventListener("keydown",e=>{if(e.key==="Escape"&&st&&st.active)end(false);});
+    // a drag must never also count as a tap (which toggles Acquired)
+    main.addEventListener("click",e=>{if(suppressClick){e.stopPropagation();e.preventDefault();}},true);
+    main.addEventListener("contextmenu",e=>{if(st&&st.active)e.preventDefault();});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
+
 // ── QUICK ADD (popup version of the Add Fragrance page; reuses its exact markup/logic) ──
 function openQuickAdd(){
   const body=document.querySelector("#addfrag .addfrag-body");
@@ -5427,5 +5525,6 @@ window.renderPotionSnapshot = async function(tier,colorHex){
 };
 </script>
 
+<div id="slot-dock"></div>
 </body>
 </html>
