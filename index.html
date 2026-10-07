@@ -169,6 +169,11 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .fb{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--t2);transition:all .15s;margin-bottom:4px}
 @media(min-width:768px){.fb{font-size:11px;padding:6px 16px;margin-bottom:0}}
 .fb.active{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--t1)}
+.qadd-x{background:none;border:none;color:var(--t2);font-size:24px;line-height:1;cursor:pointer;padding:0 4px}
+.qadd{margin-left:auto;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--t2);font-size:16px;line-height:1;cursor:pointer;padding:0;margin-bottom:4px;display:inline-flex;align-items:center;justify-content:center}
+.qadd:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+.qadd+.rb{margin-left:8px}
+@media(min-width:768px){.qadd{margin-bottom:0}}
 .rb{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:transparent;color:#B07878;margin-bottom:4px}
 @media(min-width:768px){.rb{font-size:11px;padding:6px 16px;margin-bottom:0}}
 .coll-progress{padding:12px 16px 0;display:flex;align-items:center;gap:12px}
@@ -938,6 +943,15 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
+<!-- QUICK ADD (Wardrobe +) : hosts the Add Fragrance body while open -->
+<div class="modal-overlay" id="qadd-modal" onclick="if(event.target===this)closeQuickAdd()">
+  <div class="modal-sheet" style="padding-bottom:20px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center">Add Fragrance<button class="qadd-x" onclick="closeQuickAdd()" aria-label="Close">&times;</button></div>
+    <div id="qadd-host"></div>
+  </div>
+</div>
+
 <!-- LOG MODAL -->
 <div class="modal-overlay" id="log-modal" onclick="closeLogModal(event)">
   <div class="modal-sheet">
@@ -1411,7 +1425,7 @@ function renderCollection(){
   document.getElementById("coll-toolbar").innerHTML=
     [{ id:"all",label:"All"},...SLOTS].map(s=>
       '<button class="fb'+(currentFilter===s.id?" active":"")+'" onclick="setFilter(\''+s.id+'\')" >'+s.label+'</button>'
-    ).join("")+'<button class="rb" onclick="resetAcquired()">Reset</button>';
+    ).join("")+'<button class="qadd" onclick="openQuickAdd()" title="Add fragrance" aria-label="Add fragrance">+</button><button class="rb" onclick="resetAcquired()">Reset</button>';
   // sections
   document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
     const frags=FRAGS.filter(f=>f.slot===slot.id&&!(wishlist[f.id]&&!acquired[f.id]));
@@ -4386,6 +4400,25 @@ function renderCloset(){
   // background (not just the house currently open) — by the time you open
   // any cabinet, its notes are likely already verified.
   ensureVerifiedNotes(entries);
+}
+
+// ── QUICK ADD (popup version of the Add Fragrance page; reuses its exact markup/logic) ──
+function openQuickAdd(){
+  const body=document.querySelector("#addfrag .addfrag-body");
+  const host=document.getElementById("qadd-host");
+  if(!body||!host)return;
+  host.appendChild(body);
+  document.getElementById("qadd-modal").classList.add("open");
+  const inp=document.getElementById("af-search-input");
+  if(inp){inp.value="";document.getElementById("af-results").innerHTML="";setTimeout(()=>inp.focus(),50);}
+}
+function closeQuickAdd(){
+  document.getElementById("qadd-modal").classList.remove("open");
+  const body=document.querySelector("#qadd-host .addfrag-body");
+  const page=document.getElementById("addfrag");
+  if(body&&page)page.appendChild(body);
+  renderCollection();
+  if(typeof renderWishlist==="function")try{renderWishlist();}catch(e){}
 }
 
 // ── ADD FRAGRANCE ──
