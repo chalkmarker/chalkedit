@@ -64,6 +64,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .petal-slot svg{display:block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));transition:filter .2s;pointer-events:auto}
 .petal-slot:hover svg{filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)) brightness(1.06)}
 .petal-slot.dragging{cursor:grabbing;z-index:10}
+.pp-overlay{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s}
+.pp-overlay.open{opacity:1;pointer-events:all}
+.pp-card{background:#241E1A;border:1px solid rgba(212,178,122,.3);border-radius:16px;padding:14px 10px 10px;width:min(260px,82vw);box-shadow:0 18px 50px rgba(0,0,0,.6);transform:scale(.94);transition:transform .2s}
+.pp-overlay.open .pp-card{transform:scale(1)}
+.pp-title{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:8px}
+.pp-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;color:#E8DCC8;font-size:15px;padding:12px 14px;border-radius:10px;cursor:pointer;font-family:inherit}
+.pp-item:hover,.pp-item:active{background:rgba(212,178,122,.12)}
+.pp-dot{width:5px;height:5px;border-radius:50%;background:var(--gold2,#A8895A);flex-shrink:0}
 .petal-label{position:absolute;left:50%;top:36%;text-align:center;
   color:#4a2e26;font-size:10px;letter-spacing:.05em;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
 .petal-slot:hover .petal-label,.petal-slot.dragging .petal-label{opacity:1}
@@ -170,6 +178,34 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.fb{font-size:11px;padding:6px 16px;margin-bottom:0}}
 .fb.active{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--t1)}
 .qadd-x{background:none;border:none;color:var(--t2);font-size:24px;line-height:1;cursor:pointer;padding:0 4px}
+.nb{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(212,178,122,.4);background:transparent;color:var(--gold);margin-bottom:4px}
+@media(min-width:768px){.nb{font-size:11px;padding:6px 16px;margin-bottom:0}}
+.nb+.qadd{margin-left:8px}
+.notes-menu{position:fixed;z-index:130;display:none;flex-direction:column;min-width:170px;background:#241E1A;border:1px solid rgba(212,178,122,.3);border-radius:12px;padding:5px;box-shadow:0 12px 34px rgba(0,0,0,.55)}
+.notes-menu.show{display:flex}
+.notes-menu button{background:none;border:none;color:#E8DCC8;font-size:13px;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
+.notes-menu button:hover{background:rgba(212,178,122,.12)}
+.nt-head{display:flex;justify-content:space-between;align-items:center;padding:4px 18px 10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.nt-head .modal-title{padding:0;margin:0}
+.nt-link{background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 0}
+.nt-link.del{color:#B07878}
+.nt-item{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}
+.nt-item:hover{background:rgba(212,178,122,.07)}
+.nt-t{font-size:14px;color:#F0E6D2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nt-p{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.nt-d{font-size:10px;color:var(--t3);margin-top:4px;letter-spacing:.03em}
+.nt-empty{padding:30px 18px;text-align:center;color:var(--t2);font-size:13px}
+.nt-title{display:block;width:calc(100% - 36px);margin:14px 18px 0;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);color:#F7EEDD;font-family:inherit;font-weight:700;font-size:24px;line-height:1.25;padding:2px 0 10px;resize:none;overflow:hidden;box-sizing:border-box}
+.nt-title:focus{outline:none;border-bottom-color:rgba(212,178,122,.5)}
+.nt-title::placeholder,.nt-area::placeholder{color:var(--t3);font-weight:400}
+.nt-tools{display:flex;gap:6px;margin:10px 18px 0}
+.nt-tools button{flex:1;background:#1A1512;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E8DCC8;font-size:13px;padding:7px 0;cursor:pointer;font-family:inherit}
+.nt-tools button:active,.nt-tools button:hover{border-color:rgba(212,178,122,.5);color:var(--gold)}
+.nt-area{display:block;width:calc(100% - 36px);margin:8px 18px 6px;min-height:200px;max-height:50vh;resize:vertical;background:#1A1512;border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#F0E6D2;font-family:inherit;font-size:15px;line-height:1.5;padding:12px;box-sizing:border-box}
+.nt-area:focus{outline:none;border-color:rgba(212,178,122,.5)}
+.nt-stamp{padding:0 18px;font-size:11px;color:var(--t2);line-height:1.6}
+.nt-hist{padding:4px 18px 0;font-size:11px;color:var(--t3);line-height:1.6}
+.nt-foot{display:flex;justify-content:space-between;padding:10px 18px 0}
 .qadd{margin-left:auto;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--t2);font-size:16px;line-height:1;cursor:pointer;padding:0;margin-bottom:4px;display:inline-flex;align-items:center;justify-content:center}
 .qadd:hover{color:#fff;border-color:rgba(255,255,255,.4)}
 .qadd+.rb{margin-left:8px}
@@ -309,7 +345,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 @media(min-width:768px){.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}
 .fc{margin:0 12px 7px;border-radius:11px;background:var(--card);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:opacity .2s,box-shadow .2s;display:flex;position:relative}
 .fc .br span:first-child,.fc .lon{color:#A99C8B !important}
-@media(min-width:768px){.fc .move-wish-btn{right:50px}}
 .fc:not(.acq){background:linear-gradient(90deg,#2E2620 45%,var(--tint-bg,rgba(160,140,120,.1)) 100%)}
 .fc.dragging{opacity:.25}
 .fc-ghost{position:fixed;z-index:400;pointer-events:none;margin:0 !important;box-shadow:0 14px 34px rgba(0,0,0,.6);transform:scale(1.03) rotate(1.5deg);opacity:.95}
@@ -319,8 +354,6 @@ body.card-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 #slot-dock.show{transform:translateY(0)}
 .dock-chip{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:9px 14px;border-radius:999px;border:1.5px solid var(--c);color:var(--c);background:transparent;transition:all .12s}
 .dock-chip.hot{background:var(--c);color:#14100D;transform:scale(1.08)}
-.move-wish-btn{position:absolute;bottom:6px;right:8px;font-size:9px;letter-spacing:.03em;color:var(--t3);background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:999px;padding:3px 8px;cursor:pointer;transition:color .15s,border-color .15s}
-.move-wish-btn:hover{color:var(--gold);border-color:var(--gold2)}
 @media(min-width:768px){.fc{margin:0;border-radius:12px}}
 .fc.acq{background:linear-gradient(90deg,#3A2F27 40%,var(--acq-tint,rgba(200,170,120,.16)) 100%) !important;border-color:rgba(212,178,122,.35);box-shadow:0 0 0 1px rgba(212,178,122,.08),0 3px 14px rgba(0,0,0,.25)}
 .fc.syn{border-style:dashed;border-color:rgba(255,255,255,.08)}
@@ -964,6 +997,20 @@ body.card-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
   </div>
 </div>
 
+<!-- PETAL POPUP -->
+<div class="pp-overlay" id="petal-pop" onclick="if(event.target===this)closePetalMenu()">
+  <div class="pp-card"><div class="pp-title" id="petal-pop-title"></div><div id="petal-pop-list"></div></div>
+</div>
+
+<!-- NOTES -->
+<div id="notes-menu" class="notes-menu"><button onclick="notesCreate()">Create</button><button onclick="notesViewOpen()">View open notes</button></div>
+<div class="modal-overlay" id="notes-modal" onclick="if(event.target===this)closeNotes()">
+  <div class="modal-sheet" style="padding-bottom:20px">
+    <div class="modal-handle"></div>
+    <div id="notes-body"></div>
+  </div>
+</div>
+
 <!-- LOG MODAL -->
 <div class="modal-overlay" id="log-modal" onclick="closeLogModal(event)">
   <div class="modal-sheet">
@@ -1019,6 +1066,7 @@ const SLOTS=[
   {id:"unknown",      label:"Unknown",          color:"#7A6A5A"},
 ];
 const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
+let NOTES={};
 let FRAGS=[],acquired={},wishlist={},customFrags={},logSelected={},weatherData=null,currentFilter="all",currentMonthKey=null,pageHistory=["menu"];
 
 // ── FIREBASE ──
@@ -1092,7 +1140,7 @@ async function fbSet(path,data){
 
 // ── INIT ──
 (async()=>{
-  const [fd,sd,wd,cd,vn,pt]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes"),fbGet("/housePriceTier")]);
+  const [fd,sd,wd,cd,vn,pt,nt]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes"),fbGet("/housePriceTier"),fbGet("/notes")]);
   if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
   else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
   if(sd&&typeof sd==="object")acquired=sd;
@@ -1100,6 +1148,7 @@ async function fbSet(path,data){
   if(cd&&typeof cd==="object")customFrags=cd;
   if(vn&&typeof vn==="object")VERIFIED_NOTES=vn;
   if(pt&&typeof pt==="object")HOUSE_PRICE_TIER=pt;
+  if(nt&&typeof nt==="object")NOTES=nt;
   await maybeCompileLastMonth();
   loadRemoteSuggestions();
   getWeather();
@@ -1437,7 +1486,7 @@ function renderCollection(){
   document.getElementById("coll-toolbar").innerHTML=
     [{ id:"all",label:"All"},...SLOTS].map(s=>
       '<button class="fb'+(currentFilter===s.id?" active":"")+'" onclick="setFilter(\''+s.id+'\')" >'+s.label+'</button>'
-    ).join("")+'<button class="qadd" onclick="openQuickAdd()" title="Add fragrance" aria-label="Add fragrance">+</button><button class="rb" onclick="resetAcquired()">Reset</button>';
+    ).join("")+'<button class="nb" onclick="toggleNotesMenu(event)">Notes ▾</button><button class="qadd" onclick="openQuickAdd()" title="Add fragrance" aria-label="Add fragrance">+</button><button class="rb" onclick="resetAcquired()">Reset</button>';
   // sections
   document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
     const frags=FRAGS.filter(f=>f.slot===slot.id&&!(wishlist[f.id]&&!acquired[f.id]));
@@ -1455,7 +1504,6 @@ function renderCollection(){
         +'<div class="fb2">'
           +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
           +'<div class="mr"><div class="cb">'+(isAcq?chk:"")+'</div><div class="spc"></div><div class="notes">'+pills+'</div></div>'
-          +(isAcq?'<button class="move-wish-btn" onclick="moveToWishlist(\''+frag.id+'\',event)" title="Move to wishlist">↦ Wishlist</button>':"")
           +'<div class="di">'
             +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="fn">'+frag.name+'</div><div class="cb">'+(isAcq?chk:"")+'</div></div>'
             +'<div class="fh">'+frag.house+'</div>'
@@ -1478,24 +1526,6 @@ function toggleAcq(id){
   fbSet("/collection",acquired);
   renderCollection();
   showToast(acquired[id]?"Acquired":"Removed");
-}
-
-async function moveToWishlist(id,e){
-  if(e)e.stopPropagation();
-  const prevAcquired=acquired[id];
-  const prevWishlist=wishlist[id];
-  acquired[id]=false;
-  wishlist[id]=true;
-  renderCollection();
-  const [savedAcq,savedWish]=await Promise.all([fbSet("/collection",acquired),fbSet("/wishlist",wishlist)]);
-  if(!savedAcq||!savedWish){
-    acquired[id]=prevAcquired;
-    wishlist[id]=prevWishlist;
-    renderCollection();
-    showToast("Couldn't save — check your connection and try again");
-    return;
-  }
-  showToast("Moved to wishlist");
 }
 
 function toggleWishlist(id,e){
@@ -4472,7 +4502,6 @@ function renderCloset(){
     if(!main)return;
     main.addEventListener("pointerdown",e=>{
       if(e.button!==undefined&&e.button!==0)return;
-      if(e.target.closest(".move-wish-btn"))return;
       const card=e.target.closest(".fc");if(!card||!card.dataset.id)return;
       st={card,id:card.dataset.id,from:card.closest(".sec").dataset.slot,x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,touch:e.pointerType==="touch",active:false};
       if(st.touch)st.timer=setTimeout(()=>{if(st&&!st.active)begin();},350);
@@ -4499,6 +4528,248 @@ function renderCloset(){
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
+
+// ── NOTES (My Collection) ──
+let noteCur=null,noteTimer=null;
+function noteFmt(ts){return new Date(ts).toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});}
+function noteEsc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function toggleNotesMenu(e){
+  e.stopPropagation();
+  const m=document.getElementById("notes-menu");
+  if(m.classList.contains("show")){m.classList.remove("show");return;}
+  const r=e.currentTarget.getBoundingClientRect();
+  m.style.top=(r.bottom+6)+"px";
+  m.style.left=Math.max(8,Math.min(r.left,window.innerWidth-190))+"px";
+  m.classList.add("show");
+}
+document.addEventListener("click",()=>{const m=document.getElementById("notes-menu");if(m)m.classList.remove("show");});
+function openNotesModal(){document.getElementById("notes-modal").classList.add("open");}
+function closeNotes(){
+  flushNote();
+  document.getElementById("notes-modal").classList.remove("open");
+  noteCur=null;
+}
+function notesCreate(){
+  noteCur={id:"n"+Date.now(),body:"",created:null,updated:null,edits:[],isNew:true};
+  renderNoteEditor();openNotesModal();
+}
+function notesViewOpen(){renderNoteList();openNotesModal();}
+function noteList(){return Object.values(NOTES||{}).filter(n=>n&&n.id).sort((a,b)=>(b.updated||0)-(a.updated||0));}
+function noteTitle(n){const l=(n.body||"").split("\n").find(x=>x.trim());return l?l.trim():"Untitled note";}
+function noteSnippet(n){const ls=(n.body||"").split("\n").map(x=>x.trim()).filter(Boolean);return ls.slice(1).join(" ");}
+function renderNoteList(){
+  noteCur=null;
+  const list=noteList();
+  document.getElementById("notes-body").innerHTML=
+    '<div class="nt-head"><div class="modal-title">Notes</div><button class="nt-link" onclick="notesCreate()">+ New</button></div>'
+    +(list.length?list.map(n=>'<div class="nt-item" onclick="noteOpen(\''+n.id+'\')"><div class="nt-t">'+noteEsc(noteTitle(n))+'</div>'
+      +(noteSnippet(n)?'<div class="nt-p">'+noteEsc(noteSnippet(n))+'</div>':"")
+      +'<div class="nt-d">Edited '+noteFmt(n.updated)+'</div></div>').join("")
+     :'<div class="nt-empty">No notes yet. Use Notes ▾ → Create.</div>');
+}
+function noteOpen(id){
+  const n=NOTES[id];if(!n)return;
+  noteCur=Object.assign({},n,{edits:(n.edits||[]).slice()});
+  renderNoteEditor();
+}
+function noteStampHtml(){
+  const n=noteCur;
+  if(!n.created)return "New note — timestamps are added automatically when you start typing.";
+  return "Created "+noteFmt(n.created)+"<br>Last edited "+noteFmt(n.updated);
+}
+function renderNoteEditor(){
+  const n=noteCur;
+  document.getElementById("notes-body").innerHTML=
+    '<div class="nt-head"><button class="nt-link" onclick="noteBack()">‹ All notes</button><button class="nt-link" onclick="closeNotes()">Done</button></div>'
+    +'<textarea class="nt-title" id="nt-title" rows="1" placeholder="Title"></textarea>'
+    +'<div class="nt-tools">'
+      +'<button onmousedown="event.preventDefault()" onclick="noteFmtList(\'bullet\')" title="Bulleted list">• List</button>'
+      +'<button onmousedown="event.preventDefault()" onclick="noteFmtList(\'number\')" title="Numbered list">1. List</button>'
+      +'<button onmousedown="event.preventDefault()" onclick="noteIndent(-1)" title="Outdent">⇤</button>'
+      +'<button onmousedown="event.preventDefault()" onclick="noteIndent(1)" title="Indent">⇥</button>'
+    +'</div>'
+    +'<textarea class="nt-area" id="nt-area" placeholder="Start typing…" oninput="noteBodyInput()"></textarea>'
+    +'<div class="nt-stamp" id="nt-stamp">'+noteStampHtml()+'</div>'
+    +'<div class="nt-hist" id="nt-hist"></div>'
+    +'<div class="nt-foot"><button class="nt-link" onclick="noteToggleHist()">Revision history</button>'
+    +(n.isNew?'':'<button class="nt-link del" onclick="noteDelete()">Delete</button>')+'</div>';
+  const full=n.body||"";
+  const nl=full.indexOf("\n");
+  const t=document.getElementById("nt-title"),a=document.getElementById("nt-area");
+  t.value=nl<0?full:full.slice(0,nl);
+  a.value=nl<0?"":full.slice(nl+1);
+  const grow=()=>{t.style.height="auto";t.style.height=t.scrollHeight+"px";};
+  t.addEventListener("input",()=>{if(/\n/.test(t.value))t.value=t.value.replace(/\n+/g," ");grow();noteInput();});
+  t.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){e.preventDefault();a.focus();a.setSelectionRange(0,0);}
+    else if(e.key==="ArrowDown"){e.preventDefault();a.focus();a.setSelectionRange(0,0);}
+  });
+  a.addEventListener("keydown",noteBodyKey);
+  grow();
+  setTimeout(()=>{(t.value?a:t).focus();},60);
+}
+
+// ── list / indent helpers for the note body (plain text, 2-space indents) ──
+const NOTE_BUL=["•","◦","▪"];
+const NOTE_LINE=/^( *)(•|◦|▪|\d+\.) (.*)$/;
+function noteLines(a){
+  const v=a.value,s=a.selectionStart,e=a.selectionEnd;
+  const start=v.lastIndexOf("\n",s-1)+1;
+  let end=v.indexOf("\n",e>s&&v[e-1]==="\n"?e-1:e);if(end<0)end=v.length;
+  return {v,s,e,start,end,lines:v.slice(start,end).split("\n")};
+}
+function noteApply(a,r,newLines,selMode){
+  const text=newLines.join("\n");
+  const oldLen=r.end-r.start;
+  a.value=r.v.slice(0,r.start)+text+r.v.slice(r.end);
+  const delta=text.length-oldLen;
+  if(selMode==="keep"){
+    const first=newLines[0].length-r.lines[0].length;
+    a.setSelectionRange(Math.max(r.start,r.s+first),r.e+delta);
+  }
+  noteRenumber(a);
+  noteBodyInput();
+}
+function noteDepthMarker(indent){return NOTE_BUL[Math.floor(indent/2)%3];}
+function noteIndent(dir){
+  const a=document.getElementById("nt-area");if(!a)return;a.focus();
+  const r=noteLines(a);
+  const out=r.lines.map(l=>{
+    const m=l.match(NOTE_LINE);
+    let ind=(l.match(/^ */)[0]).length,body=l.slice(ind);
+    ind=dir>0?ind+2:Math.max(0,ind-2);
+    if(m&&!/^\d/.test(m[2]))body=noteDepthMarker(ind)+" "+m[3];
+    return " ".repeat(ind)+body;
+  });
+  noteApply(a,r,out,"keep");
+}
+function noteFmtList(kind){
+  const a=document.getElementById("nt-area");if(!a)return;a.focus();
+  const r=noteLines(a);
+  const isKind=l=>{const m=l.match(NOTE_LINE);return !!m&&(kind==="number"?/^\d/.test(m[2]):!/^\d/.test(m[2]));};
+  const nonEmpty=r.lines.filter(l=>l.trim());
+  const allOn=nonEmpty.length>0&&nonEmpty.every(isKind);
+  const out=r.lines.map((l,i)=>{
+    const ind=(l.match(/^ */)[0]).length;
+    const m=l.match(NOTE_LINE);
+    const text=m?m[3]:l.slice(ind);
+    if(allOn)return " ".repeat(ind)+text;
+    if(!l.trim()&&r.lines.length>1)return l;
+    return " ".repeat(ind)+(kind==="number"?"1.":noteDepthMarker(ind))+" "+text;
+  });
+  noteApply(a,r,out,"keep");
+}
+// Re-number consecutive "N." lines per indent level; keep the caret on the
+// same spot relative to the end of its line.
+function noteRenumber(a){
+  const v=a.value,pos=a.selectionStart;
+  const lines=v.split("\n");
+  let off=0,cl=0,fromEnd=0;
+  for(let i=0;i<lines.length;i++){
+    if(pos<=off+lines[i].length){cl=i;fromEnd=off+lines[i].length-pos;break;}
+    off+=lines[i].length+1;
+  }
+  const counters={};
+  let changed=false;
+  for(let i=0;i<lines.length;i++){
+    const m=lines[i].match(NOTE_LINE);
+    if(!m){for(const k in counters)delete counters[k];continue;}
+    const ind=m[1].length;
+    for(const k in counters)if(+k>ind||(+k===ind&&!/^\d/.test(m[2])))delete counters[k];
+    if(/^\d/.test(m[2])){
+      const n=(counters[ind]||0)+1;counters[ind]=n;
+      const nl=m[1]+n+". "+m[3];
+      if(nl!==lines[i]){lines[i]=nl;changed=true;}
+    }
+  }
+  if(!changed)return;
+  a.value=lines.join("\n");
+  let np=0;for(let i=0;i<cl;i++)np+=lines[i].length+1;
+  np+=Math.max(0,lines[cl].length-fromEnd);
+  a.setSelectionRange(np,np);
+}
+function noteBodyKey(e){
+  const a=e.target;
+  if(e.key==="Tab"){e.preventDefault();noteIndent(e.shiftKey?-1:1);return;}
+  if(e.key==="Backspace"&&a.selectionStart===0&&a.selectionEnd===0){
+    e.preventDefault();const t=document.getElementById("nt-title");t.focus();t.setSelectionRange(t.value.length,t.value.length);return;
+  }
+  if(e.key==="Enter"&&!e.shiftKey&&a.selectionStart===a.selectionEnd){
+    const r=noteLines(a);
+    const line=r.lines[0];
+    const m=line.match(NOTE_LINE);
+    if(!m)return;
+    e.preventDefault();
+    const caretCol=r.s-r.start;
+    if(!m[3].trim()){            // empty list item -> end the list (or outdent one level)
+      if(m[1].length>0){noteIndent(-1);return;}
+      a.value=r.v.slice(0,r.start)+r.v.slice(r.end);
+      a.setSelectionRange(r.start,r.start);
+      noteRenumber(a);noteBodyInput();return;
+    }
+    const marker=/^\d/.test(m[2])?(parseInt(m[2],10)+1)+".":m[2];
+    const ins="\n"+m[1]+marker+" ";
+    a.value=r.v.slice(0,r.s)+ins+r.v.slice(r.s);
+    const p=r.s+ins.length;a.setSelectionRange(p,p);
+    noteRenumber(a);noteBodyInput();
+  }
+}
+function noteBodyInput(){
+  const a=document.getElementById("nt-area");
+  if(a&&a.selectionStart===a.selectionEnd){
+    // typing "- " or "* " at the start of a line becomes a bullet
+    const v=a.value,p=a.selectionStart,ls=v.lastIndexOf("\n",p-1)+1;
+    const m=v.slice(ls,p).match(/^( *)[-*] $/);
+    if(m){
+      const mk=noteDepthMarker(m[1].length)+" ";
+      a.value=v.slice(0,ls)+m[1]+mk+v.slice(p);
+      const np=ls+m[1].length+mk.length;a.setSelectionRange(np,np);
+    }
+  }
+  noteInput();
+}
+function noteInput(){
+  clearTimeout(noteTimer);
+  noteTimer=setTimeout(flushNote,700);
+}
+function flushNote(){
+  clearTimeout(noteTimer);noteTimer=null;
+  const a=document.getElementById("nt-area"),t=document.getElementById("nt-title");
+  if(!noteCur||!a||!t)return;
+  const body=t.value.replace(/\n/g," ")+(a.value?"\n"+a.value:"");
+  const existing=NOTES[noteCur.id];
+  if(!body.trim()&&!existing)return;           // never save an empty new note
+  if(existing&&existing.body===body)return;    // unchanged -> no new timestamp
+  const now=Date.now();
+  noteCur.body=body;
+  if(!noteCur.created)noteCur.created=now;
+  noteCur.updated=now;
+  noteCur.edits=(noteCur.edits||[]);noteCur.edits.push(now);
+  if(noteCur.edits.length>40)noteCur.edits=noteCur.edits.slice(-40);
+  delete noteCur.isNew;
+  NOTES[noteCur.id]=Object.assign({},noteCur);
+  fbSet("/notes",NOTES).then(ok=>{if(!ok)showToast("Couldn't save note — check your connection");});
+  const st=document.getElementById("nt-stamp");if(st)st.innerHTML=noteStampHtml();
+  const h=document.getElementById("nt-hist");if(h&&h.dataset.open)noteRenderHist();
+}
+function noteBack(){flushNote();renderNoteList();}
+function noteDelete(){
+  if(!noteCur||!confirm("Delete this note?"))return;
+  clearTimeout(noteTimer);
+  delete NOTES[noteCur.id];
+  fbSet("/notes",NOTES);
+  renderNoteList();
+  showToast("Note deleted");
+}
+function noteRenderHist(){
+  const h=document.getElementById("nt-hist");
+  const e=(noteCur.edits||[]).slice().reverse();
+  h.innerHTML=e.length?e.map((t,i)=>(i===e.length-1?"Created ":"Edited ")+noteFmt(t)).join("<br>"):"No revisions yet.";
+}
+function noteToggleHist(){
+  const h=document.getElementById("nt-hist");
+  if(h.dataset.open){delete h.dataset.open;h.innerHTML="";}else{h.dataset.open="1";noteRenderHist();}
+}
 
 // ── QUICK ADD (popup version of the Add Fragrance page; reuses its exact markup/logic) ──
 function openQuickAdd(){
@@ -4896,11 +5167,33 @@ function bloomSeeded(i,tag){
   return (Math.abs(h)%1000)/1000;
 }
 
+const PETAL_MENUS={
+  wardrobe:{title:"Wardrobe",items:[["My Collection",()=>goTo("collection")],["Wishlist",()=>goTo("wishlist")],["Coverage Analysis",()=>goTo("coverage")]]},
+  yearwrap:{title:"Year Wrap",items:[["Wear Log",()=>goTo("wearlog")],["This Month",()=>goTo("thismonth")],["Months Past",()=>goTo("months")],["Year-End Report",()=>goTo("yearend")]]},
+  recommended:{title:"Recommended",items:[["Today's Pick",()=>goTo("today")],["Surprise Me!",()=>goTo("today","surprise")],["Suggested Purchases",()=>goTo("suggestions")],["Add Fragrance",()=>goTo("addfrag")]]}
+};
+function openPetalMenu(key){
+  const m=PETAL_MENUS[key];if(!m)return;
+  const ov=document.getElementById("petal-pop");
+  document.getElementById("petal-pop-title").textContent=m.title;
+  const list=document.getElementById("petal-pop-list");
+  list.innerHTML="";
+  m.items.forEach(([label,fn])=>{
+    const b=document.createElement("button");
+    b.className="pp-item";b.innerHTML='<span class="pp-dot"></span>'+label;
+    b.addEventListener("click",()=>{closePetalMenu();fn();});
+    list.appendChild(b);
+  });
+  ov.classList.add("open");
+}
+function closePetalMenu(){document.getElementById("petal-pop").classList.remove("open");}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePetalMenu();});
+
 const BLOOM_PETALS=[
-  {label:"Wardrobe",angle:0,go:()=>goTo("collection")},
+  {label:"Wardrobe",angle:0,go:()=>openPetalMenu("wardrobe")},
   {label:"Closet",angle:72,go:()=>goTo("closet")},
-  {label:"Year Wrap",angle:144,go:()=>goTo("wearlog")},
-  {label:"Suggested",angle:216,go:()=>goTo("suggestions")},
+  {label:"Year Wrap",angle:144,go:()=>openPetalMenu("yearwrap")},
+  {label:"Recommended",angle:216,go:()=>openPetalMenu("recommended")},
   {label:"",angle:288,special:true,go:()=>goTo("today")},
 ];
 
