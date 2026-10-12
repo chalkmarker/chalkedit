@@ -346,6 +346,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .fc{margin:0 12px 7px;border-radius:11px;background:var(--card);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:opacity .2s,box-shadow .2s;display:flex;position:relative}
 .fc .br span:first-child,.fc .lon{color:#A99C8B !important}
 .fc:not(.acq){background:linear-gradient(90deg,#2E2620 45%,var(--tint-bg,rgba(160,140,120,.1)) 100%)}
+.alsomark{font-size:11px;color:var(--gold);opacity:.8;margin-left:4px;font-weight:400}
+#card-menu{position:fixed;z-index:450;display:none;flex-direction:column;min-width:210px;background:#241E1A;border:1px solid rgba(212,178,122,.3);border-radius:12px;padding:5px;box-shadow:0 12px 34px rgba(0,0,0,.55)}
+#card-menu.show{display:flex}
+#card-menu .cm-h{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);padding:8px 12px 4px}
+#card-menu button{display:flex;align-items:center;gap:9px;background:none;border:none;color:#E8DCC8;font-size:13px;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
+#card-menu button:hover{background:rgba(212,178,122,.12)}
+#card-menu button.rm{color:#C68A8A}
+#card-menu .cm-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .fc.dragging{opacity:.25}
 .fc-ghost{position:fixed;z-index:400;pointer-events:none;margin:0 !important;box-shadow:0 14px 34px rgba(0,0,0,.6);transform:scale(1.03) rotate(1.5deg);opacity:.95}
 .sec.drop-hot .cg{outline:2px dashed rgba(212,178,122,.7);outline-offset:4px;border-radius:12px}
@@ -1065,6 +1073,7 @@ const SLOTS=[
   {id:"special",      label:"Special Occasion", color:"#6B4C2A"},
   {id:"unknown",      label:"Unknown",          color:"#7A6A5A"},
 ];
+function fragSlots(f){const a=[f.slot];(f.alsoSlots||[]).forEach(x=>{if(x&&!a.includes(x))a.push(x);});return a;}
 const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
 let NOTES={};
 let FRAGS=[],acquired={},wishlist={},customFrags={},logSelected={},weatherData=null,currentFilter="all",currentMonthKey=null,pageHistory=["menu"];
@@ -1267,7 +1276,7 @@ function getWeatherScore(frag,temp,code){
 
 async function computePick(surprise=false){
   const acqIds=Object.keys(acquired).filter(id=>acquired[id]);
-  const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id)&&f.slot!=="unknown");
+  const acqFrags=FRAGS.filter(f=>acqIds.includes(f.id)&&fragSlots(f).some(x=>x!=="unknown"));
   if(acqFrags.length===0)return null;
   const recent=surprise?{}:await getRecentWorn();
   const temp=weatherData?weatherData.temp:85;
@@ -1280,9 +1289,10 @@ async function computePick(surprise=false){
       s-=wornScore*2;
     }
     // time of day preference
-    if(hour>=6&&hour<12&&(f.slot==="everyday"||f.slot==="professional"))s+=10;
-    if(hour>=12&&hour<18&&f.slot==="professional")s+=8;
-    if(hour>=18&&(f.slot==="date"||f.slot==="special"))s+=15;
+    const fs=fragSlots(f);
+    if(hour>=6&&hour<12&&(fs.includes("everyday")||fs.includes("professional")))s+=10;
+    if(hour>=12&&hour<18&&fs.includes("professional"))s+=8;
+    if(hour>=18&&(fs.includes("date")||fs.includes("special")))s+=15;
     s+=Math.random()*8;
     return{...f,score:s};
   });
@@ -1489,7 +1499,7 @@ function renderCollection(){
     ).join("")+'<button class="nb" onclick="toggleNotesMenu(event)">Notes ▾</button><button class="qadd" onclick="openQuickAdd()" title="Add fragrance" aria-label="Add fragrance">+</button><button class="rb" onclick="resetAcquired()">Reset</button>';
   // sections
   document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
-    const frags=FRAGS.filter(f=>f.slot===slot.id&&!(wishlist[f.id]&&!acquired[f.id]));
+    const frags=FRAGS.filter(f=>fragSlots(f).includes(slot.id)&&!(wishlist[f.id]&&!acquired[f.id]));
     const hidden=!vs.find(s=>s.id===slot.id);
     const cards=frags.map(frag=>{
       const isAcq=!!acquired[frag.id];
@@ -1497,15 +1507,17 @@ function renderCollection(){
       const accent=frag.synced?"linear-gradient(180deg,#5C6B7A,#8C3A3A,#6B4C2A)":slot.color;
       const pills=(frag.notes||[]).map(n=>'<span class="np">'+n+'</span>').join("");
       const caut=frag.caution?'<div class="fcat">'+frag.caution+'</div>':"";
+      const multi=fragSlots(frag).length>1;
+      const mark=multi?' <span class="alsomark" title="Also in: '+fragSlots(frag).filter(x=>x!==slot.id).map(x=>(SLOTMAP[x]||{}).label).join(", ")+'">⧉</span>':"";
       const ss="color:"+slot.color+";background:"+slot.color+"22";
       return '<div class="fc'+(isAcq?" acq":"")+(frag.synced?" syn":"")+'" data-id="'+frag.id
         +'" style="--acq-tint:'+tint.replace(/[\d.]+\)$/,'.28)')+';background:linear-gradient(90deg,#2E2620 45%,'+tint+' 100%)" onclick="toggleAcq(\''+frag.id+'\')">'
         +'<div class="fa" style="background:'+accent+'"></div>'
         +'<div class="fb2">'
-          +'<div class="ml"><div class="fn">'+frag.name+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
+          +'<div class="ml"><div class="fn">'+frag.name+mark+'</div><div class="fh">'+frag.house+'</div>'+caut+'<div class="lon">'+(frag.longevity||"")+'</div><span class="sb" style="'+ss+'">'+(frag.maxSprays||"")+'</span></div>'
           +'<div class="mr"><div class="cb">'+(isAcq?chk:"")+'</div><div class="spc"></div><div class="notes">'+pills+'</div></div>'
           +'<div class="di">'
-            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="fn">'+frag.name+'</div><div class="cb">'+(isAcq?chk:"")+'</div></div>'
+            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px"><div class="fn">'+frag.name+mark+'</div><div class="cb">'+(isAcq?chk:"")+'</div></div>'
             +'<div class="fh">'+frag.house+'</div>'
             +'<div class="notes" style="margin-bottom:12px">'+pills+'</div>'
             +caut
@@ -4444,6 +4456,50 @@ function renderCloset(){
   ensureVerifiedNotes(entries);
 }
 
+// ── RIGHT-CLICK: also add a fragrance to another occasion ──
+function openCardMenu(id,x,y){
+  const f=FRAGS.find(q=>q.id===id);if(!f)return;
+  const have=fragSlots(f);
+  const m=document.getElementById("card-menu");
+  const dot=sl=>'<span class="cm-dot" style="background:'+sl.color+'"></span>';
+  let h='<div class="cm-h">'+f.name.replace(/</g,"&lt;")+'</div>';
+  const add=SLOTS.filter(sl=>!have.includes(sl.id));
+  h+=add.map(sl=>'<button data-act="add" data-slot="'+sl.id+'">'+dot(sl)+'Also add to '+sl.label+'</button>').join("");
+  if(have.length>1)h+=have.map(id2=>{const sl=SLOTMAP[id2];return '<button class="rm" data-act="rm" data-slot="'+id2+'">Remove from '+(sl?sl.label:id2)+'</button>';}).join("");
+  if(!add.length&&have.length<=1)h+='<div class="cm-h">Nothing to add</div>';
+  m.innerHTML=h;
+  m.classList.add("show");
+  const w=m.offsetWidth,hh=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(x,window.innerWidth-w-8))+"px";
+  m.style.top=Math.max(8,Math.min(y,window.innerHeight-hh-8))+"px";
+  m.querySelectorAll("button").forEach(b=>b.addEventListener("click",ev=>{
+    ev.stopPropagation();
+    cardMenuAct(id,b.dataset.act,b.dataset.slot);
+    closeCardMenu();
+  }));
+}
+function closeCardMenu(){const m=document.getElementById("card-menu");if(m)m.classList.remove("show");}
+function cardMenuAct(id,act,slotId){
+  const f=FRAGS.find(q=>q.id===id);if(!f)return;
+  const label=(SLOTMAP[slotId]||{}).label;
+  if(act==="add"){
+    if(fragSlots(f).includes(slotId))return;
+    f.alsoSlots=(f.alsoSlots||[]).concat(slotId);
+    showToast("Also added to "+label);
+  }else{
+    if(fragSlots(f).length<2)return;
+    if(f.slot===slotId){f.slot=f.alsoSlots[0];f.alsoSlots=f.alsoSlots.slice(1);}
+    else f.alsoSlots=(f.alsoSlots||[]).filter(x=>x!==slotId);
+    showToast("Removed from "+label);
+  }
+  if(!f.alsoSlots||!f.alsoSlots.length)delete f.alsoSlots;
+  fbSet("/fragrances",FRAGS);
+  renderCollection();
+}
+document.addEventListener("click",closeCardMenu);
+document.addEventListener("scroll",closeCardMenu,true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCardMenu();});
+
 // ── DRAG A CARD BETWEEN OCCASIONS ──
 (function(){
   let st=null,suppressClick=false;
@@ -4485,13 +4541,20 @@ function renderCloset(){
       document.body.classList.remove("card-dragging");
       dock().classList.remove("show");
       document.querySelectorAll(".drop-hot").forEach(e=>e.classList.remove("drop-hot"));
+      if(st.touch&&drop&&(st.maxMove||0)<10){
+        const id=st.id,x=st.x,y=st.y;st=null;openCardMenu(id,x,y);return;
+      }
       if(target&&target!==st.from){
         const f=FRAGS.find(x=>x.id===st.id);
         if(f){
-          f.slot=target;
-          fbSet("/fragrances",FRAGS);
-          renderCollection();
-          showToast("Moved to "+(SLOTMAP[target]||{}).label);
+          if(fragSlots(f).includes(target)){showToast("Already in "+(SLOTMAP[target]||{}).label);}
+          else{
+            if(st.from===f.slot)f.slot=target;
+            else f.alsoSlots=(f.alsoSlots||[]).map(x=>x===st.from?target:x);
+            fbSet("/fragrances",FRAGS);
+            renderCollection();
+            showToast("Moved to "+(SLOTMAP[target]||{}).label);
+          }
         }
       }
     }
@@ -4515,6 +4578,7 @@ function renderCloset(){
         else if(moved>6)begin();
         return;
       }
+      st.maxMove=Math.max(st.maxMove||0,Math.hypot(st.x-st.sx,st.y-st.sy));
       st.ghost.style.left=(st.x-st.dx)+"px";st.ghost.style.top=(st.y-st.dy)+"px";
       hot(slotAt(st.x,st.y));
     });
@@ -4524,7 +4588,12 @@ function renderCloset(){
     window.addEventListener("keydown",e=>{if(e.key==="Escape"&&st&&st.active)end(false);});
     // a drag must never also count as a tap (which toggles Acquired)
     main.addEventListener("click",e=>{if(suppressClick){e.stopPropagation();e.preventDefault();}},true);
-    main.addEventListener("contextmenu",e=>{if(st&&st.active)e.preventDefault();});
+    main.addEventListener("contextmenu",e=>{
+      e.preventDefault();
+      if(st&&st.active)return;
+      const card=e.target.closest(".fc");
+      if(card&&card.dataset.id)openCardMenu(card.dataset.id,e.clientX,e.clientY);
+    });
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
@@ -5819,5 +5888,6 @@ window.renderPotionSnapshot = async function(tier,colorHex){
 </script>
 
 <div id="slot-dock"></div>
+<div id="card-menu"></div>
 </body>
 </html>
