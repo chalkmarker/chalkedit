@@ -149,8 +149,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .modal-sub{font-size:11px;color:var(--t3);padding:0 20px 16px;border-bottom:1px solid var(--border)}
 .log-item{display:flex;align-items:center;gap:12px;padding:13px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,0.03)}
 .log-item:hover{background:rgba(255,255,255,0.02)}
-.log-item-name{flex:1;font-size:13px;color:var(--t1)}
-.log-item-house{font-size:11px;color:var(--t3)}
+.log-item-name{flex:1;font-size:14px;color:#F4EBDD}
+.log-item>div:first-child{flex:1;min-width:0}
+.log-item-house{font-size:11px;color:#CDBFAE;margin-top:1px}
+.log-house-head{position:sticky;top:0;z-index:1;background:#2A221C;color:var(--gold);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:8px 20px;border-top:1px solid rgba(212,178,122,.15);border-bottom:1px solid rgba(255,255,255,.05)}
 
 /* ── SPRAY ETIQUETTE PSA — centered dialog, not a bottom sheet ── */
 #spray-modal{align-items:center;justify-content:center;padding:20px}
@@ -1392,12 +1394,32 @@ async function openLogModal(dateKey){
   const existing=await fbGet("/logs/"+LOG_TARGET_DATE);
   logSelected={};
   (existing&&existing.worn||[]).forEach(id=>{logSelected[id]=true;});
+  // One row per physical fragrance (same house + name collapses), grouped
+  // under a canonical house heading, houses and names both A→Z.
+  const groups={};
+  acqFrags.forEach(f=>{
+    const house=canonicalHouse(f.house);
+    const key=house.toLowerCase()+"|"+(f.name||"").trim().toLowerCase();
+    (groups[key]=groups[key]||{house,name:f.name,ids:[]}).ids.push(f.id);
+  });
+  const rows=Object.values(groups);
+  rows.forEach(g=>{
+    // if a duplicate id was logged previously, fold it into the primary id
+    if(g.ids.some(id=>logSelected[id])){g.ids.forEach(id=>delete logSelected[id]);logSelected[g.ids[0]]=true;}
+  });
+  const byHouse={};
+  rows.forEach(g=>{(byHouse[g.house]=byHouse[g.house]||[]).push(g);});
+  const cmp=(a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"});
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
   const list=document.getElementById("log-list");
-  list.innerHTML=acqFrags.map(f=>
-    '<div class="log-item" id="log-'+f.id+'" onclick="toggleLog(\''+f.id+'\')">'
-      +'<div><div class="log-item-name">'+f.name+'</div><div class="log-item-house">'+f.house+'</div></div>'
-      +'<div class="log-check" id="logck-'+f.id+'"></div>'
-    +'</div>'
+  list.innerHTML=Object.keys(byHouse).sort(cmp).map(h=>
+    '<div class="log-house-head">'+esc(h)+'</div>'
+    +byHouse[h].sort((x,y)=>cmp(x.name||"",y.name||"")).map(g=>
+      '<div class="log-item" id="log-'+g.ids[0]+'" onclick="toggleLog(\''+g.ids[0]+'\')">'
+        +'<div><div class="log-item-name">'+esc(g.name)+'</div><div class="log-item-house">'+esc(g.house)+'</div></div>'
+        +'<div class="log-check" id="logck-'+g.ids[0]+'"></div>'
+      +'</div>'
+    ).join("")
   ).join("");
   // Reflect pre-selected items visually
   Object.keys(logSelected).forEach(id=>{
