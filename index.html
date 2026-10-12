@@ -181,6 +181,17 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .nb{margin-left:auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;cursor:pointer;border:1px solid rgba(212,178,122,.4);background:transparent;color:var(--gold);margin-bottom:4px}
 @media(min-width:768px){.nb{font-size:11px;padding:6px 16px;margin-bottom:0}}
 .nb+.qadd{margin-left:8px}
+.mob-more{display:none}
+@media(max-width:767px){
+  #coll-toolbar .nb,#coll-toolbar .qadd,#coll-toolbar .rb{display:none}
+  .mob-more{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto;width:32px;height:26px;margin-bottom:4px;border-radius:999px;border:1px solid rgba(212,178,122,.4);background:var(--bg);color:var(--gold);font-size:18px;line-height:1;padding:0 0 5px;cursor:pointer}
+}
+#tool-menu{position:fixed;z-index:130;display:none;flex-direction:column;min-width:190px;background:#241E1A;border:1px solid rgba(212,178,122,.3);border-radius:12px;padding:5px;box-shadow:0 12px 34px rgba(0,0,0,.55)}
+#tool-menu.show{display:flex}
+#tool-menu button{background:none;border:none;color:#E8DCC8;font-size:14px;text-align:left;padding:11px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
+#tool-menu button:active{background:rgba(212,178,122,.12)}
+#tool-menu .tm-sep{height:1px;background:rgba(255,255,255,.08);margin:4px 6px}
+#tool-menu .tm-danger{color:#C68A8A}
 .notes-menu{position:fixed;z-index:130;display:none;flex-direction:column;min-width:170px;background:#241E1A;border:1px solid rgba(212,178,122,.3);border-radius:12px;padding:5px;box-shadow:0 12px 34px rgba(0,0,0,.55)}
 .notes-menu.show{display:flex}
 .notes-menu button{background:none;border:none;color:#E8DCC8;font-size:13px;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
@@ -1496,7 +1507,7 @@ function renderCollection(){
   document.getElementById("coll-toolbar").innerHTML=
     [{ id:"all",label:"All"},...SLOTS].map(s=>
       '<button class="fb'+(currentFilter===s.id?" active":"")+'" onclick="setFilter(\''+s.id+'\')" >'+s.label+'</button>'
-    ).join("")+'<button class="nb" onclick="toggleNotesMenu(event)">Notes ▾</button><button class="qadd" onclick="openQuickAdd()" title="Add fragrance" aria-label="Add fragrance">+</button><button class="rb" onclick="resetAcquired()">Reset</button>';
+    ).join("")+'<button class="mob-more" onclick="toggleToolMenu(event)" aria-label="More">⋯</button><button class="nb" onclick="toggleNotesMenu(event)">Notes ▾</button><button class="qadd" onclick="openQuickAdd()" title="Add fragrance" aria-label="Add fragrance">+</button><button class="rb" onclick="resetAcquired()">Reset</button>';
   // sections
   document.getElementById("coll-main").innerHTML=SLOTS.map(slot=>{
     const frags=FRAGS.filter(f=>fragSlots(f).includes(slot.id)&&!(wishlist[f.id]&&!acquired[f.id]));
@@ -4456,6 +4467,42 @@ function renderCloset(){
   ensureVerifiedNotes(entries);
 }
 
+// ── MOBILE: toolbar dropdown + swipe-from-left-edge to go back ──
+function toggleToolMenu(e){
+  e.stopPropagation();
+  const m=document.getElementById("tool-menu");
+  if(m.classList.contains("show")){m.classList.remove("show");return;}
+  const r=e.currentTarget.getBoundingClientRect();
+  m.style.top=(r.bottom+6)+"px";
+  m.style.right="10px";m.style.left="auto";
+  m.classList.add("show");
+}
+document.addEventListener("click",()=>{const m=document.getElementById("tool-menu");if(m)m.classList.remove("show");});
+(function(){
+  const EDGE=32,MIN_DX=70;
+  let t0=null;
+  function overlayOpen(){
+    return !!document.querySelector(".modal-overlay.open,.pp-overlay.open,#card-menu.show")||document.body.classList.contains("card-dragging");
+  }
+  window.addEventListener("touchstart",e=>{
+    t0=null;
+    if(e.touches.length!==1||overlayOpen())return;
+    const t=e.touches[0];
+    if(t.clientX>EDGE)return;
+    if(pageHistory.length<=1)return;
+    t0={x:t.clientX,y:t.clientY,t:Date.now()};
+  },{passive:true});
+  window.addEventListener("touchend",e=>{
+    if(!t0)return;
+    const t=e.changedTouches[0],dx=t.clientX-t0.x,dy=t.clientY-t0.y,dt=Date.now()-t0.t;
+    t0=null;
+    if(dx<MIN_DX||Math.abs(dy)>Math.abs(dx)*0.6||dt>800||overlayOpen())return;
+    const btn=document.querySelector(".page:not(.hidden) .back-btn");
+    if(btn)btn.click();else goBack();
+  },{passive:true});
+  window.addEventListener("touchcancel",()=>{t0=null;},{passive:true});
+})();
+
 // ── RIGHT-CLICK: also add a fragrance to another occasion ──
 function openCardMenu(id,x,y){
   const f=FRAGS.find(q=>q.id===id);if(!f)return;
@@ -5889,5 +5936,6 @@ window.renderPotionSnapshot = async function(tier,colorHex){
 
 <div id="slot-dock"></div>
 <div id="card-menu"></div>
+<div id="tool-menu"><button onclick="notesCreate()">New note</button><button onclick="notesViewOpen()">View open notes</button><button onclick="openQuickAdd()">Add fragrance</button><div class="tm-sep"></div><button class="tm-danger" onclick="resetAcquired()">Reset</button></div>
 </body>
 </html>
