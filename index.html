@@ -1088,6 +1088,34 @@ const SLOTS=[
 ];
 function fragSlots(f){const a=[f.slot];(f.alsoSlots||[]).forEach(x=>{if(x&&!a.includes(x))a.push(x);});return a;}
 const SLOTMAP=Object.fromEntries(SLOTS.map(s=>[s.id,s]));
+// Local-calendar date keys. toISOString() is UTC, which rolls to "tomorrow"
+// every evening in US time zones — that's what made the wrong day highlight.
+// "Today" follows the timezone of the location the visitor shared for weather
+// (Open-Meteo reports the IANA zone for those coordinates). Cached so the
+// right day is used immediately on later visits; falls back to the device
+// clock if location was never shared.
+let APP_TZ=null;
+try{APP_TZ=localStorage.getItem("appTZ")||null;}catch(e){}
+function setAppTZ(tz){
+  if(!tz)return;
+  try{new Intl.DateTimeFormat("en-CA",{timeZone:tz});}catch(e){return;}
+  APP_TZ=tz;
+  try{localStorage.setItem("appTZ",tz);}catch(e){}
+}
+function appDateParts(d){
+  d=d||new Date();
+  if(APP_TZ){
+    try{
+      const o={};
+      new Intl.DateTimeFormat("en-CA",{timeZone:APP_TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"})
+        .formatToParts(d).forEach(p=>{o[p.type]=p.value;});
+      return {y:+o.year,m:+o.month,d:+o.day,h:+o.hour};
+    }catch(e){}
+  }
+  return {y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate(),h:d.getHours()};
+}
+function localDateKey(d){const p=appDateParts(d);return p.y+"-"+String(p.m).padStart(2,"0")+"-"+String(p.d).padStart(2,"0");}
+function appHour(){return appDateParts().h;}
 let NOTES={};
 let FRAGS=[],acquired={},wishlist={},customFrags={},logSelected={},weatherData=null,currentFilter="all",currentMonthKey=null,pageHistory=["menu"];
 
@@ -1182,8 +1210,9 @@ function getWeather(){
   navigator.geolocation.getCurrentPosition(async pos=>{
     try{
       const{latitude:lat,longitude:lon}=pos.coords;
-      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit`);
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&timezone=auto`);
       const d=await r.json();
+      if(d&&d.timezone)setAppTZ(d.timezone);
       const cw=d.current_weather;
       const code=cw.weathercode;
       const temp=Math.round(cw.temperature);
@@ -1194,7 +1223,7 @@ function getWeather(){
       document.getElementById("pw-desc").textContent=desc+" · "+temp+"°F";
       document.getElementById("pw-temp").textContent=temp+"°F";
       const advEl=document.getElementById("pick-weather-advisory");
-      if(advEl)advEl.textContent=weatherAdvisory(temp,new Date().getHours(),code);
+      if(advEl)advEl.textContent=weatherAdvisory(temp,appHour(),code);
       const mwEl=document.getElementById("menu-weather");
       document.getElementById("mw-icon").textContent=icon;
       document.getElementById("mw-temp").textContent=temp+"°F";
@@ -1210,7 +1239,7 @@ function setWeatherFallback(){
   document.getElementById("pw-desc").textContent="Houston — Warm & Humid";
   document.getElementById("pw-temp").textContent="85°F";
   const advEl=document.getElementById("pick-weather-advisory");
-  if(advEl)advEl.textContent=weatherAdvisory(85,new Date().getHours(),0);
+  if(advEl)advEl.textContent=weatherAdvisory(85,appHour(),0);
   const mwEl=document.getElementById("menu-weather");
   if(mwEl){
     document.getElementById("mw-icon").textContent="☀️";
@@ -1259,7 +1288,7 @@ function wIcon(c){
 async function getRecentWorn(){
   const logs=await fbGet("/logs")||{};
   const recent={};
-  const today=new Date();
+  const today=new Date(localDateKey());
   Object.entries(logs).forEach(([date,entry])=>{
     const d=new Date(date);
     const daysAgo=Math.floor((today-d)/(1000*60*60*24));
@@ -1294,7 +1323,7 @@ async function computePick(surprise=false){
   const recent=surprise?{}:await getRecentWorn();
   const temp=weatherData?weatherData.temp:85;
   const code=weatherData?weatherData.code:0;
-  const hour=new Date().getHours();
+  const hour=appHour();
   const scored=acqFrags.map(f=>{
     let s=getWeatherScore(f,temp,code);
     if(!surprise){
@@ -1314,7 +1343,7 @@ async function computePick(surprise=false){
 }
 
 function pickReason(frag,temp,code,surprise){
-  const hour=new Date().getHours();
+  const hour=appHour();
   const parts=[];
   if(surprise)parts.push("A spontaneous pick just for you");
   else{
@@ -1376,8 +1405,8 @@ function renderSurprise(){renderPick(true);}
 // ── LOG MODAL ──
 let LOG_TARGET_DATE=null;
 async function openLogModal(dateKey){
-  LOG_TARGET_DATE=dateKey||new Date().toISOString().split("T")[0];
-  const todayKey=new Date().toISOString().split("T")[0];
+  LOG_TARGET_DATE=dateKey||localDateKey();
+  const todayKey=localDateKey();
   const titleEl=document.getElementById("log-modal-title");
   if(titleEl){
     if(LOG_TARGET_DATE===todayKey){
@@ -1498,7 +1527,7 @@ async function confirmLog(){
   const worn=Object.keys(logSelected).filter(id=>logSelected[id]);
   const other=document.getElementById("log-other-input").value.trim();
   if(worn.length===0&&!other){showToast("Select at least one");return;}
-  const targetDate=LOG_TARGET_DATE||new Date().toISOString().split("T")[0];
+  const targetDate=LOG_TARGET_DATE||localDateKey();
   const entry={worn:worn};
   if(other)entry.other=other;;
   const saved=await fbSet("/logs/"+targetDate,entry);
@@ -1723,7 +1752,7 @@ async function buildMonthCalendarHtml(key){
   const daysInMonth=new Date(y,mo,0).getDate();
   const firstDow=new Date(y,mo-1,1).getDay();
   const dowLabels=["S","M","T","W","T","F","S"];
-  const todayKey=new Date().toISOString().split("T")[0];
+  const todayKey=localDateKey();
 
   let gridHtml='<div class="cal-grid">'+dowLabels.map(d=>'<div class="cal-dow">'+d+'</div>').join("");
   for(let i=0;i<firstDow;i++){gridHtml+='<div class="cal-day empty"></div>';}
@@ -1779,7 +1808,7 @@ async function renderMonthDetail(key){
 }
 
 async function renderThisMonth(){
-  const key=new Date().toISOString().slice(0,7);
+  const key=localDateKey().slice(0,7);
   const {label,html}=await buildMonthCalendarHtml(key);
   const subEl=document.getElementById("thismonth-sub");
   if(subEl)subEl.textContent=label;
@@ -1789,10 +1818,10 @@ async function renderThisMonth(){
 
 // ── LAZY MONTHLY COMPILE ──
 async function maybeCompileLastMonth(){
-  const now=new Date();
-  const y=now.getFullYear();
-  const mo=now.getMonth(); // 0-indexed, so this is last month if we're in a new month
-  if(now.getDate()>3)return; // only compile in first 3 days of month
+  const now=appDateParts();
+  const y=now.y;
+  const mo=now.m-1; // 0-indexed, so this is last month if we're in a new month
+  if(now.d>3)return; // only compile in first 3 days of month
   const lastMo=mo===0?12:mo;
   const lastY=mo===0?y-1:y;
   const key=lastY+"-"+String(lastMo).padStart(2,"0");
@@ -1829,8 +1858,8 @@ async function maybeCompileLastMonth(){
 async function renderYearEnd(){
   const monthly=await fbGet("/monthly")||{};
   const body=document.getElementById("ye-body");
-  const year=new Date().getFullYear();
-  const currentKey=new Date().toISOString().slice(0,7);
+  const year=appDateParts().y;
+  const currentKey=localDateKey().slice(0,7);
   const yearKeys=Object.keys(monthly).filter(k=>k.startsWith(year+"-"));
 
   // The current month is never in /monthly (that only gets written once a
