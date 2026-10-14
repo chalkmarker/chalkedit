@@ -371,6 +371,19 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #card-menu button:hover{background:rgba(212,178,122,.12)}
 #card-menu button.rm{color:#C68A8A}
 #card-menu .cm-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ap-ico{display:inline-block;width:15px;height:15px;vertical-align:-3px;margin-left:3px}
+.ap-ico svg{width:100%;height:100%;display:block;overflow:visible}
+.ap-sun .rays{transform-origin:12px 12px;animation:ap-spin 14s linear infinite}
+.ap-sun circle.core{fill:#E8A91C;filter:drop-shadow(0 0 3px rgba(232,169,28,.7))}
+.ap-sun .rays line{stroke:#E8A91C;stroke-width:2;stroke-linecap:round}
+.ap-moon path{fill:#E6DDBB;filter:drop-shadow(0 0 3px rgba(230,221,187,.55));animation:ap-glow 3.2s ease-in-out infinite}
+.ap-moon .star{fill:#E6DDBB;animation:ap-twinkle 2.4s ease-in-out infinite}
+.menu-more-toggle:hover .ap-sun .rays{animation-duration:3s}
+@keyframes ap-spin{to{transform:rotate(360deg)}}
+@keyframes ap-glow{0%,100%{opacity:.85}50%{opacity:1}}
+@keyframes ap-twinkle{0%,100%{opacity:.25}50%{opacity:1}}
+#long-branch{position:absolute;left:0;top:0;width:100%;height:100%;z-index:-1;pointer-events:none;overflow:hidden}
+#petal-fx{position:fixed;inset:0;width:100%;height:100%;z-index:6;pointer-events:none}
 .bg-sec{padding:14px 20px 4px}
 .bg-lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
 .bg-sw{display:flex;flex-wrap:wrap;gap:10px}
@@ -877,7 +890,7 @@ html.light .sugg-tag.ai{color:#1E4B6B}
   <div class="bloom-hint">pull a petal open · hover the fifth for today</div>
 
   <div class="menu-more-toggle" onclick="toggleFullMenu()" id="menuMoreToggle">Show all pages ›</div>
-  <div class="menu-more-toggle" style="margin-top:6px" onclick="openBgModal()">Appearance ◐</div>
+  <div class="menu-more-toggle" style="margin-top:6px" onclick="openBgModal()">Appearance <span id="appearance-icon" class="ap-ico"></span></div>
   <div class="menu-nav" id="menu-nav-full" style="display:none">
     <div class="menu-section">
       <div class="menu-parent" onclick="goTo('closet')">
@@ -1161,6 +1174,10 @@ html.light .sugg-tag.ai{color:#1E4B6B}
       </div>
       <input type="file" id="bg-file" accept="image/*" style="display:none" onchange="bgFile(this)">
       <div class="bg-row" id="bg-dim-row"><span style="min-width:62px">Dimming</span><input class="bg-range" type="range" id="bg-dim" min="0" max="85" value="45" oninput="bgDim(this.value)"><span id="bg-dim-v" style="min-width:34px;text-align:right">45%</span></div>
+    </div>
+    <div class="bg-sec">
+      <div class="bg-lbl">Animation</div>
+      <label class="bg-row" style="margin-top:0;cursor:pointer"><input type="checkbox" id="bg-petals" onchange="bgTogglePetals(this.checked)" style="width:18px;height:18px;accent-color:#D4B07A"><span>Falling blossom petals</span></label>
     </div>
     <div class="bg-note">Saved on this device and synced to your other devices. Light colors switch the text to deep red and black automatically (a custom color counts as light once it passes mid-tone).</div>
     <div style="padding:14px 20px 0;display:flex;justify-content:space-between"><button class="bg-btn dim" onclick="bgReset()">Reset to default</button><button class="bg-btn" onclick="closeBgModal()">Done</button></div>
@@ -5096,15 +5113,180 @@ function bgIsLight(hex){
   const c=[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));
   return (.2126*c[0]+.7152*c[1]+.0722*c[2])>.3;
 }
-let BG={mode:"default",color:"#1A1714",image:null,dim:45,updated:0};
+let BG={mode:"default",color:"#1A1714",image:null,dim:45,petals:true,updated:0};
 function bgClampColor(hex){return /^#[0-9a-f]{6}$/i.test(hex||"")?hex:"#1A1714";}
+const AP_SUN='<svg class="ap-sun" viewBox="0 0 24 24"><g class="rays">'+[0,45,90,135,180,225,270,315].map(a=>'<line x1="12" y1="2.2" x2="12" y2="4.6" transform="rotate('+a+' 12 12)"/>').join("")+'</g><circle class="core" cx="12" cy="12" r="4.6"/></svg>';
+const AP_MOON='<svg class="ap-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/><circle class="star" cx="18.5" cy="5" r="1"/><circle class="star" cx="21" cy="9.5" r=".7" style="animation-delay:1.1s"/></svg>';
+// ── Long blossom branch across the main menu (rebuilt to fit any screen) ──
+function buildLongBranch(){
+  const menu=document.getElementById("menu");if(!menu)return;
+  let svg=document.getElementById("long-branch");
+  const W=window.innerWidth,H=window.innerHeight;
+  if(!svg){
+    svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.id="long-branch";svg.setAttribute("aria-hidden","true");
+    menu.insertBefore(svg,menu.firstChild);
+  }
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  const P=(x,y)=>(x*W).toFixed(1)+" "+(y*H).toFixed(1);
+  // main limb sweeps from the upper-left, passes behind the bloom, exits lower-right
+  const paths=[
+    {w:3.4,d:"M"+P(-.02,.16)+" C"+P(.10,.15)+" "+P(.25,.17)+" "+P(.34,.24)+" S"+P(.44,.34)+" "+P(.50,.36)+" S"+P(.62,.43)+" "+P(.72,.49)+" S"+P(.88,.62)+" "+P(1.03,.74)},
+    {w:2.0,d:"M"+P(.08,.153)+" C"+P(.07,.19)+" "+P(.12,.207)+" "+P(.19,.2)},
+    {w:2.0,d:"M"+P(.40,.298)+" C"+P(.37,.33)+" "+P(.33,.356)+" "+P(.29,.352)},
+    {w:2.2,d:"M"+P(.655,.435)+" C"+P(.66,.33)+" "+P(.67,.25)+" "+P(.685,.2)},
+    {w:1.6,d:"M"+P(.668,.272)+" C"+P(.69,.272)+" "+P(.71,.256)+" "+P(.722,.236)},
+    {w:2.2,d:"M"+P(.60,.715)+" C"+P(.68,.68)+" "+P(.74,.62)+" "+P(.748,.545)},
+    {w:1.6,d:"M"+P(.665,.738)+" C"+P(.668,.69)+" "+P(.676,.65)+" "+P(.684,.62)}
+  ];
+  // [path, t along it, flower|bud, size multiplier, offset-x, offset-y]
+  const bl=[
+    [0,.05,"f",1.0,2,17],[0,.11,"b",.5,-6,11],[0,.17,"f",.8,3,-18],[0,.26,"f",.9,-10,13],[0,.32,"b",.5,7,-14],
+    [0,.74,"f",1.0,4,17],[0,.80,"b",.5,-4,-13],[0,.86,"f",.85,2,-19],[0,.93,"f",1.1,-5,17],[0,.985,"b",.5,0,-12],
+    [1,.55,"b",.5,0,11],[1,1,"f",.7,0,0],
+    [2,1,"f",.8,0,0],[2,.5,"b",.45,-6,9],
+    [3,1,"f",.9,0,0],[3,.55,"b",.5,9,0],[4,1,"b",.55,0,0],
+    [5,0,"f",.85,0,0],[5,.5,"b",.5,0,11],[6,1,"b",.5,0,0]
+  ];
+  const base=Math.max(26,Math.min(58,Math.min(W,H)*.075));
+  const ws=Math.max(.55,Math.min(1.15,W/1200));
+  // keep blooms off the Back button and the title block
+  const blocked=(x,y)=>(x<130&&y>38&&y<104)||(x>W-250&&y<125);
+  // [path index, width at start, width at end] — real limbs are thicker at the
+  // base (lower-right for the main limb, the junction for twigs) and thin out
+  const taper=[[2.2,10.5],[3.4,1.2],[3.0,1.2],[3.8,1.4],[2.4,1.0],[1.2,4.0],[1.0,2.6]];
+  // invisible reference paths (used only to measure points along each limb)
+  let html="";
+  paths.forEach((p,i)=>{html+='<path id="lb'+i+'" d="'+p.d+'" stroke="none" fill="none"/>';});
+  svg.innerHTML=html;
+  const ref=i=>svg.querySelector("#lb"+i);
+  function taperShape(el,w0,w1,pow){
+    const len=el.getTotalLength(),n=Math.max(28,Math.ceil(len/10)),L=[],R=[];
+    for(let i=0;i<=n;i++){
+      const l=len*i/n,p=el.getPointAtLength(l),pa=el.getPointAtLength(Math.max(0,l-1.5)),pb=el.getPointAtLength(Math.min(len,l+1.5));
+      let tx=pb.x-pa.x,ty=pb.y-pa.y;const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;
+      const w=(w0+(w1-w0)*Math.pow(i/n,pow))*ws/2;
+      L.push((p.x-ty*w).toFixed(1)+" "+(p.y+tx*w).toFixed(1));
+      R.push((p.x+ty*w).toFixed(1)+" "+(p.y-tx*w).toFixed(1));
+    }
+    const s0=el.getPointAtLength(0),s1=el.getPointAtLength(len);
+    return '<path d="M'+L.join(" L")+" L"+R.reverse().join(" L")+' Z" fill="var(--gold2)"/>'
+      +'<circle cx="'+s0.x.toFixed(1)+'" cy="'+s0.y.toFixed(1)+'" r="'+(w0*ws/2).toFixed(1)+'" fill="var(--gold2)"/>'
+      +'<circle cx="'+s1.x.toFixed(1)+'" cy="'+s1.y.toFixed(1)+'" r="'+(w1*ws/2).toFixed(1)+'" fill="var(--gold2)"/>';
+  }
+  let limbs="";
+  taper.forEach((t,i)=>{limbs+=taperShape(ref(i),t[0],t[1],i===0?1.7:1);});
+  // extra little branchlets sprouting off the main limb (kept clear of the bloom in the middle)
+  const mainEl=ref(0),mainLen=mainEl.getTotalLength();
+  const extra=[ // [t along main, side, length, curl, tip]
+    [.045,-1,34,.35,"f"],[.075,1,26,.4,"b"],[.135,-1,30,-.3,"f"],[.215,1,38,.35,"b"],[.285,-1,30,.3,"f"],
+    [.70,-1,34,-.3,"b"],[.76,1,30,.4,"f"],[.825,-1,38,.3,"f"],[.895,1,34,-.35,"b"],[.955,-1,30,.3,"f"]
+  ];
+  let eStems="",eBlooms="";
+  extra.forEach((e,k)=>{
+    const l=e[0]*mainLen,p=mainEl.getPointAtLength(l),pa=mainEl.getPointAtLength(l-2),pb=mainEl.getPointAtLength(l+2);
+    let tx=pb.x-pa.x,ty=pb.y-pa.y;const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;
+    const nx=-ty*e[1],ny=tx*e[1],len=e[2]*(base/40)*1.0;
+    const ex=p.x+nx*len+tx*len*e[3],ey=p.y+ny*len+ty*len*e[3];
+    const mx=p.x+nx*len*.45-tx*len*.15,my=p.y+ny*len*.45-ty*len*.15;
+    eStems+='<path d="M'+p.x.toFixed(1)+' '+p.y.toFixed(1)+' Q'+mx.toFixed(1)+' '+my.toFixed(1)+' '+ex.toFixed(1)+' '+ey.toFixed(1)+'" stroke="var(--gold2)" stroke-width="'+(1.7*ws).toFixed(2)+'" fill="none" stroke-linecap="round"/>';
+    const sz=base*(e[4]==="f"?(.62+(k%3)*.12):.42);
+    if(blocked(ex,ey))return;
+    eBlooms+='<use href="#'+(e[4]==="f"?"blossom-flower":"blossom-bud")+'" x="'+(ex-sz/2).toFixed(1)+'" y="'+(ey-sz/2).toFixed(1)+'" width="'+sz.toFixed(1)+'" height="'+sz.toFixed(1)+'" transform="rotate('+(((k*53)%80)-40)+' '+ex.toFixed(1)+' '+ey.toFixed(1)+')"/>';
+  });
+  svg.insertAdjacentHTML("beforeend",limbs+eStems);
+  // more blossoms along the original limbs
+  const bl2=[
+    [0,.03,"f",.8,-4,-15],[0,.22,"f",.75,6,15],[0,.29,"b",.45,-8,-11],
+    [0,.68,"f",.8,-6,-16],[0,.9,"b",.5,5,15],[0,.96,"f",.9,6,-17],
+    [1,.8,"f",.6,0,0],[3,.3,"f",.7,-9,0],[3,.8,"b",.45,8,0],[5,.75,"f",.7,0,0],[2,.75,"f",.6,0,0]
+  ];
+  let stems="",blooms="";
+  bl.concat(bl2).forEach((b,k)=>{
+    const el=ref(b[0]);const len=el.getTotalLength();
+    const pt=el.getPointAtLength(b[1]*len);
+    const sz=base*b[3],cx=pt.x+b[4]*(base/40),cy=pt.y+b[5]*(base/40);
+    if(b[4]||b[5])stems+='<path d="M'+pt.x.toFixed(1)+' '+pt.y.toFixed(1)+' Q'+((pt.x+cx)/2+3).toFixed(1)+' '+((pt.y+cy)/2).toFixed(1)+' '+cx.toFixed(1)+' '+cy.toFixed(1)+'" stroke="var(--gold2)" stroke-width="'+(1.3*ws).toFixed(2)+'" fill="none" stroke-linecap="round"/>';
+    if(blocked(cx,cy))return;
+    const rot=((k*47)%70)-35;
+    blooms+='<use href="#'+(b[2]==="f"?"blossom-flower":"blossom-bud")+'" x="'+(cx-sz/2).toFixed(1)+'" y="'+(cy-sz/2).toFixed(1)+'" width="'+sz.toFixed(1)+'" height="'+sz.toFixed(1)+'" transform="rotate('+rot+' '+cx.toFixed(1)+' '+cy.toFixed(1)+')"/>';
+  });
+  svg.insertAdjacentHTML("beforeend",stems+eBlooms+blooms);
+}
+buildLongBranch();
+window.addEventListener("resize",()=>{clearTimeout(buildLongBranch._t);buildLongBranch._t=setTimeout(buildLongBranch,150);});
+
+// ── Falling petals (canvas, non-interactive, pauses when tab hidden) ──
+const PetalFX=(function(){
+  let cv=null,ctx=null,raf=0,petals=[],w=0,h=0,dpr=1,light=false,last=0,on=false;
+  const DARK_COLS=["#F7D6DF","#F2B8C8","#FFFFFF","#EBA3B8"],LIGHT_COLS=["#E0708F","#D9577C","#EA8FA8","#C94A6E"];
+  function mk(initial){
+    const size=7+Math.random()*9;
+    return {x:Math.random()*w,y:initial?Math.random()*h:-20-Math.random()*h*.3,
+      s:size,vy:22+Math.random()*30,vx:-6+Math.random()*14,ph:Math.random()*6.28,sw:.6+Math.random()*1.1,amp:14+Math.random()*26,
+      rot:Math.random()*6.28,vr:(Math.random()-.5)*1.6,fl:Math.random()*6.28,fs:1.5+Math.random()*2,a:.5+Math.random()*.35,c:Math.floor(Math.random()*4)};
+  }
+  function size(){
+    dpr=Math.min(1.5,window.devicePixelRatio||1);
+    w=window.innerWidth;h=window.innerHeight;
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const want=Math.max(10,Math.min(26,Math.round(w/36)));
+    while(petals.length<want)petals.push(mk(true));
+    petals.length=want;
+  }
+  function draw(p){
+    ctx.save();
+    ctx.translate(p.x+Math.sin(p.ph)*p.amp,p.y);
+    ctx.rotate(p.rot);
+    ctx.scale(Math.max(.25,Math.abs(Math.cos(p.fl))),1);   // flutter = petal turning edge-on
+    ctx.globalAlpha=p.a;
+    ctx.fillStyle=(light?LIGHT_COLS:DARK_COLS)[p.c];
+    const r=p.s;
+    ctx.beginPath();
+    ctx.moveTo(0,-r);
+    ctx.bezierCurveTo(r*.95,-r*.7,r*.8,r*.7,r*.12,r);       // right edge to the notch
+    ctx.lineTo(0,r*.72);                                     // little notch like a plum petal
+    ctx.lineTo(-r*.12,r);
+    ctx.bezierCurveTo(-r*.8,r*.7,-r*.95,-r*.7,0,-r);
+    ctx.fill();
+    ctx.restore();
+  }
+  function frame(t){
+    if(!on)return;
+    const dt=Math.min(.05,(t-last)/1000||.016);last=t;
+    ctx.clearRect(0,0,w,h);
+    for(const p of petals){
+      p.y+=p.vy*dt;p.ph+=p.sw*dt;p.rot+=p.vr*dt;p.fl+=p.fs*dt;p.x+=p.vx*dt;
+      if(p.y>h+24||p.x<-80||p.x>w+80){Object.assign(p,mk(false),{x:Math.random()*w});}
+      draw(p);
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  function start(){
+    if(on)return;
+    if(!cv){cv=document.createElement("canvas");cv.id="petal-fx";document.body.appendChild(cv);ctx=cv.getContext("2d");window.addEventListener("resize",()=>{if(on)size();});}
+    cv.style.display="block";on=true;size();last=performance.now();raf=requestAnimationFrame(frame);
+  }
+  function stop(){on=false;cancelAnimationFrame(raf);if(cv){cv.style.display="none";ctx&&ctx.clearRect(0,0,w,h);}}
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){cancelAnimationFrame(raf);}else if(on){last=performance.now();raf=requestAnimationFrame(frame);}});
+  return {start,stop,setLight(v){light=!!v;},get on(){return on;}};
+})();
+function bgTogglePetals(v){BG.petals=!!v;applyBackground();bgSaveLocal();bgSyncRemote();}
 function applyBackground(){
   const root=document.documentElement,layer=document.getElementById("bg-layer");
   const color=BG.mode==="default"?"#1A1714":bgClampColor(BG.color);
   root.style.setProperty("--bg",color);
   const useImg=BG.mode==="image"&&BG.image;
   root.classList.toggle("has-bg-img",!!useImg);
-  root.classList.toggle("light",!useImg&&BG.mode==="color"&&bgIsLight(color));
+  const isLight=!useImg&&BG.mode==="color"&&bgIsLight(color);
+  root.classList.toggle("light",isLight);
+  PetalFX.setLight(isLight);
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const wantPetals=BG.petals!==false&&!(reduce&&BG.petals===undefined);
+  if(wantPetals)PetalFX.start();else PetalFX.stop();
+  const ico=document.getElementById("appearance-icon");
+  if(ico){const want=isLight?"sun":"moon";if(ico.dataset.k!==want){ico.dataset.k=want;ico.innerHTML=isLight?AP_SUN:AP_MOON;}}
   if(layer){
     if(useImg){
       const d=Math.max(0,Math.min(85,+BG.dim||0))/100;
@@ -5149,6 +5331,7 @@ function bgRenderUI(){
   th.style.backgroundImage=BG.image?"url("+BG.image+")":"none";
   th.style.opacity=BG.image?1:.35;
   document.getElementById("bg-remove").style.display=BG.image?"":"none";
+  const pc=document.getElementById("bg-petals");if(pc)pc.checked=BG.petals!==false;
   document.getElementById("bg-dim").value=BG.dim;document.getElementById("bg-dim-v").textContent=BG.dim+"%";
   document.getElementById("bg-dim-row").style.display=BG.image?"":"none";
 }
@@ -5156,7 +5339,7 @@ function bgPickColor(c){BG.color=c;BG.mode=(c.toLowerCase()==="#1a1714")?"defaul
 function bgPickCustom(c){BG.color=bgClampColor(c);BG.mode="color";applyBackground();bgSaveLocal();bgSyncRemote();bgRenderUI();}
 function bgDim(v){BG.dim=+v;document.getElementById("bg-dim-v").textContent=v+"%";applyBackground();bgSaveLocal();bgSyncRemote();}
 function bgRemoveImage(){BG.image=null;if(BG.mode==="image")BG.mode=BG.color&&BG.color.toLowerCase()!=="#1a1714"?"color":"default";bgChanged();}
-function bgReset(){BG={mode:"default",color:"#1A1714",image:null,dim:45,updated:0};bgChanged();showToast("Background reset");}
+function bgReset(){BG={mode:"default",color:"#1A1714",image:null,dim:45,petals:true,updated:0};bgChanged();showToast("Background reset");}
 function bgFile(inp){
   const f=inp.files&&inp.files[0];inp.value="";
   if(!f)return;
