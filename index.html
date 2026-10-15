@@ -2366,11 +2366,11 @@ function renderSuggestions(){
   const maxScore=Math.max(.0001,...(basis.length?basis:scored).map(x=>x.score));
   const byId={};scored.forEach(x=>{byId[x.s.id]=x;});
   const hiddenCount=scored.filter(x=>TASTE_DISMISSED[x.s.id]).length;
-  document.getElementById("sugg-body").innerHTML=refreshPanel+refreshLabel+tastePanelHtml(model)+tiers.map(t=>{
-    let items=scored.filter(x=>x.s.tier===t.key&&(SHOW_DISMISSED||!TASTE_DISMISSED[x.s.id]));
+  document.getElementById("sugg-body").innerHTML=refreshPanel+refreshLabel+tastePanelHtml(model)+[{key:"all",label:"Ranked for you"}].map(t=>{
+    let items=scored.filter(x=>SHOW_DISMISSED||!TASTE_DISMISSED[x.s.id]);
     items.sort((a,b)=>(!!TASTE_DISMISSED[a.s.id]-!!TASTE_DISMISSED[b.s.id])||(b.score-a.score));
     return '<div class="sugg-tier">'
-      +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
+      +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div></div>'
       +items.map(x=>{
         const s=x.s,isDis=!!TASTE_DISMISSED[s.id];
         const isWish=!!wishlist[s.id];
@@ -2386,9 +2386,8 @@ function renderSuggestions(){
             +s.tags.map(tg=>'<span class="sugg-tag">'+tg+'</span>').join("")
             +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
           +'</div>'
-          +'<div class="sugg-price">'+s.price+'</div>'
           +(model.hasData?'<div class="sugg-fit"><span class="fit-pill '+fit+'</span><span class="fit-why">'+why+'</span></div>':"")
-          +'<div class="sugg-reason">'+s.reason+'</div>'
+          +'<div class="sugg-reason">'+String(s.reason||"").replace(/\s*[(~]*\$\d[\d,.]*\+?\)?/g,"")+'</div>'
           +(isDis?'<button class="sugg-no" onclick="restoreSuggestion(\''+s.id+'\',event)">Restore</button>':'<button class="sugg-no" onclick="dismissSuggestion(\''+s.id+'\',event)">Not for me</button>')
         +'</div>';
       }).join("")
@@ -2418,7 +2417,6 @@ function renderWishlist(){
         +(s.tags||[]).map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
         +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
       +'</div>'
-      +(s.price?'<div class="sugg-price">'+s.price+'</div>':"")
       +(s.reason?'<div class="sugg-reason">'+s.reason+'</div>':"")
       +'<button class="wl-move-btn" onclick="moveWishlistToCollection(\''+s.id+'\',event)">Move to Collection</button>'
     +'</div>';
@@ -5600,7 +5598,6 @@ function afConfirmCard(m){
     +'<div class="sugg-name">'+m.name+'</div>'
     +'<div class="sugg-house">'+m.house+'</div>'
     +(tagsHtml?'<div class="sugg-tags">'+tagsHtml+'</div>':"")
-    +(m.price?'<div class="sugg-price">'+m.price+'</div>':"")
     +(m.reason?'<div class="sugg-reason">'+m.reason+'</div>':"")
     +'<div class="af-confirm-row">'
       +'<span class="af-confirm-label">Is this what you were looking for?</span>'
@@ -5627,7 +5624,6 @@ function afResultCard(m){
     +'<div class="sugg-name">'+m.name+'</div>'
     +'<div class="sugg-house">'+m.house+'</div>'
     +(tagsHtml?'<div class="sugg-tags">'+tagsHtml+'</div>':"")
-    +(m.price?'<div class="sugg-price">'+m.price+'</div>':"")
     +(m.reason?'<div class="sugg-reason">'+m.reason+'</div>':"")
     +'<div class="af-add-btn" onclick="toggleAfMenu(\''+m.id+'\',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></div>'
     +'<div class="af-menu" id="afmenu-'+m.id+'" style="display:none">'
@@ -5644,7 +5640,6 @@ function afManualCard(q){
       +'<input type="text" id="af-m-name" placeholder="Name" value="'+q.replace(/"/g,"&quot;")+'">'
       +'<input type="text" id="af-m-house" placeholder="House / Brand">'
       +'<input type="text" id="af-m-notes" placeholder="Notes / accords, comma separated (e.g. oud, vanilla, amber)">'
-      +'<input type="text" id="af-m-price" placeholder="Price (optional)">'
     +'</div>'
     +'<div class="af-add-btn" onclick="toggleAfMenu(\'manual\',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14"/></svg></div>'
     +'<div class="af-menu" id="afmenu-manual" style="display:none">'
@@ -5694,7 +5689,7 @@ function addManualTo(dest){
   const name=document.getElementById("af-m-name").value.trim();
   const house=document.getElementById("af-m-house").value.trim()||"Unknown";
   const notes=document.getElementById("af-m-notes").value.split(",").map(s=>s.trim()).filter(Boolean);
-  const price=document.getElementById("af-m-price").value.trim();
+  const price="";
   if(!name){showToast("Enter a name first");return;}
   const id="custom-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")+"-"+Date.now();
   if(dest==="wishlist"){
