@@ -519,6 +519,30 @@ body.card-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .sugg-tier{margin-bottom:28px}
 .sugg-tier-label{font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#A9C08A;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .sugg-tier-line{flex:1;height:1px;background:#A9C08A;opacity:.35}
+.taste-panel{margin:0 16px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);padding:0}
+.taste-panel summary{cursor:pointer;list-style:none;padding:13px 16px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);display:flex;justify-content:space-between;align-items:center}
+.taste-panel summary::-webkit-details-marker{display:none}
+.taste-panel summary span{font-size:10px;letter-spacing:.04em;text-transform:none;color:var(--t2)}
+.taste-body{padding:2px 16px 14px}
+.taste-h{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);margin:10px 0 7px}
+.taste-bar{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:12px;color:var(--t1)}
+.taste-bar .tl{width:74px;flex-shrink:0}
+.taste-bar .tt{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.taste-bar .tf{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold2),var(--gold))}
+.taste-bar .tp{width:34px;text-align:right;font-size:11px;color:var(--t2)}
+.taste-chips{display:flex;flex-wrap:wrap;gap:6px}
+.taste-chips span{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--note-bg);color:var(--t1)}
+.taste-chips span b{color:var(--gold);font-weight:600;margin-left:4px}
+.taste-foot{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
+.sugg-fit{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.fit-pill{font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--gold2);color:var(--gold)}
+.fit-pill.great{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.fit-why{font-size:11px;color:var(--t1)}
+.sugg-no{position:absolute;right:14px;bottom:12px;background:none;border:none;color:var(--t2);font-size:10px;letter-spacing:.04em;cursor:pointer;text-decoration:underline;font-family:inherit}
+.sugg-no:hover{color:var(--gold)}
+.sugg-card.dismissed{opacity:.5}
+.sugg-showhid{margin:2px 16px 12px;text-align:center}
+.sugg-showhid button{background:none;border:none;color:var(--t2);font-size:11px;text-decoration:underline;cursor:pointer;font-family:inherit}
 .sugg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;margin-bottom:8px;position:relative}
 .sugg-name{padding-right:26px}
 .sugg-empty{text-align:center;padding:48px 20px;font-size:13px;color:var(--t3);font-style:italic}
@@ -609,6 +633,9 @@ html.light .modal-title{color:#5C0A14}
 html.light .modal-sub,html.light .nt-stamp,html.light .nt-hist,html.light .nt-p,html.light .nt-d{color:#111}
 html.light .cb{border-color:rgba(0,0,0,.35)}
 html.light .petal-label{color:#4a2e26}
+html.light .taste-bar .tt{background:rgba(0,0,0,.1)}
+html.light .taste-chips span{color:#111}
+html.light .fit-why{color:#111}
 html.light .bg-sw button{border-color:rgba(0,0,0,.28)}
 html.light .bg-sw button.on{border-color:#8E1B26;box-shadow:0 0 0 2px rgba(142,27,38,.3)}
 html.light .cover-bg-glow{background:radial-gradient(circle,rgba(0,0,0,0.062) 0%,transparent 70%)}
@@ -1356,7 +1383,7 @@ async function fbSet(path,data){
 
 // ── INIT ──
 (async()=>{
-  const [fd,sd,wd,cd,vn,pt,nt,bgr]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes"),fbGet("/housePriceTier"),fbGet("/notes"),fbGet("/settings/background")]);
+  const [fd,sd,wd,cd,vn,pt,nt,bgr,tdis]=await Promise.all([fbGet("/fragrances"),fbGet("/collection"),fbGet("/wishlist"),fbGet("/customFrags"),fbGet("/verifiedNotes"),fbGet("/housePriceTier"),fbGet("/notes"),fbGet("/settings/background"),fbGet("/tasteDismissed")]);
   if(Array.isArray(fd)&&fd.length>0)FRAGS=fd;
   else if(fd&&typeof fd==="object")FRAGS=Object.values(fd);
   if(sd&&typeof sd==="object")acquired=sd;
@@ -1366,6 +1393,8 @@ async function fbSet(path,data){
   if(pt&&typeof pt==="object")HOUSE_PRICE_TIER=pt;
   if(nt&&typeof nt==="object")NOTES=nt;
   bgAdoptRemote(bgr);
+  if(tdis&&typeof tdis==="object")TASTE_DISMISSED=tdis;
+  loadTasteLogs();
   await maybeCompileLastMonth();
   loadRemoteSuggestions();
   getWeather();
@@ -2187,6 +2216,122 @@ function fmtShortDateUTC(d){
   return d.toLocaleDateString(undefined,{month:"short",day:"numeric",timeZone:"UTC"});
 }
 
+// ── TASTE MODEL: learns your accords + notes from collection, wishlist, wear history and "not for me" taps ──
+const OCCASION_TAGS={"everyday":"everyday","professional":"professional","date night":"date","date":"date","special occasion":"special","special":"special"};
+const ACCORD_GROUPS=[
+  {id:"Woody",kw:["wood","cedar","sandal","patchouli","vetiver","oakmoss","guaiac","cypress"]},
+  {id:"Oud",kw:["oud","agarwood"]},
+  {id:"Amber",kw:["amber","benzoin","labdanum","resin","ambroxan"]},
+  {id:"Sweet",kw:["sweet","vanilla","caramel","tonka","gourmand","honey","sugar","praline","chocolate","coffee","cacao"]},
+  {id:"Fresh",kw:["fresh","clean","mint","ozon","green","herbal","tea","lavender"]},
+  {id:"Aquatic",kw:["aquatic","marine","sea","salt","water","coconut","melon"]},
+  {id:"Citrus",kw:["citrus","bergamot","lemon","lime","grapefruit","orange","mandarin","yuzu","neroli"]},
+  {id:"Floral",kw:["floral","rose","jasmine","peony","iris","blossom","tuberose","ylang","violet","lily"]},
+  {id:"Spicy",kw:["spic","pepper","cardamom","cinnamon","ginger","clove","saffron","nutmeg"]},
+  {id:"Smoky",kw:["smok","tobacco","incense","birch","tar","cade"]},
+  {id:"Leather",kw:["leather","suede"]},
+  {id:"Musk",kw:["musk","powder","skin"]},
+  {id:"Fruity",kw:["fruit","apple","pineapple","berry","peach","plum","pear","cherry","mango"]}
+];
+let TASTE_DISMISSED={},TASTE_WEARS={},SHOW_DISMISSED=false;
+function tasteTags(tags){return (tags||[]).map(t=>String(t).toLowerCase().trim()).filter(t=>t&&!(t in OCCASION_TAGS));}
+function tasteFeatures(tags){
+  const notes=tasteTags(tags),f={};
+  notes.forEach(n=>{f["n:"+n]=1;});
+  ACCORD_GROUPS.forEach(g=>{if(notes.some(n=>g.kw.some(k=>n.includes(k))))f["a:"+g.id]=1.25;});
+  return f;
+}
+function tasteOccasion(tags){for(const t of (tags||[])){const k=OCCASION_TAGS[String(t).toLowerCase().trim()];if(k)return k;}return null;}
+function tasteNameKey(n){return String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"");}
+function loadTasteLogs(){
+  return fbGet("/logs").then(logs=>{
+    const w={};
+    Object.values(logs||{}).forEach(e=>(e&&e.worn||[]).forEach(id=>{w[id]=(w[id]||0)+1;}));
+    TASTE_WEARS=w;
+    const pg=document.getElementById("suggestions");
+    if(pg&&!pg.classList.contains("hidden"))renderSuggestions();
+  }).catch(()=>{});
+}
+function buildTasteModel(pool){
+  const owned=FRAGS.filter(f=>acquired[f.id]);
+  const wishItems=[
+    ...FRAGS.filter(f=>wishlist[f.id]&&!acquired[f.id]).map(f=>({id:f.id,tags:f.notes})),
+    ...SUGGESTIONS.filter(s=>wishlist[s.id]).map(s=>({id:s.id,tags:s.tags})),
+    ...(REMOTE_SUGGESTIONS||[]).filter(s=>wishlist[s.id]).map(s=>({id:s.id,tags:s.tags})),
+    ...Object.values(customFrags).filter(c=>wishlist[c.id]).map(c=>({id:c.id,tags:c.tags}))
+  ];
+  const seenW=new Set();const wish=wishItems.filter(w=>!seenW.has(w.id)&&seenW.add(w.id));
+  const disliked=[...SUGGESTIONS,...(REMOTE_SUGGESTIONS||[])].filter(s=>TASTE_DISMISSED[s.id]);
+  // document frequency across everything we know of (for IDF: a note everyone has says little)
+  const universe=new Map();
+  [...FRAGS.map(f=>({id:f.id,tags:f.notes})),...SUGGESTIONS,...(REMOTE_SUGGESTIONS||[]),...Object.values(customFrags)].forEach(x=>{if(x&&x.id&&!universe.has(x.id))universe.set(x.id,tasteFeatures(x.tags));});
+  const df={};universe.forEach(fv=>Object.keys(fv).forEach(k=>{df[k]=(df[k]||0)+1;}));
+  const N=universe.size||1;
+  const idf=k=>Math.log((N+1)/((df[k]||0)+1))+1;
+  const T={},count={n:{},a:{}};let ownedN=0;
+  const add=(tags,w,track)=>{
+    const fv=tasteFeatures(tags);
+    Object.keys(fv).forEach(k=>{
+      T[k]=(T[k]||0)+w*fv[k]*idf(k);
+      if(track&&w>0){const kind=k[0];count[kind][k.slice(2)]=(count[kind][k.slice(2)]||0)+w;}
+    });
+  };
+  owned.forEach(f=>{ownedN++;add(f.notes,1+.35*Math.log(1+(TASTE_WEARS[f.id]||0)),true);});
+  wish.forEach(w=>add(w.tags,1.6,true));
+  disliked.forEach(s=>add(s.tags,-1.2,false));
+  const norm=Math.sqrt(Object.values(T).reduce((a,v)=>a+v*v,0))||1;
+  const ownedFeat=new Set();owned.forEach(f=>Object.keys(tasteFeatures(f.notes)).forEach(k=>ownedFeat.add(k)));
+  const slotCount={everyday:0,professional:0,date:0,special:0};
+  owned.forEach(f=>fragSlots(f).forEach(sl=>{if(sl in slotCount)slotCount[sl]++;}));
+  const maxSlot=Math.max(1,...Object.values(slotCount));
+  function scoreItem(s){
+    const fv=tasteFeatures(s.tags);
+    let dot=0,sn=0;const contrib=[];
+    Object.keys(fv).forEach(k=>{
+      const sv=fv[k]*idf(k);sn+=sv*sv;
+      if(T[k]){dot+=T[k]*sv;if(T[k]>0)contrib.push([k,T[k]*sv]);}
+    });
+    const cos=sn?dot/(norm*Math.sqrt(sn)):0;
+    const keys=Object.keys(fv);
+    const novelty=keys.length?keys.filter(k=>!ownedFeat.has(k)).length/keys.length:0;
+    const occ=tasteOccasion(s.tags);
+    const gap=occ&&occ in slotCount?(1-slotCount[occ]/maxSlot):0;
+    const score=cos+.05*novelty+.06*gap;
+    contrib.sort((a,b)=>b[1]-a[1]);
+    const why=[];
+    contrib.forEach(([k])=>{const name=k.slice(2);const lbl=name.charAt(0).toUpperCase()+name.slice(1);if(why.length<3&&!why.includes(lbl))why.push(lbl);});
+    return {score,why,gapOcc:gap>.5?occ:null};
+  }
+  // taste profile for the panel
+  const accTotal=Object.values(count.a).reduce((a,v)=>a+v,0)||1;
+  const topAcc=Object.entries(count.a).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,v])=>({n,pct:Math.round(100*v/accTotal)}));
+  const topNotes=Object.entries(count.n).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,v])=>({n,v:Math.round(v*10)/10}));
+  return {scoreItem,topAcc,topNotes,ownedN,wishN:wish.length,dislikeN:disliked.length,hasData:(ownedN+wish.length)>0};
+}
+function dismissSuggestion(id,e){
+  if(e)e.stopPropagation();
+  TASTE_DISMISSED[id]=true;
+  fbSet("/tasteDismissed",TASTE_DISMISSED);
+  renderSuggestions();
+  showToast("Noted — steering away from this style");
+}
+function restoreSuggestion(id,e){
+  if(e)e.stopPropagation();
+  delete TASTE_DISMISSED[id];
+  fbSet("/tasteDismissed",TASTE_DISMISSED);
+  renderSuggestions();
+}
+function toggleShowDismissed(){SHOW_DISMISSED=!SHOW_DISMISSED;renderSuggestions();}
+function tastePanelHtml(m){
+  if(!m.hasData)return '<details class="taste-panel"><summary>Your taste profile<span>builds as you add fragrances</span></summary></details>';
+  return '<details class="taste-panel" open><summary>Your taste profile<span>learned from '+m.ownedN+' owned · '+m.wishN+' wishlist'+(m.dislikeN?' · '+m.dislikeN+' passed':'')+'</span></summary><div class="taste-body">'
+    +'<div class="taste-h">Top accords</div>'
+    +m.topAcc.map(a=>'<div class="taste-bar"><div class="tl">'+a.n+'</div><div class="tt"><div class="tf" style="width:'+a.pct*2.2+'%;max-width:100%"></div></div><div class="tp">'+a.pct+'%</div></div>').join("")
+    +'<div class="taste-h">Most common notes</div><div class="taste-chips">'+m.topNotes.map(n=>'<span>'+n.n+'</span>').join("")+'</div>'
+    +'<div class="taste-foot">Suggestions are ranked by how closely their notes and accords match this profile. Wishlist picks count extra, fragrances you wear often count more, and "Not for me" teaches it what to avoid.</div>'
+  +'</div></details>';
+}
+
 function renderSuggestions(){
   const tiers=[
     {key:"affordable",label:"Affordable · Under $80",pct:"50%"},
@@ -2212,27 +2357,44 @@ function renderSuggestions(){
     +'</div>'
     +'<button class="sugg-refresh-btn" id="sugg-refresh-btn" onclick="manualRefreshSuggestions()">↻ Refresh Now</button>'
   +'</div>';
-  document.getElementById("sugg-body").innerHTML=refreshPanel+refreshLabel+tiers.map(t=>{
-    const items=pool.filter(s=>s.tier===t.key);
+  const ownedKeys=new Set(FRAGS.filter(f=>acquired[f.id]).map(f=>tasteNameKey(f.name)));
+  const ownedIds=new Set(FRAGS.filter(f=>acquired[f.id]).map(f=>f.id));
+  const visible=pool.filter(x=>!ownedIds.has(x.id)&&!ownedKeys.has(tasteNameKey(x.name)));
+  const model=buildTasteModel(visible);
+  const scored=visible.map(x=>Object.assign({s:x},model.scoreItem(x)));
+  const basis=scored.filter(x=>!wishlist[x.s.id]);   // a wishlisted pick shouldn't set the bar for everything else
+  const maxScore=Math.max(.0001,...(basis.length?basis:scored).map(x=>x.score));
+  const byId={};scored.forEach(x=>{byId[x.s.id]=x;});
+  const hiddenCount=scored.filter(x=>TASTE_DISMISSED[x.s.id]).length;
+  document.getElementById("sugg-body").innerHTML=refreshPanel+refreshLabel+tastePanelHtml(model)+tiers.map(t=>{
+    let items=scored.filter(x=>x.s.tier===t.key&&(SHOW_DISMISSED||!TASTE_DISMISSED[x.s.id]));
+    items.sort((a,b)=>(!!TASTE_DISMISSED[a.s.id]-!!TASTE_DISMISSED[b.s.id])||(b.score-a.score));
     return '<div class="sugg-tier">'
       +'<div class="sugg-tier-label">'+t.label+'<div class="sugg-tier-line"></div><span style="color:var(--t3);font-size:9px">'+t.pct+'</span></div>'
-      +items.map(s=>{
+      +items.map(x=>{
+        const s=x.s,isDis=!!TASTE_DISMISSED[s.id];
         const isWish=!!wishlist[s.id];
-        const heart='<div class="wl-btn'+(isWish?" active":"")+'" onclick="toggleWishlist(\''+s.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9z"/></svg></div>';
-        return '<div class="sugg-card">'
+        const heart='<div class="wl-btn'+(isWish?" active":"")+'" onclick="toggleWishlist(\''+s.id+'\',event)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.7-9C.6 8.2 2.6 4.6 6.3 4.6c2 0 3.6 1.1 5.7 3.4 2.1-2.3 3.7-3.4 5.7-3.4 3.7 0 5.7 3.6 4 7.4-2.5 4.6-9.7 9-9.7 9Z"/></svg></div>';
+        const rel=Math.min(1,x.score/maxScore);
+        const fit=!model.hasData?"":(rel>=.8?'great">Great fit':(rel>=.55?'">Good fit':'">Wildcard'));
+        const why=x.why.length?"Matches your taste for "+x.why.join(" · "):(x.gapOcc?"Fills a gap in your "+(SLOTMAP[x.gapOcc]||{}).label+" slot":"Something new to try");
+        return '<div class="sugg-card'+(isDis?" dismissed":"")+'">'
           +heart
           +'<div class="sugg-name">'+s.name+'</div>'
           +'<div class="sugg-house">'+s.house+'</div>'
           +'<div class="sugg-tags">'
-            +s.tags.map(t=>'<span class="sugg-tag">'+t+'</span>').join("")
+            +s.tags.map(tg=>'<span class="sugg-tag">'+tg+'</span>').join("")
             +(s.dupe?'<span class="sugg-tag dupe">Dupe of '+s.dupeOf+'</span>':"")
           +'</div>'
           +'<div class="sugg-price">'+s.price+'</div>'
+          +(model.hasData?'<div class="sugg-fit"><span class="fit-pill '+fit+'</span><span class="fit-why">'+why+'</span></div>':"")
           +'<div class="sugg-reason">'+s.reason+'</div>'
+          +(isDis?'<button class="sugg-no" onclick="restoreSuggestion(\''+s.id+'\',event)">Restore</button>':'<button class="sugg-no" onclick="dismissSuggestion(\''+s.id+'\',event)">Not for me</button>')
         +'</div>';
       }).join("")
     +'</div>';
-  }).join("");
+  }).join("")
+  +(hiddenCount?'<div class="sugg-showhid"><button onclick="toggleShowDismissed()">'+(SHOW_DISMISSED?"Hide":"Show")+' passed suggestions ('+hiddenCount+')</button></div>':"");
 }
 
 // ── WISHLIST ──
